@@ -1,0 +1,12 @@
+{
+  "name": "@kallpasoft/web",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kallpasoft/shared": "workspace:*",
+    "@kallpasoft/validators": "workspace:*"
+  }
+}

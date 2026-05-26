@@ -5,8 +5,8 @@
 | Ticket | Descripción | Estado |
 |--------|-------------|--------|
 | E0.1 | Crear repositorio REPARATEGO_SUPERBASE + estructura docs + CLAUDE.md | ✅ DONE |
-| E0.2 | Poblar contenido docs con info definida en planificación | 🟡 IN_PROGRESS |
-| E0.3 | Scaffoldear monorepo con Turborepo + pnpm workspaces | ⬜ TODO |
+| E0.2 | Poblar contenido docs con info definida en planificación | ✅ DONE |
+| E0.3 | Scaffoldear monorepo con Turborepo + pnpm workspaces | ✅ DONE |
 | E0.4 | Configurar Biome + Husky + commitlint | ⬜ TODO |
 | E0.5 | Configurar TypeScript estricto (tsconfig base + por paquete) | ⬜ TODO |
 | E0.6 | Crear paquete @kallpasoft/shared (tipos, constantes, enums) | ⬜ TODO |

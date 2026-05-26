@@ -1,8 +1,5 @@
-# API — Pagos Proveedores
+# API — Pagos a Proveedores
 
-> Detalle del módulo Pagos Proveedores.
-> Se actualizará al implementar los tickets correspondientes.
-
----
-
-_Pendiente de implementación._
+> Documentado junto con el módulo de compras.
+> Ver: docs/api/modules/compras.md (sección "Pagos a proveedores")
+> Épica: E9

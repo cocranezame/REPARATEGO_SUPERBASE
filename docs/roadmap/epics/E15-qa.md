@@ -1,9 +1,10 @@
-# E15 — QA y Hardening
+# E15 — QA, Performance y Pulido
 
 | Ticket | Descripción | Estado |
 |--------|-------------|--------|
-| E15.1 | Tests unitarios módulos críticos | ⬜ TODO |
-| E15.2 | Tests de integración API | ⬜ TODO |
-| E15.3 | Tests E2E flujos principales | ⬜ TODO |
-| E15.4 | Revisión de seguridad y permisos | ⬜ TODO |
-| E15.5 | Performance y optimización de queries | ⬜ TODO |
+| E15.1 | Tests E2E flujos críticos | ⬜ TODO |
+| E15.2 | Optimización de queries | ⬜ TODO |
+| E15.3 | PWA manifest, service worker, offline-light | ⬜ TODO |
+| E15.4 | Responsive: verificación en todos los breakpoints | ⬜ TODO |
+| E15.5 | Accesibilidad básica | ⬜ TODO |
+| E15.6 | Documentación API (OpenAPI/Swagger) | ⬜ TODO |

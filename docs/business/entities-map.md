@@ -1,64 +1,79 @@
-# Entities Map — ReparaTego
+# Mapa de Entidades — ReparaTego
 
-> Mapa de entidades del negocio y sus relaciones.
-> Basado en el documento de integración técnica definido en planificación.
+> Relaciones entre entidades principales y flujos de negocio.
 
-## Entidades principales
+## Diagrama de relaciones clave
 
-### Tenant (Multi-empresa)
-- Un tenant = una empresa/negocio
-- Todas las tablas se filtran por tenant_id (RLS)
+```
+TENANT (aísla todo)
+├── USUARIO (roles: ADMIN, TECNICO, VENDEDOR, CAJERO)
+├── SUCURSAL (locales físicos)
+│
+├── CATÁLOGOS
+│   ├── CATEGORIA (jerárquica) ← COMPONENTE
+│   └── MARCA ← MODELO (+ categoria)
+│
+├── CLIENTE ← DIRECCION (con lat/lng)
+│
+├── PRODUCTO (PRD/SRV)
+│   ├── ← COMPATIBILIDAD → MODELO
+│   ├── ← LOTE (stock por lote)
+│   └── ← MOVIMIENTO (stock por SUM)
+│
+├── PROVEEDOR
+│   ├── ← CONTACTO
+│   ├── ← METODO_PAGO (cuentas bancarias)
+│   └── ← LINEA (categorías/componentes que vende)
+│
+├── FLUJO DE COMPRA
+│   ├── COTIZACION_COMPRA ← DETALLE → PRODUCTO
+│   ├── SOLICITUD_COMPRA → PRODUCTO (pedido interno)
+│   ├── ORDEN_COMPRA → PROVEEDOR, agrupa SOLICITUDES
+│   │   ├── ← CONFIRMACION (qué llegó realmente)
+│   │   ├── → LOTE (al confirmar, genera ingreso)
+│   │   └── ← PAGO_PROVEEDOR
+│   └── Flujo: Solicitud → OC → Confirmar → Lote+Movimiento → Pagar
+│
+├── FLUJO DE SERVICIO
+│   ├── ORDEN_SERVICIO → CLIENTE, TECNICO, EQUIPO
+│   │   ├── ← COMPONENTE_OS (preliminar + final)
+│   │   ├── ← COTIZACION_OS (precio congelado)
+│   │   ├── ← EVIDENCIA (fotos S3)
+│   │   └── → VENTA (tipo SERVICIO)
+│   └── Flujo: Recepción → Diagnóstico → Cotización → Aprobación → Reparación → Entrega
+│
+├── FLUJO DE VENTA
+│   ├── CAJA → USUARIO (sesión de caja)
+│   ├── VENTA → CAJA, CLIENTE?
+│   │   ├── ← ITEM → PRODUCTO
+│   │   ├── ← PAGO → METODO_PAGO
+│   │   ├── ← ENVIO → DIRECCION?
+│   │   └── → MOVIMIENTO (tipo VENTA, resta stock)
+│   └── COTIZACION_VENTA ← ITEM (presupuesto)
+│
+├── FLUJO DE DOMICILIO
+│   ├── TARIFA_DISTRITO (precio por zona)
+│   ├── VISITA → CLIENTE, TECNICO, DIRECCION
+│   │   ├── → ORDEN_SERVICIO (si necesita reparación)
+│   │   └── → VENTA (tipo REVISION_DOMICILIO, si cancela)
+│   └── Flujo: Agendar → Validar → Asignar → Visitar → Resultado
+│
+└── CRM
+    ├── WA_CUENTA (WhatsApp Business, token cifrado)
+    ├── PIPELINE: ETAPA ← TRANSICION
+    ├── LEAD → ETAPA, CLIENTE?, ETIQUETAS
+    ├── CONVERSACION → LEAD, WA_CUENTA
+    │   └── ← MENSAJE (entrante/saliente, multi-tipo)
+    ├── PLANTILLA_WA (templates Meta)
+    ├── BOT (respuestas automáticas)
+    ├── AGENTE_CONFIG (Nico, con tools)
+    │   └── ← AGENTE_EVENTO (log de acciones)
+    └── MENSAJE_INTERNO (entre usuarios)
+```
 
-### Seguridad
-- **Usuario** → pertenece a un tenant, tiene rol (ADMIN, TECNICO, VENDEDOR, CAJERO)
-- **Sucursal** → pertenece a un tenant, tiene dirección y datos de contacto
+## Flujos transversales
 
-### Catálogos
-- **Categoría** → tipo de dispositivo (celular, laptop, TV, electrodoméstico)
-- **Componente** → pieza/repuesto (pantalla, batería, placa, etc.)
-- **Marca** → marca del dispositivo (Samsung, Apple, LG, etc.)
-- **Modelo** → modelo específico, pertenece a una marca
-
-### Clientes
-- **Cliente** → persona natural o jurídica, con tipo_doc (DNI/RUC/CE)
-- **ClienteDirección** → dirección del cliente (puede tener varias)
-
-### Inventario
-- **Producto** → repuesto o producto para venta, tiene categoría + marca
-- **Stock** → cantidad por producto por sucursal
-- **MovimientoStock** → registro de entradas/salidas de stock
-
-### Proveedores
-- **Proveedor** → empresa o persona que vende repuestos
-- **ProveedorContacto** → contacto del proveedor
-
-### Compras
-- **CotizaciónCompra** → solicitud de precio a proveedor
-- **OrdenCompra** → compra confirmada, puede venir de una cotización
-
-### Servicios
-- **OrdenServicio** → reparación de un equipo de un cliente
-- **Diagnóstico** → resultado de la evaluación técnica
-- **Evidencia** → fotos/videos del equipo (antes/durante/después)
-
-### Ventas
-- **CotizaciónVenta** → presupuesto para un cliente
-- **Venta** → venta de productos o servicios
-
-### Domicilios
-- **Domicilio** → servicio técnico a domicilio
-- **DomicilioSeguimiento** → tracking del técnico
-
-### Pagos
-- **PagoProveedor** → pago a proveedor por compras
-
-### CRM
-- **InteracciónCliente** → registro de contactos con clientes
-- **Seguimiento** → follow-up de interacciones
-
-## Flujos principales
-
-1. **Reparación:** Cliente → OrdenServicio → Diagnóstico → (Compra repuestos si necesario) → Reparación → Entrega → Cobro
-2. **Venta directa:** Cliente → CotizaciónVenta → Venta → Entrega
-3. **Compra repuestos:** CotizaciónCompra → OrdenCompra → Recepción stock → PagoProveedor
-4. **Servicio a domicilio:** Cliente → Domicilio → Diagnóstico → OrdenServicio → Seguimiento
+1. **Stock bajo → Solicitud → OC → Ingreso:** alerta de stock mínimo → usuario crea solicitud → se agrupa en OC → proveedor entrega → se confirman items → se crean lotes+movimientos
+2. **WhatsApp → Lead → OS → Venta:** cliente escribe por WA → Nico lo atiende → se crea lead → se agenda servicio → se crea OS → se repara → se cobra
+3. **Domicilio → OS → Venta:** cliente pide visita → técnico va → diagnostica → se crea OS → se repara en taller → se cobra servicio + envío
+4. **OS → Cotización → Aprobación → Reparación → Venta:** el flujo completo de reparación con aprobación del cliente

@@ -1,7 +1,9 @@
-# E16 — Mobile (React Native / PWA)
+# E16 — App Móvil
 
 | Ticket | Descripción | Estado |
 |--------|-------------|--------|
-| E16.1 | Evaluación: React Native vs PWA | ⬜ TODO |
-| E16.2 | Scaffolding app mobile | ⬜ TODO |
-| E16.3 | Implementación flujos principales mobile | ⬜ TODO |
+| E16.1 | Scaffoldear React Native + Expo | ⬜ TODO |
+| E16.2 | Compartir paquetes con web (@kallpasoft/shared, validators) | ⬜ TODO |
+| E16.3 | Implementar flujos prioritarios en mobile | ⬜ TODO |
+| E16.4 | Push notifications | ⬜ TODO |
+| E16.5 | Publicar en Play Store y App Store | ⬜ TODO |

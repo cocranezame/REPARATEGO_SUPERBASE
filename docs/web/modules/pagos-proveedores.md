@@ -1,8 +1,5 @@
-# Web — Pagos Proveedores
+# Web — Pagos a Proveedores
 
-> Detalle del módulo Pagos Proveedores.
-> Se actualizará al implementar los tickets correspondientes.
-
----
-
-_Pendiente de implementación._
+> Documentado junto con el módulo de compras.
+> Ver: docs/web/modules/compras.md (sección "Pagos pendientes")
+> Épica: E9

@@ -2,7 +2,7 @@
 
 | Ticket | Descripción | Estado |
 |--------|-------------|--------|
-| E1.1 | Migración: tablas tenant, usuario, sucursal, feature_flag | ⬜ TODO |
+| E1.1 | Migración: tablas tenant, usuario, sucursal, feature_flag | ✅ DONE |
 | E1.2 | RLS policies para tablas de seguridad | ⬜ TODO |
 | E1.3 | API: CRUD usuario (con hash de password) | ⬜ TODO |
 | E1.4 | API: CRUD sucursal | ⬜ TODO |

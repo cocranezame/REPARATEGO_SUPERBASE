@@ -1,3 +1,21 @@
+/*
+ * RLS Policies — aplicar en E1.2
+ *
+ * ALTER TABLE tenant      ENABLE ROW LEVEL SECURITY;
+ * ALTER TABLE sucursal    ENABLE ROW LEVEL SECURITY;
+ * ALTER TABLE usuario     ENABLE ROW LEVEL SECURITY;
+ * ALTER TABLE feature_flag ENABLE ROW LEVEL SECURITY;
+ *
+ * -- tenant: solo el propio tenant (los usuarios no pueden ver otros tenants)
+ * CREATE POLICY tenant_isolation ON tenant
+ *   USING (id = (auth.jwt() ->> 'tenant_id')::uuid);
+ *
+ * -- sucursal / usuario / feature_flag: aislamiento por tenant_id
+ * CREATE POLICY sucursal_isolation    ON sucursal     USING (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
+ * CREATE POLICY usuario_isolation     ON usuario      USING (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
+ * CREATE POLICY feature_flag_isolation ON feature_flag USING (tenant_id = (auth.jwt() ->> 'tenant_id')::uuid);
+ */
+
 import { PlanTenant, RolUsuario, TipoDocumento } from "@kallpasoft/shared";
 import { isNotNull, relations } from "drizzle-orm";
 import {

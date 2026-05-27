@@ -14,6 +14,6 @@
 | E0.8 | Crear paquete @kallpasoft/db (schema Drizzle, migraciones, cliente) | ✅ DONE |
 | E0.9 | Scaffoldear app API con Hono (estructura DDD ports & adapters) | ✅ DONE |
 | E0.10 | Scaffoldear app Web con Vite + React 18 + Tailwind + TanStack Query | ✅ DONE |
-| E0.11 | Configurar Sentry (web + API) | ⬜ TODO |
+| E0.11 | Configurar Sentry (web + API) | ✅ DONE |
 | E0.12 | Configurar Docker Compose (Postgres local + Supabase local) | ⬜ TODO |
 | E0.13 | Smoke test local (API responde, Web carga, DB conecta) | ⬜ TODO |

@@ -5,7 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./app/App";
+import { initSentry, Sentry } from "./shared/lib/sentry";
 import "./styles/globals.css";
+
+initSentry();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,8 +24,10 @@ if (rootEl === null) throw new Error("Root element #root not found");
 
 createRoot(rootEl).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
+    <Sentry.ErrorBoundary fallback={<p>Ocurrió un error inesperado.</p>}>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </Sentry.ErrorBoundary>
   </StrictMode>
 );

@@ -1,5 +1,6 @@
 import type { ErrorHandler } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
+import { Sentry } from "../lib/sentry.js";
 
 export class ApiError extends Error {
   constructor(
@@ -24,6 +25,7 @@ export const errorHandler: ErrorHandler = (err, c) => {
     );
   }
 
+  Sentry.captureException(err);
   console.error("[API Error]", err);
   return c.json(
     {

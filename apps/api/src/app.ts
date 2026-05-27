@@ -2,9 +2,12 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { requestId } from "hono/request-id";
+import { initSentry } from "./lib/sentry.js";
 import { errorHandler } from "./middlewares/error-handler.js";
 import { healthRoutes } from "./modules/health/routes.js";
 import type { HonoVariables } from "./types/context.js";
+
+initSentry();
 
 export const app = new Hono<{ Variables: HonoVariables }>();
 

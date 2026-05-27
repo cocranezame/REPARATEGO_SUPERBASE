@@ -25,6 +25,7 @@ VITE_SUPABASE_ANON_KEY=<generado por supabase local>
 
 # Sentry (opcional en local)
 SENTRY_DSN=
+VITE_SENTRY_DSN=
 ```
 
 ## Producción (se configura en fase deploy)
@@ -45,4 +46,5 @@ S3_REGION=sa-east-1
 
 # Sentry
 SENTRY_DSN=<producción>
+VITE_SENTRY_DSN=<producción>
 ```

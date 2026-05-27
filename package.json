@@ -5,12 +5,18 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
-    "lint": "turbo run lint",
+    "lint": "biome lint .",
+    "check": "biome check .",
+    "format": "biome format --write .",
     "test": "turbo run test",
-    "check": "turbo run check",
-    "format": "turbo run format"
+    "prepare": "husky"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
+    "@commitlint/cli": "^21.0.1",
+    "@commitlint/config-conventional": "^21.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
     "turbo": "^2.5.0",
     "typescript": "^5.7.0"
   },
@@ -18,5 +24,13 @@
     "node": ">=20",
     "pnpm": ">=9"
   },
-  "packageManager": "pnpm@9.15.9"
+  "packageManager": "pnpm@9.15.9",
+  "lint-staged": {
+    "**/*.{ts,tsx,js,jsx,mjs,cjs}": [
+      "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true"
+    ],
+    "**/*.json": [
+      "biome format --write --no-errors-on-unmatched --files-ignore-unknown=true"
+    ]
+  }
 }

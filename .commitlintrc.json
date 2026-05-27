@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json.schemastore.org/commitlintrc.json",
+  "extends": ["@commitlint/config-conventional"],
+  "rules": {
+    "scope-enum": [
+      2,
+      "always",
+      [
+        "infra",
+        "seguridad",
+        "catalogos",
+        "clientes",
+        "inventario",
+        "proveedores",
+        "compras",
+        "servicios",
+        "ventas",
+        "domicilios",
+        "pagos",
+        "crm",
+        "shared",
+        "db",
+        "api",
+        "web"
+      ]
+    ],
+    "scope-empty": [1, "never"],
+    "subject-case": [0],
+    "body-max-line-length": [0],
+    "footer-max-line-length": [0]
+  }
+}

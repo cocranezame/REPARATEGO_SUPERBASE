@@ -8,7 +8,7 @@
 | E0.2 | Poblar contenido docs con info definida en planificación | ✅ DONE |
 | E0.3 | Scaffoldear monorepo con Turborepo + pnpm workspaces | ✅ DONE |
 | E0.4 | Configurar Biome + Husky + commitlint | ✅ DONE |
-| E0.5 | Configurar TypeScript estricto (tsconfig base + por paquete) | ⬜ TODO |
+| E0.5 | Configurar TypeScript estricto (tsconfig base + por paquete) | ✅ DONE |
 | E0.6 | Crear paquete @kallpasoft/shared (tipos, constantes, enums) | ⬜ TODO |
 | E0.7 | Crear paquete @kallpasoft/validators (schemas Zod compartidos) | ⬜ TODO |
 | E0.8 | Crear paquete @kallpasoft/db (schema Drizzle, migraciones, cliente) | ⬜ TODO |

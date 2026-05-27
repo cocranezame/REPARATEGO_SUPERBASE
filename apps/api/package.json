@@ -10,6 +10,10 @@
   "dependencies": {
     "@kallpasoft/db": "workspace:*",
     "@kallpasoft/shared": "workspace:*",
-    "@kallpasoft/validators": "workspace:*"
+    "@kallpasoft/validators": "workspace:*",
+    "hono": "^4.12.23"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1"
   }
 }

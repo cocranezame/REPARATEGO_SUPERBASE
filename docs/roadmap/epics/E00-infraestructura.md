@@ -12,7 +12,7 @@
 | E0.6 | Crear paquete @kallpasoft/shared (tipos, constantes, enums) | ✅ DONE |
 | E0.7 | Crear paquete @kallpasoft/validators (schemas Zod compartidos) | ✅ DONE |
 | E0.8 | Crear paquete @kallpasoft/db (schema Drizzle, migraciones, cliente) | ✅ DONE |
-| E0.9 | Scaffoldear app API con Hono (estructura DDD ports & adapters) | ⬜ TODO |
+| E0.9 | Scaffoldear app API con Hono (estructura DDD ports & adapters) | ✅ DONE |
 | E0.10 | Scaffoldear app Web con Vite + React 18 + Tailwind + TanStack Query | ⬜ TODO |
 | E0.11 | Configurar Sentry (web + API) | ⬜ TODO |
 | E0.12 | Configurar Docker Compose (Postgres local + Supabase local) | ⬜ TODO |

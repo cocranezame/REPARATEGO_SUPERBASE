@@ -1,7 +1,2 @@
-import type { ApiResponse } from "@kallpasoft/shared";
-
-export function createApp(): unknown {
-  throw new Error("Hono app not yet configured — implement in E0.9");
-}
-
-export type { ApiResponse };
+export type { AppType } from "./app.js";
+export { app } from "./app.js";

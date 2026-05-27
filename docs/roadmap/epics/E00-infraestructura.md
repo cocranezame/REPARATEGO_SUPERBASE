@@ -16,4 +16,4 @@
 | E0.10 | Scaffoldear app Web con Vite + React 18 + Tailwind + TanStack Query | ✅ DONE |
 | E0.11 | Configurar Sentry (web + API) | ✅ DONE |
 | E0.12 | Configurar Docker Compose (Postgres local + Supabase local) | ✅ DONE |
-| E0.13 | Smoke test local (API responde, Web carga, DB conecta) | ⬜ TODO |
+| E0.13 | Smoke test local (API responde, Web carga, DB conecta) | ✅ DONE |

@@ -6,7 +6,7 @@
 
 ```env
 # Base de datos (Postgres local)
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/reparatego_dev
+DATABASE_URL=postgresql://postgres:postgres@localhost:5435/reparatego_dev
 
 # Supabase local
 SUPABASE_URL=http://localhost:54321

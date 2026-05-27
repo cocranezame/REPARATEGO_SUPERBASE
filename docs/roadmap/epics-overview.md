@@ -5,7 +5,7 @@
 
 | Épica | Nombre | Estado | Doc |
 |-------|--------|--------|-----|
-| E0 | Infraestructura y Scaffolding (Local) | 🟡 IN_PROGRESS | E00-infraestructura.md |
+| E0 | Infraestructura y Scaffolding (Local) | ✅ DONE | E00-infraestructura.md |
 | E1 | Seguridad y Acceso | ⬜ TODO | E01-seguridad.md |
 | E2 | Catálogos Maestros | ⬜ TODO | E02-catalogos.md |
 | E3 | Clientes | ⬜ TODO | E03-clientes.md |

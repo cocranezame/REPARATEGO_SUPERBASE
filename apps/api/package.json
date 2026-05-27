@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "dev": "tsc -p tsconfig.json --watch",
+    "dev": "tsx watch src/server.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@hono/node-server": "^2.0.4",
     "@kallpasoft/db": "workspace:*",
     "@kallpasoft/shared": "workspace:*",
     "@kallpasoft/validators": "workspace:*",
@@ -15,6 +16,7 @@
     "hono": "^4.12.23"
   },
   "devDependencies": {
-    "@types/node": "^25.9.1"
+    "@types/node": "^25.9.1",
+    "tsx": "^4.22.3"
   }
 }

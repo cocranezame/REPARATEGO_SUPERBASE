@@ -81,3 +81,18 @@ Las directivas `@tailwind base/components/utilities` son desconocidas para el li
 Al agregar `createDbClientFromEnv()` a `packages/db/src/client.ts` usando `process.env.DATABASE_URL`, TypeScript emitió `TS2580: Cannot find name 'process'`. El package no tenía `@types/node` como devDependency (el `drizzle.config.ts` ya usaba `process.env` pero es ejecutado por drizzle-kit con su propio runner, no por tsc).
 
 **Corrección aplicada:** `@types/node` instalado como devDependency en `packages/db`.
+
+---
+
+## C006 — 2026-05-27
+
+**ID:** C006  
+**Afecta:** infra, db  
+**Contexto:** E0.13 — Smoke test local
+
+**Puerto 5432 ocupado por otras instancias Postgres locales:**  
+El entorno de desarrollo ya tiene instancias Postgres en los puertos 5432, 5433 y 5434 (otros proyectos). `drizzle-kit migrate` conectaba silenciosamente a la instancia equivocada y fallaba con exit code 1 sin mostrar el error real ("no existe la base de datos reparatego_dev" en la instancia externa). La API tampoco podía conectar.
+
+**Corrección aplicada:** Docker Compose usa el puerto `5435` (host) → `5432` (container). `DATABASE_URL` en `.env.example` y `env-vars.md` actualizado a `localhost:5435`.
+
+**Nota:** Para futuros entornos con conflicto de puertos, cambiar el puerto host en `docker-compose.yml` a cualquier puerto libre ≥ 5435.

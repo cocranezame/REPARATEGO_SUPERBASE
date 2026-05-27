@@ -2,6 +2,23 @@
 
 > Se actualizará a medida que se configuren las herramientas.
 
+## Setup local (primera vez)
+
+```bash
+git clone https://github.com/cocranezame/REPARATEGO_SUPERBASE.git
+cd REPARATEGO_SUPERBASE
+pnpm install               # Instalar dependencias del monorepo
+cp .env.example .env       # Crear .env local (editar con tus valores si aplica)
+pnpm build                 # Compilar packages (db, shared, validators)
+docker compose up -d       # Levantar Postgres en localhost:5432
+pnpm db:generate           # Generar primera migración SQL desde el schema
+pnpm db:migrate            # Aplicar migraciones a la DB local
+pnpm dev                   # Levantar API (localhost:3001) + Web (localhost:5173)
+```
+
+> **Nota:** `pnpm build` es necesario antes de `pnpm dev` para que la API resuelva
+> los tipos de `@kallpasoft/db`.
+
 ## General (monorepo)
 
 ```bash

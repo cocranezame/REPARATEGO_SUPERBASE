@@ -14,3 +14,18 @@ export function createDbClientFromEnv(): DbClient {
   if (!url) throw new Error("DATABASE_URL environment variable is not set");
   return createDbClient(url);
 }
+
+export async function pingDb(connectionString: string): Promise<void> {
+  const pg = postgres(connectionString, { max: 1 });
+  try {
+    await pg`SELECT 1`;
+  } finally {
+    await pg.end();
+  }
+}
+
+export async function pingDbFromEnv(): Promise<void> {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL environment variable is not set");
+  await pingDb(url);
+}

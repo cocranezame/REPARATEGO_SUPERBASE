@@ -7,6 +7,7 @@ dist/
 .next/
 .turbo/
 out/
+*.tsbuildinfo
 
 # Environment
 .env
@@ -30,8 +31,7 @@ Thumbs.db
 supabase/.temp/
 supabase/.branches/
 
-# Drizzle
-drizzle/meta/
+# Drizzle (las migraciones y meta SÍ se commitean — no excluir)
 
 # Sentry
 .sentryclirc

@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@kallpasoft/shared": "workspace:*"
+    "@kallpasoft/shared": "workspace:*",
+    "zod": "^4.4.3"
   }
 }

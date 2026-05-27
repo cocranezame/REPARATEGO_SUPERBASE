@@ -3,10 +3,28 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "build": "tsc -b && vite build",
+    "dev": "vite",
+    "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
     "@kallpasoft/shared": "workspace:*",
-    "@kallpasoft/validators": "workspace:*"
+    "@kallpasoft/validators": "workspace:*",
+    "@tanstack/react-query": "^5.100.14",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-router-dom": "^7.15.1",
+    "zustand": "^5.0.13"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.15",
+    "tailwindcss": "^3",
+    "vite": "^5.4.21"
   }
 }

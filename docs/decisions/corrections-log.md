@@ -68,3 +68,16 @@ Pasar `body: undefined` a `RequestInit` viola `exactOptionalPropertyTypes` porqu
 
 **`noUnknownAtRules` de Biome con Tailwind CSS:**  
 Las directivas `@tailwind base/components/utilities` son desconocidas para el linter CSS de Biome. Corregido añadiendo `"noUnknownAtRules": "off"` en `biome.json` bajo `linter.rules.suspicious`.
+
+---
+
+## C005 — 2026-05-27
+
+**ID:** C005  
+**Afecta:** db  
+**Contexto:** E0.12 — Docker Compose
+
+**TS2580 — `process` no encontrado en `packages/db`:**  
+Al agregar `createDbClientFromEnv()` a `packages/db/src/client.ts` usando `process.env.DATABASE_URL`, TypeScript emitió `TS2580: Cannot find name 'process'`. El package no tenía `@types/node` como devDependency (el `drizzle.config.ts` ya usaba `process.env` pero es ejecutado por drizzle-kit con su propio runner, no por tsc).
+
+**Corrección aplicada:** `@types/node` instalado como devDependency en `packages/db`.

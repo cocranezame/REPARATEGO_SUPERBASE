@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: reparatego_postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: reparatego_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d reparatego_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Supabase Studio local requiere el stack completo de Supabase (Kong, GoTrue, PostgREST, etc.).
+  # Usar `supabase start` (Supabase CLI) para levantarlo. Ver E0.13.
+
+volumes:
+  postgres_data:

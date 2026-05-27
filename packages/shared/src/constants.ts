@@ -1,0 +1,12 @@
+export const IGV_RATE = 0.18 as const;
+
+export const CODE_PREFIX = {
+  PRODUCTO: "PRD",
+  SERVICIO_CATALOGO: "SRV",
+  ORDEN_SERVICIO: "OS",
+  ORDEN_COMPRA: "OC",
+  VENTA: "V",
+  COTIZACION_COMPRA: "COT-C",
+  COTIZACION_VENTA: "COT-V",
+  VISITA_DOMICILIO: "VD",
+} as const;

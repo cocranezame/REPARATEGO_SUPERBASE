@@ -16,8 +16,8 @@ export const authMiddleware: MiddlewareHandler<{ Variables: HonoVariables }> = a
   }
 
   // Stub: production will verify JWT with Supabase and extract real claims
-  c.set("tenantId", "stub-tenant-id");
-  c.set("userId", "stub-user-id");
+  c.set("tenantId", "00000000-0000-0000-0000-000000000001");
+  c.set("userId", "00000000-0000-0000-0000-000000000002");
   c.set("rol", RolUsuario.ADMIN);
 
   return await next();

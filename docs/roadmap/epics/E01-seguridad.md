@@ -10,7 +10,7 @@
 | E1.6 | API: Auth — login (numero_doc + password), refresh token, logout | ✅ DONE |
 | E1.7 | API: Middleware de autenticación y autorización por rol | ✅ DONE |
 | E1.8 | Web: Pantalla de login | ✅ DONE |
-| E1.9 | Web: Layout principal (sidebar, header, guard de rutas) | ⬜ TODO |
+| E1.9 | Web: Layout principal (sidebar, header, guard de rutas) | ✅ DONE |
 | E1.10 | Web: CRUD usuarios (admin) | ⬜ TODO |
 | E1.11 | Web: CRUD sucursales (admin) | ⬜ TODO |
 | E1.12 | Web: Gestión de feature flags (admin) | ⬜ TODO |

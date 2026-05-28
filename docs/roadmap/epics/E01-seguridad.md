@@ -8,7 +8,7 @@
 | E1.4 | API: CRUD sucursal | ✅ DONE |
 | E1.5 | API: CRUD feature_flag | ✅ DONE |
 | E1.6 | API: Auth — login (numero_doc + password), refresh token, logout | ✅ DONE |
-| E1.7 | API: Middleware de autenticación y autorización por rol | ⬜ TODO |
+| E1.7 | API: Middleware de autenticación y autorización por rol | ✅ DONE |
 | E1.8 | Web: Pantalla de login | ⬜ TODO |
 | E1.9 | Web: Layout principal (sidebar, header, guard de rutas) | ⬜ TODO |
 | E1.10 | Web: CRUD usuarios (admin) | ⬜ TODO |

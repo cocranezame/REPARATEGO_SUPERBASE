@@ -3,10 +3,21 @@ import { z } from "zod";
 import { uuidSchema } from "./common.js";
 
 export const loginSchema = z.object({
+  tipo_documento: z.nativeEnum(TipoDocumento),
   numero_documento: z.string().min(1).max(20),
   password: z.string().min(1),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const refreshTokenSchema = z.object({
+  refresh_token: z.string().min(1),
+});
+export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>;
+
+export const logoutSchema = z.object({
+  refresh_token: z.string().min(1),
+});
+export type LogoutInput = z.infer<typeof logoutSchema>;
 
 export const createUsuarioSchema = z.object({
   tipo_documento: z.nativeEnum(TipoDocumento),

@@ -4,6 +4,7 @@ import { logger } from "hono/logger";
 import { requestId } from "hono/request-id";
 import { initSentry } from "./lib/sentry.js";
 import { errorHandler } from "./middlewares/error-handler.js";
+import { authRoutes } from "./modules/auth/http/routes.js";
 import { featureFlagRoutes } from "./modules/feature-flags/http/routes.js";
 import { healthRoutes } from "./modules/health/routes.js";
 import { sucursalRoutes } from "./modules/sucursales/http/routes.js";
@@ -20,6 +21,7 @@ app.use(logger());
 app.onError(errorHandler);
 
 app.route("/api/v1", healthRoutes);
+app.route("/api/v1", authRoutes);
 app.route("/api/v1", usuarioRoutes);
 app.route("/api/v1", sucursalRoutes);
 app.route("/api/v1", featureFlagRoutes);

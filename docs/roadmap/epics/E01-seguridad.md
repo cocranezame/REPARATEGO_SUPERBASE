@@ -5,7 +5,7 @@
 | E1.1 | Migración: tablas tenant, usuario, sucursal, feature_flag | ✅ DONE |
 | E1.2 | RLS policies para tablas de seguridad | ✅ DONE |
 | E1.3 | API: CRUD usuario (con hash de password) | ✅ DONE |
-| E1.4 | API: CRUD sucursal | ⬜ TODO |
+| E1.4 | API: CRUD sucursal | ✅ DONE |
 | E1.5 | API: CRUD feature_flag | ⬜ TODO |
 | E1.6 | API: Auth — login (numero_doc + password), refresh token, logout | ⬜ TODO |
 | E1.7 | API: Middleware de autenticación y autorización por rol | ⬜ TODO |

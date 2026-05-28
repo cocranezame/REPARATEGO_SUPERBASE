@@ -1,4 +1,7 @@
-const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
+import { useAuthStore } from "../stores/auth-store";
+
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api/v1";
+const TENANT_ID = import.meta.env.VITE_TENANT_ID ?? "";
 
 type HttpMethod = "DELETE" | "GET" | "PATCH" | "POST" | "PUT";
 
@@ -11,9 +14,13 @@ type RequestOptions = {
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = "GET", body, headers = {} } = options;
 
-  const token = localStorage.getItem("auth_token");
+  const token = useAuthStore.getState().accessToken;
   if (token !== null) {
     headers.Authorization = `Bearer ${token}`;
+  }
+
+  if (TENANT_ID) {
+    headers["X-Tenant-Id"] = TENANT_ID;
   }
 
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -23,7 +30,14 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   });
 
   if (!res.ok) {
-    throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    let message = `HTTP ${res.status}`;
+    try {
+      const errorBody = (await res.json()) as { error?: { message?: string } };
+      if (errorBody?.error?.message) message = errorBody.error.message;
+    } catch {
+      // keep default message
+    }
+    throw new Error(message);
   }
 
   return res.json() as Promise<T>;

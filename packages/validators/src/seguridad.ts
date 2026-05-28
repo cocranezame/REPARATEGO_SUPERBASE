@@ -35,3 +35,8 @@ export type CreateSucursalInput = z.infer<typeof createSucursalSchema>;
 
 export const updateSucursalSchema = createSucursalSchema.partial();
 export type UpdateSucursalInput = z.infer<typeof updateSucursalSchema>;
+
+export const upsertFeatureFlagSchema = z.object({
+  habilitado: z.boolean(),
+});
+export type UpsertFeatureFlagInput = z.infer<typeof upsertFeatureFlagSchema>;

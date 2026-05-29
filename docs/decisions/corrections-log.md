@@ -96,3 +96,66 @@ El entorno de desarrollo ya tiene instancias Postgres en los puertos 5432, 5433 
 **Corrección aplicada:** Docker Compose usa el puerto `5435` (host) → `5432` (container). `DATABASE_URL` en `.env.example` y `env-vars.md` actualizado a `localhost:5435`.
 
 **Nota:** Para futuros entornos con conflicto de puertos, cambiar el puerto host en `docker-compose.yml` a cualquier puerto libre ≥ 5435.
+
+---
+
+## C007 — 2026-05-27
+
+**ID:** C007  
+**Afecta:** db  
+**Contexto:** E1.2 — RLS policies
+
+**`RESET app.tenant_id` produce string vacío, no NULL:**  
+`current_setting('app.tenant_id', true)` con `missing_ok = true` devuelve NULL cuando la variable nunca fue seteada. Pero `RESET app.tenant_id` deja la variable como `""` (string vacío), no como NULL. Intentar `""::uuid` falla con `invalid input syntax for type uuid`.
+
+**Corrección aplicada:** Policies usan `NULLIF(current_setting('app.tenant_id', true), '')::uuid`. `NULLIF('', '')` → NULL → `NULL::uuid` = NULL → la policy no pasa filas (seguro por defecto).
+
+**Nota:** En la práctica, la API usa `SET LOCAL` dentro de transacciones (no `RESET`), así que este caso solo ocurre en testing manual con psql.
+
+---
+
+## C008 — 2026-05-27
+
+**ID:** C008  
+**Afecta:** api  
+**Contexto:** E1.3 — CRUD usuario
+
+**Hono `c.req.valid()` devuelve `never` con handlers separados de rutas:**  
+Cuando los handlers se definen en un archivo separado y reciben `Context<{ Variables: HonoVariables }>`, el tipo genérico `Input` queda como `{}` vacío. `c.req.valid("query")` infiere `T extends keyof I & keyof ValidationTargets` — como `I = {}`, el resultado es `never`. Intentar tipar `HonoInput = { in: { json: ...; query: ... } }` tampoco resuelve porque `Context` no lo propaga correctamente a `HonoRequest`.
+
+**Corrección aplicada:** `type HonoCtx = Context<{ Variables: HonoVariables }, string, any>` con `// biome-ignore lint/suspicious/noExplicitAny`. El `any` en el tercer genérico (`Input`) desbloquea `valid()` sin afectar type-safety del dominio.
+
+**Drizzle `PgTransaction` type deeply generic — `tx.execute()` sin tipo explícito:**  
+`db.transaction(async (tx) => { ... })` — el tipo de `tx` es `PgTransaction<...>` con parámetros de tipo muy genéricos. Intentar tipar el parámetro de la función `setTenantLocal(tx: PgTransaction<...>)` requiere instanciar todos los type params. Solución estructural: `interface TxLike { execute(query: SQL<unknown>): Promise<unknown> }` — pero `tx` aún debe tipificarse como `any` al llamar con `biome-ignore`.
+
+**Corrección aplicada:** `async function setTenantLocal(tx: any, ...)` con `// biome-ignore lint/suspicious/noExplicitAny`.
+
+---
+
+## C009 — 2026-05-27
+
+**ID:** C009  
+**Afecta:** api  
+**Contexto:** E1.6 — Auth JWT
+
+**`jose` v5+ es ESM-only — incompatible con monorepo CJS:**  
+`jose` v5+ no tiene entrypoint CommonJS. En un monorepo donde `@kallpasoft/db` es CJS y `apps/api` también lo es (sin `"type": "module"`), un static `import { SignJWT } from "jose"` dispara TS1479. Intentar `"type": "module"` en `apps/api` causó TS2345 de dual-resolution en `drizzle-orm`: `apps/api` (ESM) y `@kallpasoft/db` (CJS) resuelven `drizzle-orm` desde entrypoints distintos, generando dos declaraciones incompatibles de la clase `SQL` (`private shouldInlineParams`).
+
+**Corrección aplicada:** Reemplazar `jose` por `jsonwebtoken@9` (CJS-compatible, sin dependencias nativas). API idéntica a nivel de tokens generados (HS256 / HS384 / RS256). `JWT_SECRET` permanece como variable de entorno.
+
+**Nota:** Para migrar a `jose` en el futuro, hacer todos los packages del monorepo ESM simultáneamente (agregar `"type": "module"` a todos los package.json y reconstruir).
+
+---
+
+## C010 — 2026-05-28
+
+**ID:** C010  
+**Afecta:** web  
+**Contexto:** E1.11 — Web: CRUD sucursales
+
+**`z.boolean().default(false)` produce tipo de entrada `boolean | undefined` — incompatible con `exactOptionalPropertyTypes`:**  
+`createSucursalSchema` tiene `es_principal: z.boolean().default(false)`. `z.infer<>` de un campo con `.default()` produce `boolean | undefined` para el tipo de entrada. Cuando se usa en `useForm<SucursalFormValues>({ resolver: zodResolver(schema) })`, el `Resolver<TFieldValues>` necesita que `TFieldValues` y el tipo inferido coincidan exactamente. Con `exactOptionalPropertyTypes: true`, `boolean` no es asignable a `boolean | undefined`, causando TS2322.
+
+**Corrección aplicada:** Al extender el schema para el formulario, sobreescribir el campo con `es_principal: z.boolean()` (sin `.default()`). El valor por defecto se provee en `useForm defaultValues: { es_principal: false }`, no en el schema.
+
+**Regla:** Nunca usar `.default()` en campos de un schema de formulario React Hook Form. Proveer el valor default en `defaultValues` del `useForm`.

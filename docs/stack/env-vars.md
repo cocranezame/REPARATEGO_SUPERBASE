@@ -17,6 +17,7 @@ SUPABASE_SERVICE_ROLE_KEY=<generado por supabase local>
 API_PORT=3001
 API_HOST=localhost
 NODE_ENV=development
+JWT_SECRET=dev-secret-change-me-in-production  # min 32 chars en producción
 
 # Web
 VITE_API_URL=http://localhost:3001/api/v1

@@ -1,3 +1,22 @@
+/*
+ * RLS Policies — aplicar en E1.2
+ *
+ * ALTER TABLE tenant      ENABLE ROW LEVEL SECURITY;
+ * ALTER TABLE sucursal    ENABLE ROW LEVEL SECURITY;
+ * ALTER TABLE usuario     ENABLE ROW LEVEL SECURITY;
+ * ALTER TABLE feature_flag ENABLE ROW LEVEL SECURITY;
+ *
+ * ✅ Aplicado en E1.2 (migración 0001_rls_policies.sql)
+ * Local: NULLIF(current_setting('app.tenant_id', true), '')::uuid — API usa SET LOCAL
+ * Prod:  (auth.jwt() ->> 'tenant_id')::uuid — reemplazar en migración de deploy (E0D)
+ *
+ * CREATE POLICY tenant_isolation ON tenant
+ *   USING (id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
+ * CREATE POLICY sucursal_isolation    ON sucursal     USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
+ * CREATE POLICY usuario_isolation     ON usuario      USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
+ * CREATE POLICY feature_flag_isolation ON feature_flag USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
+ */
+
 import { PlanTenant, RolUsuario, TipoDocumento } from "@kallpasoft/shared";
 import { isNotNull, relations } from "drizzle-orm";
 import {

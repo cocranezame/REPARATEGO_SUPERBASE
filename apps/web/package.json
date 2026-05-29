@@ -10,13 +10,17 @@
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
+    "@hookform/resolvers": "^5.4.0",
     "@kallpasoft/shared": "workspace:*",
     "@kallpasoft/validators": "workspace:*",
     "@sentry/react": "^8",
     "@tanstack/react-query": "^5.100.14",
+    "lucide-react": "^1.16.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
+    "react-hook-form": "^7.76.1",
     "react-router-dom": "^7.15.1",
+    "zod": "^4",
     "zustand": "^5.0.13"
   },
   "devDependencies": {

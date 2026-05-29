@@ -1,5 +1,5 @@
 import type { RolUsuario } from "@kallpasoft/shared";
-import { Building2, Home, LogOut, Menu, Users, Wrench, X } from "lucide-react";
+import { Building2, Flag, Home, LogOut, Menu, Users, Wrench, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -24,6 +24,12 @@ const NAV_ITEMS: NavItem[] = [
     label: "Sucursales",
     to: "/admin/sucursales",
     icon: <Building2 className="h-5 w-5" />,
+    roles: ["ADMIN"],
+  },
+  {
+    label: "Feature Flags",
+    to: "/admin/feature-flags",
+    icon: <Flag className="h-5 w-5" />,
     roles: ["ADMIN"],
   },
 ];

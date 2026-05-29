@@ -13,4 +13,4 @@
 | E1.9 | Web: Layout principal (sidebar, header, guard de rutas) | ✅ DONE |
 | E1.10 | Web: CRUD usuarios (admin) | ✅ DONE |
 | E1.11 | Web: CRUD sucursales (admin) | ✅ DONE |
-| E1.12 | Web: Gestión de feature flags (admin) | ⬜ TODO |
+| E1.12 | Web: Gestión de feature flags (admin) | ✅ DONE |

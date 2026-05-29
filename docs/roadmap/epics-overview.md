@@ -7,7 +7,7 @@
 |-------|--------|--------|-----|
 | E0 | Infraestructura y Scaffolding (Local) | ✅ DONE | E00-infraestructura.md |
 | E1 | Seguridad y Acceso | ✅ DONE | E01-seguridad.md |
-| E2 | Catálogos Maestros | ⬜ TODO | E02-catalogos.md |
+| E2 | Catálogos Maestros | ✅ DONE | E02-catalogos.md |
 | E3 | Clientes | ⬜ TODO | E03-clientes.md |
 | E4 | Inventario y Productos | ⬜ TODO | E04-inventario.md |
 | E5 | Proveedores | ⬜ TODO | E05-proveedores.md |

@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { LoginPage } from "../modules/auth/pages/LoginPage";
+import { CatalogosPage } from "../modules/catalogos/pages/CatalogosPage";
 import { DashboardPage } from "../modules/dashboard/pages/DashboardPage";
 import { FeatureFlagsPage } from "../modules/feature-flags/pages/FeatureFlagsPage";
 import { SucursalesPage } from "../modules/sucursales/pages/SucursalesPage";
@@ -22,6 +23,7 @@ export function App() {
             <Route path="/admin/usuarios" element={<UsuariosPage />} />
             <Route path="/admin/sucursales" element={<SucursalesPage />} />
             <Route path="/admin/feature-flags" element={<FeatureFlagsPage />} />
+            <Route path="/catalogos" element={<CatalogosPage />} />
           </Route>
         </Route>
       </Routes>

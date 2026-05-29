@@ -1,5 +1,5 @@
 import type { RolUsuario } from "@kallpasoft/shared";
-import { Building2, Flag, Home, LogOut, Menu, Users, Wrench, X } from "lucide-react";
+import { BookOpen, Building2, Flag, Home, LogOut, Menu, Users, Wrench, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -32,6 +32,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: <Flag className="h-5 w-5" />,
     roles: ["ADMIN"],
   },
+  { label: "Catálogos", to: "/catalogos", icon: <BookOpen className="h-5 w-5" /> },
 ];
 
 const SEGMENT_LABELS: Record<string, string> = {
@@ -40,6 +41,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   usuarios: "Usuarios",
   sucursales: "Sucursales",
   "feature-flags": "Feature Flags",
+  catalogos: "Catálogos",
 };
 
 function breadcrumbsFromPath(pathname: string): string[] {

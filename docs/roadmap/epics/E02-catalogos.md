@@ -8,4 +8,4 @@
 | E2.4 | API: CRUD componente (cascada por categoría) | ✅ DONE |
 | E2.5 | API: CRUD marca | ✅ DONE |
 | E2.6 | API: CRUD modelo (por marca + categoría) | ✅ DONE |
-| E2.7 | Web: Pantalla de catálogos (tabs: categorías, componentes, marcas, modelos) | ⬜ TODO |
+| E2.7 | Web: Pantalla de catálogos (tabs: categorías, componentes, marcas, modelos) | ✅ DONE |

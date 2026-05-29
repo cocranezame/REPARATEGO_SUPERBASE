@@ -6,5 +6,5 @@
 | E3.2 | RLS policies para clientes | ✅ DONE |
 | E3.3 | API: CRUD cliente (búsqueda por DNI/RUC) | ✅ DONE |
 | E3.4 | API: CRUD direcciones de cliente | ✅ DONE |
-| E3.5 | Web: Pantalla de clientes (listado, búsqueda, crear/editar) | ⬜ TODO |
-| E3.6 | Web: Detalle de cliente con direcciones | ⬜ TODO |
+| E3.5 | Web: Pantalla de clientes (listado, búsqueda, crear/editar) | ✅ DONE |
+| E3.6 | Web: Detalle de cliente con direcciones | ✅ DONE |

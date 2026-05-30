@@ -2,6 +2,7 @@ import {
   EstadoCotizacionCompra,
   EstadoOrdenCompra,
   EstadoSolicitudCompra,
+  MetodoPagoProveedor,
   PrioridadSolicitud,
 } from "@kallpasoft/shared";
 import { relations } from "drizzle-orm";
@@ -22,6 +23,7 @@ import { producto } from "./inventario.js";
 import { proveedor } from "./proveedores.js";
 import { tenant, usuario } from "./seguridad.js";
 
+export const metodoPagoProveedorEnum = pgEnum("metodo_pago_proveedor", MetodoPagoProveedor);
 export const estadoCotizacionCompraEnum = pgEnum(
   "estado_cotizacion_compra",
   EstadoCotizacionCompra
@@ -156,6 +158,37 @@ export const ordenCompraConfirmacion = pgTable("orden_compra_confirmacion", {
   updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const pagoProveedor = pgTable(
+  "pago_proveedor",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenant_id: uuid("tenant_id")
+      .notNull()
+      .references(() => tenant.id),
+    orden_compra_id: uuid("orden_compra_id")
+      .notNull()
+      .references(() => ordenCompra.id),
+    proveedor_id: uuid("proveedor_id")
+      .notNull()
+      .references(() => proveedor.id),
+    monto: decimal("monto", { precision: 12, scale: 2 }).notNull(),
+    metodo_pago: metodoPagoProveedorEnum("metodo_pago").notNull(),
+    referencia: varchar("referencia", { length: 100 }),
+    comprobante_url: varchar("comprobante_url", { length: 500 }),
+    fecha_pago: date("fecha_pago").notNull(),
+    notas: text("notas"),
+    usuario_id: uuid("usuario_id")
+      .notNull()
+      .references(() => usuario.id),
+    created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_pago_proveedor_tenant").on(t.tenant_id),
+    index("idx_pago_proveedor_orden_compra").on(t.orden_compra_id),
+    index("idx_pago_proveedor_proveedor").on(t.tenant_id, t.proveedor_id),
+  ]
+);
+
 // ─── Relations ────────────────────────────────────────────────────────────────
 
 export const cotizacionCompraRelations = relations(cotizacionCompra, ({ one, many }) => ({
@@ -214,4 +247,14 @@ export const ordenCompraConfirmacionRelations = relations(ordenCompraConfirmacio
     fields: [ordenCompraConfirmacion.producto_id],
     references: [producto.id],
   }),
+}));
+
+export const pagoProveedorRelations = relations(pagoProveedor, ({ one }) => ({
+  tenant: one(tenant, { fields: [pagoProveedor.tenant_id], references: [tenant.id] }),
+  ordenCompra: one(ordenCompra, {
+    fields: [pagoProveedor.orden_compra_id],
+    references: [ordenCompra.id],
+  }),
+  proveedor: one(proveedor, { fields: [pagoProveedor.proveedor_id], references: [proveedor.id] }),
+  usuario: one(usuario, { fields: [pagoProveedor.usuario_id], references: [usuario.id] }),
 }));

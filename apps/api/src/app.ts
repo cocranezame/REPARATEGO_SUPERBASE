@@ -10,6 +10,7 @@ import { clienteRoutes } from "./modules/clientes/http/routes.js";
 import { componenteRoutes } from "./modules/componentes/http/routes.js";
 import { featureFlagRoutes } from "./modules/feature-flags/http/routes.js";
 import { healthRoutes } from "./modules/health/routes.js";
+import { inventarioRoutes } from "./modules/inventario/http/routes.js";
 import { marcaRoutes } from "./modules/marcas/http/routes.js";
 import { modeloRoutes } from "./modules/modelos/http/routes.js";
 import { sucursalRoutes } from "./modules/sucursales/http/routes.js";
@@ -35,5 +36,6 @@ app.route("/api/v1", categoriaRoutes);
 app.route("/api/v1", componenteRoutes);
 app.route("/api/v1", marcaRoutes);
 app.route("/api/v1", modeloRoutes);
+app.route("/api/v1", inventarioRoutes);
 
 export type AppType = typeof app;

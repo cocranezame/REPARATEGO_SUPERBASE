@@ -3,6 +3,7 @@ import {
   ArrowLeftRight,
   BookOpen,
   Building2,
+  CreditCard,
   Flag,
   Home,
   Layers,
@@ -73,6 +74,11 @@ const NAV_ITEMS: NavItem[] = [
     to: "/compras/ordenes",
     icon: <ShoppingCart className="h-5 w-5" />,
   },
+  {
+    label: "Pagos OC",
+    to: "/compras/pagos",
+    icon: <CreditCard className="h-5 w-5" />,
+  },
 ];
 
 const SEGMENT_LABELS: Record<string, string> = {
@@ -95,6 +101,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   "metodos-pago": "Métodos de pago",
   lotes: "Lotes",
   movimientos: "Movimientos",
+  pagos: "Pagos OC",
 };
 
 function breadcrumbsFromPath(pathname: string): string[] {

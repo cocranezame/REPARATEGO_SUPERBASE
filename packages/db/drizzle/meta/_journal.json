@@ -85,6 +85,13 @@
       "when": 1748822401000,
       "tag": "0011_rls_e7_compras",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1780152326413,
+      "tag": "0012_e9_pago_proveedor",
+      "breakpoints": true
     }
   ]
 }

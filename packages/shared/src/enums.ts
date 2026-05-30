@@ -68,6 +68,14 @@ export const MomentoEvidencia = {
 } as const;
 export type MomentoEvidencia = (typeof MomentoEvidencia)[keyof typeof MomentoEvidencia];
 
+// Pagos a proveedores
+export const MetodoPagoProveedor = {
+  TRANSFERENCIA: "TRANSFERENCIA",
+  EFECTIVO: "EFECTIVO",
+  CHEQUE: "CHEQUE",
+} as const;
+export type MetodoPagoProveedor = (typeof MetodoPagoProveedor)[keyof typeof MetodoPagoProveedor];
+
 // Compras
 export const EstadoOrdenCompra = {
   GENERADA: "GENERADA",

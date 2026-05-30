@@ -7,6 +7,7 @@ import { ComparadorPage } from "../modules/compras/pages/ComparadorPage";
 import { CotizacionesPage } from "../modules/compras/pages/CotizacionesPage";
 import { OrdenDetallePage } from "../modules/compras/pages/OrdenDetallePage";
 import { OrdenesPage } from "../modules/compras/pages/OrdenesPage";
+import { PagosPage } from "../modules/compras/pages/PagosPage";
 import { SolicitudesPage } from "../modules/compras/pages/SolicitudesPage";
 import { DashboardPage } from "../modules/dashboard/pages/DashboardPage";
 import { FeatureFlagsPage } from "../modules/feature-flags/pages/FeatureFlagsPage";
@@ -55,6 +56,7 @@ export function App() {
             <Route path="/compras/solicitudes" element={<SolicitudesPage />} />
             <Route path="/compras/ordenes" element={<OrdenesPage />} />
             <Route path="/compras/ordenes/:id" element={<OrdenDetallePage />} />
+            <Route path="/compras/pagos" element={<PagosPage />} />
           </Route>
         </Route>
       </Routes>

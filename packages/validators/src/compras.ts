@@ -55,6 +55,28 @@ export const confirmarOrdenCompraSchema = z.object({
 });
 export type ConfirmarOrdenCompraInput = z.infer<typeof confirmarOrdenCompraSchema>;
 
+// ─── Pagos a proveedores ──────────────────────────────────────────────────────
+
+export const createPagoProveedorSchema = z.object({
+  orden_compra_id: uuidSchema,
+  monto: z.number().positive(),
+  metodo_pago: z.enum(["TRANSFERENCIA", "EFECTIVO", "CHEQUE"]),
+  referencia: z.string().max(100).optional(),
+  comprobante_url: z.string().max(500).optional(),
+  fecha_pago: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  notas: z.string().optional(),
+});
+export type CreatePagoProveedorInput = z.infer<typeof createPagoProveedorSchema>;
+
+export const listPagosProveedorQuerySchema = z.object({
+  proveedor_id: uuidSchema.optional(),
+  desde: z.string().optional(),
+  hasta: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+export type ListPagosProveedorQuery = z.infer<typeof listPagosProveedorQuerySchema>;
+
 // ─── Cotizaciones de compra ───────────────────────────────────────────────────
 
 export const createCotizacionCompraItemSchema = z.object({

@@ -3,6 +3,8 @@ import { LoginPage } from "../modules/auth/pages/LoginPage";
 import { CatalogosPage } from "../modules/catalogos/pages/CatalogosPage";
 import { ClienteDetallePage } from "../modules/clientes/pages/ClienteDetallePage";
 import { ClientesPage } from "../modules/clientes/pages/ClientesPage";
+import { ComparadorPage } from "../modules/compras/pages/ComparadorPage";
+import { CotizacionesPage } from "../modules/compras/pages/CotizacionesPage";
 import { DashboardPage } from "../modules/dashboard/pages/DashboardPage";
 import { FeatureFlagsPage } from "../modules/feature-flags/pages/FeatureFlagsPage";
 import { MetodosPagoPage } from "../modules/inventario/pages/MetodosPagoPage";
@@ -41,6 +43,8 @@ export function App() {
             <Route path="/inventario/productos/:id" element={<ProductoFormPage />} />
             <Route path="/inventario/tasas-precio" element={<TasasPrecioPage />} />
             <Route path="/inventario/metodos-pago" element={<MetodosPagoPage />} />
+            <Route path="/compras/cotizaciones" element={<CotizacionesPage />} />
+            <Route path="/compras/cotizaciones/comparar" element={<ComparadorPage />} />
           </Route>
         </Route>
       </Routes>

@@ -7,6 +7,7 @@ import {
   LogOut,
   Menu,
   Package,
+  ShoppingCart,
   Truck,
   UserRound,
   Users,
@@ -49,6 +50,11 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Clientes", to: "/clientes", icon: <UserRound className="h-5 w-5" /> },
   { label: "Proveedores", to: "/proveedores", icon: <Truck className="h-5 w-5" /> },
   { label: "Inventario", to: "/inventario/productos", icon: <Package className="h-5 w-5" /> },
+  {
+    label: "Compras",
+    to: "/compras/cotizaciones",
+    icon: <ShoppingCart className="h-5 w-5" />,
+  },
 ];
 
 const SEGMENT_LABELS: Record<string, string> = {
@@ -62,6 +68,9 @@ const SEGMENT_LABELS: Record<string, string> = {
   proveedores: "Proveedores",
   inventario: "Inventario",
   productos: "Productos",
+  compras: "Compras",
+  cotizaciones: "Cotizaciones",
+  comparar: "Comparador",
   "tasas-precio": "Tasas de precio",
   "metodos-pago": "Métodos de pago",
 };

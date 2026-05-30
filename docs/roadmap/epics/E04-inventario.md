@@ -8,6 +8,6 @@
 | E4.4 | API: Gestión de compatibilidades por modelo | ✅ DONE |
 | E4.5 | API: CRUD tasa_precio (cálculo automático precio_venta) | ✅ DONE |
 | E4.6 | API: CRUD metodo_pago_catalogo | ✅ DONE |
-| E4.7 | Web: Pantalla de productos (filtros por categoría, componente, tipo) | ⬜ TODO |
-| E4.8 | Web: Formulario de producto con compatibilidades | ⬜ TODO |
-| E4.9 | Web: Gestión de tasas de precio | ⬜ TODO |
+| E4.7 | Web: Pantalla de productos (filtros por categoría, componente, tipo) | ✅ DONE |
+| E4.8 | Web: Formulario de producto con compatibilidades | ✅ DONE |
+| E4.9 | Web: Gestión de tasas de precio | ✅ DONE |

@@ -9,7 +9,7 @@
 | E1 | Seguridad y Acceso | ✅ DONE | E01-seguridad.md |
 | E2 | Catálogos Maestros | ✅ DONE | E02-catalogos.md |
 | E3 | Clientes | ✅ DONE | E03-clientes.md |
-| E4 | Inventario y Productos | ⬜ TODO | E04-inventario.md |
+| E4 | Inventario y Productos | ✅ DONE | E04-inventario.md |
 | E5 | Proveedores | ⬜ TODO | E05-proveedores.md |
 | E6 | Cotización a Proveedores (Compra) | ⬜ TODO | E06-cotizacion-compra.md |
 | E7 | Compras (Solicitudes + OC) | ⬜ TODO | E07-compras.md |

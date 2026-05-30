@@ -6,6 +6,7 @@ import {
   Home,
   LogOut,
   Menu,
+  Package,
   UserRound,
   Users,
   Wrench,
@@ -45,6 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   { label: "Catálogos", to: "/catalogos", icon: <BookOpen className="h-5 w-5" /> },
   { label: "Clientes", to: "/clientes", icon: <UserRound className="h-5 w-5" /> },
+  { label: "Inventario", to: "/inventario/productos", icon: <Package className="h-5 w-5" /> },
 ];
 
 const SEGMENT_LABELS: Record<string, string> = {
@@ -55,6 +57,10 @@ const SEGMENT_LABELS: Record<string, string> = {
   "feature-flags": "Feature Flags",
   catalogos: "Catálogos",
   clientes: "Clientes",
+  inventario: "Inventario",
+  productos: "Productos",
+  "tasas-precio": "Tasas de precio",
+  "metodos-pago": "Métodos de pago",
 };
 
 function breadcrumbsFromPath(pathname: string): string[] {

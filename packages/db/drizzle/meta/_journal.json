@@ -57,6 +57,13 @@
       "when": 1748563200000,
       "tag": "0007_rls_proveedores",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1780124095838,
+      "tag": "0008_opposite_masque",
+      "breakpoints": true
     }
   ]
 }

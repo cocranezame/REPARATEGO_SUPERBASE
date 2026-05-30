@@ -1,0 +1,248 @@
+import type {
+  CreateMetodoPagoInput,
+  CreateProductoInput,
+  CreateTasaPrecioInput,
+  SyncCompatibilidadesInput,
+} from "@kallpasoft/validators";
+import type { Context } from "hono";
+import { ApiError } from "../../../middlewares/error-handler.js";
+import type { HonoVariables } from "../../../types/context.js";
+import type { IMetodoPagoRepository } from "../domain/ports/metodo-pago.repository.js";
+import type {
+  IProductoRepository,
+  ListProductosParams,
+} from "../domain/ports/producto.repository.js";
+import type { ITasaPrecioRepository } from "../domain/ports/tasa-precio.repository.js";
+import { createMetodoPago } from "../domain/use-cases/create-metodo-pago.js";
+import { createProducto } from "../domain/use-cases/create-producto.js";
+import { createTasaPrecio } from "../domain/use-cases/create-tasa-precio.js";
+import { deleteMetodoPago } from "../domain/use-cases/delete-metodo-pago.js";
+import { deleteProducto } from "../domain/use-cases/delete-producto.js";
+import { deleteTasaPrecio } from "../domain/use-cases/delete-tasa-precio.js";
+import { getProductoById } from "../domain/use-cases/get-producto-by-id.js";
+import { listCompatibilidades } from "../domain/use-cases/list-compatibilidades.js";
+import { listMetodosPago } from "../domain/use-cases/list-metodos-pago.js";
+import { listProductos } from "../domain/use-cases/list-productos.js";
+import { listTasasPrecio } from "../domain/use-cases/list-tasas-precio.js";
+import { syncCompatibilidades } from "../domain/use-cases/sync-compatibilidades.js";
+import type { UpdateMetodoPagoInput } from "../domain/use-cases/update-metodo-pago.js";
+import { updateMetodoPago } from "../domain/use-cases/update-metodo-pago.js";
+import type { UpdateProductoInput } from "../domain/use-cases/update-producto.js";
+import { updateProducto } from "../domain/use-cases/update-producto.js";
+import type { UpdateTasaPrecioInput } from "../domain/use-cases/update-tasa-precio.js";
+import { updateTasaPrecio } from "../domain/use-cases/update-tasa-precio.js";
+import type { ListProductosQuery, ListSimpleQuery } from "./validators.js";
+
+// biome-ignore lint/suspicious/noExplicitAny: Hono's Input generic doesn't compose well with separately-defined handlers
+type HonoCtx = Context<{ Variables: HonoVariables }, string, any>;
+
+function isDuplicateKeyError(err: unknown): boolean {
+  return (err as { code?: string })?.code === "23505";
+}
+
+export function createInventarioHandlers(
+  productoRepo: IProductoRepository,
+  tasaPrecioRepo: ITasaPrecioRepository,
+  metodoPagoRepo: IMetodoPagoRepository
+) {
+  // ── Productos ──────────────────────────────────────────────────────────────
+
+  async function listProductosHandler(c: HonoCtx) {
+    const query = c.req.valid("query") as ListProductosQuery;
+    const tenantId = c.get("tenantId");
+
+    const params: ListProductosParams = {
+      page: query.page,
+      pageSize: query.pageSize,
+      ...(query.tipo !== undefined ? { tipo: query.tipo } : {}),
+      ...(query.categoria_id !== undefined ? { categoria_id: query.categoria_id } : {}),
+      ...(query.componente_id !== undefined ? { componente_id: query.componente_id } : {}),
+      ...(query.marca_id !== undefined ? { marca_id: query.marca_id } : {}),
+      ...(query.search !== undefined ? { search: query.search } : {}),
+      ...(query.activo !== undefined ? { activo: query.activo } : {}),
+    };
+
+    const result = await listProductos(productoRepo, tenantId, params);
+    return c.json({
+      success: true,
+      data: result.items,
+      meta: {
+        total: result.total,
+        page: query.page,
+        pageSize: query.pageSize,
+        totalPages: Math.ceil(result.total / query.pageSize),
+      },
+    });
+  }
+
+  async function createProductoHandler(c: HonoCtx) {
+    const body = c.req.valid("json") as CreateProductoInput;
+    const tenantId = c.get("tenantId");
+    try {
+      const producto = await createProducto(productoRepo, tenantId, body);
+      return c.json({ success: true, data: producto }, 201);
+    } catch (err) {
+      if (isDuplicateKeyError(err)) {
+        throw new ApiError("DUPLICATE_PRODUCTO", "Código de producto ya registrado", 409);
+      }
+      throw err;
+    }
+  }
+
+  async function getProductoByIdHandler(c: HonoCtx) {
+    const id = c.req.param("id") as string;
+    const tenantId = c.get("tenantId");
+    const producto = await getProductoById(productoRepo, tenantId, id);
+    if (!producto) throw new ApiError("PRODUCTO_NOT_FOUND", "Producto no encontrado", 404);
+    const compatibilidades = await listCompatibilidades(productoRepo, tenantId, id);
+    return c.json({ success: true, data: { ...producto, compatibilidades } });
+  }
+
+  async function updateProductoHandler(c: HonoCtx) {
+    const id = c.req.param("id") as string;
+    const body = c.req.valid("json") as UpdateProductoInput;
+    const tenantId = c.get("tenantId");
+    try {
+      const producto = await updateProducto(productoRepo, tenantId, id, body);
+      if (!producto) throw new ApiError("PRODUCTO_NOT_FOUND", "Producto no encontrado", 404);
+      return c.json({ success: true, data: producto });
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      throw err;
+    }
+  }
+
+  async function deleteProductoHandler(c: HonoCtx) {
+    const id = c.req.param("id") as string;
+    const tenantId = c.get("tenantId");
+    const deleted = await deleteProducto(productoRepo, tenantId, id);
+    if (!deleted) throw new ApiError("PRODUCTO_NOT_FOUND", "Producto no encontrado", 404);
+    return c.json({ success: true, data: null });
+  }
+
+  // ── Compatibilidades ───────────────────────────────────────────────────────
+
+  async function listCompatibilidadesHandler(c: HonoCtx) {
+    const id = c.req.param("id") as string;
+    const tenantId = c.get("tenantId");
+    const producto = await getProductoById(productoRepo, tenantId, id);
+    if (!producto) throw new ApiError("PRODUCTO_NOT_FOUND", "Producto no encontrado", 404);
+    const items = await listCompatibilidades(productoRepo, tenantId, id);
+    return c.json({ success: true, data: items });
+  }
+
+  async function syncCompatibilidadesHandler(c: HonoCtx) {
+    const id = c.req.param("id") as string;
+    const body = c.req.valid("json") as SyncCompatibilidadesInput;
+    const tenantId = c.get("tenantId");
+    const producto = await getProductoById(productoRepo, tenantId, id);
+    if (!producto) throw new ApiError("PRODUCTO_NOT_FOUND", "Producto no encontrado", 404);
+    try {
+      const items = await syncCompatibilidades(productoRepo, tenantId, id, body);
+      return c.json({ success: true, data: items });
+    } catch (err) {
+      if (isDuplicateKeyError(err)) {
+        throw new ApiError("DUPLICATE_COMPATIBILIDAD", "Modelo ya asociado a este producto", 409);
+      }
+      throw err;
+    }
+  }
+
+  // ── Tasas de precio ────────────────────────────────────────────────────────
+
+  async function listTasasPrecioHandler(c: HonoCtx) {
+    const query = c.req.valid("query") as ListSimpleQuery;
+    const tenantId = c.get("tenantId");
+    const items = await listTasasPrecio(tasaPrecioRepo, tenantId, query.activo);
+    return c.json({ success: true, data: items });
+  }
+
+  async function createTasaPrecioHandler(c: HonoCtx) {
+    const body = c.req.valid("json") as CreateTasaPrecioInput;
+    const tenantId = c.get("tenantId");
+    try {
+      const tasa = await createTasaPrecio(tasaPrecioRepo, tenantId, body);
+      return c.json({ success: true, data: tasa }, 201);
+    } catch (err) {
+      if (isDuplicateKeyError(err)) {
+        throw new ApiError("DUPLICATE_TASA_PRECIO", "Nombre de tasa ya registrado", 409);
+      }
+      throw err;
+    }
+  }
+
+  async function updateTasaPrecioHandler(c: HonoCtx) {
+    const id = c.req.param("id") as string;
+    const body = c.req.valid("json") as UpdateTasaPrecioInput;
+    const tenantId = c.get("tenantId");
+    const tasa = await updateTasaPrecio(tasaPrecioRepo, tenantId, id, body);
+    if (!tasa) throw new ApiError("TASA_PRECIO_NOT_FOUND", "Tasa de precio no encontrada", 404);
+    return c.json({ success: true, data: tasa });
+  }
+
+  async function deleteTasaPrecioHandler(c: HonoCtx) {
+    const id = c.req.param("id") as string;
+    const tenantId = c.get("tenantId");
+    const deleted = await deleteTasaPrecio(tasaPrecioRepo, tenantId, id);
+    if (!deleted) throw new ApiError("TASA_PRECIO_NOT_FOUND", "Tasa de precio no encontrada", 404);
+    return c.json({ success: true, data: null });
+  }
+
+  // ── Métodos de pago ────────────────────────────────────────────────────────
+
+  async function listMetodosPagoHandler(c: HonoCtx) {
+    const query = c.req.valid("query") as ListSimpleQuery;
+    const tenantId = c.get("tenantId");
+    const items = await listMetodosPago(metodoPagoRepo, tenantId, query.activo);
+    return c.json({ success: true, data: items });
+  }
+
+  async function createMetodoPagoHandler(c: HonoCtx) {
+    const body = c.req.valid("json") as CreateMetodoPagoInput;
+    const tenantId = c.get("tenantId");
+    try {
+      const metodo = await createMetodoPago(metodoPagoRepo, tenantId, body);
+      return c.json({ success: true, data: metodo }, 201);
+    } catch (err) {
+      if (isDuplicateKeyError(err)) {
+        throw new ApiError("DUPLICATE_METODO_PAGO", "Nombre de método de pago ya registrado", 409);
+      }
+      throw err;
+    }
+  }
+
+  async function updateMetodoPagoHandler(c: HonoCtx) {
+    const id = c.req.param("id") as string;
+    const body = c.req.valid("json") as UpdateMetodoPagoInput;
+    const tenantId = c.get("tenantId");
+    const metodo = await updateMetodoPago(metodoPagoRepo, tenantId, id, body);
+    if (!metodo) throw new ApiError("METODO_PAGO_NOT_FOUND", "Método de pago no encontrado", 404);
+    return c.json({ success: true, data: metodo });
+  }
+
+  async function deleteMetodoPagoHandler(c: HonoCtx) {
+    const id = c.req.param("id") as string;
+    const tenantId = c.get("tenantId");
+    const deleted = await deleteMetodoPago(metodoPagoRepo, tenantId, id);
+    if (!deleted) throw new ApiError("METODO_PAGO_NOT_FOUND", "Método de pago no encontrado", 404);
+    return c.json({ success: true, data: null });
+  }
+
+  return {
+    listProductos: listProductosHandler,
+    createProducto: createProductoHandler,
+    getProductoById: getProductoByIdHandler,
+    updateProducto: updateProductoHandler,
+    deleteProducto: deleteProductoHandler,
+    listCompatibilidades: listCompatibilidadesHandler,
+    syncCompatibilidades: syncCompatibilidadesHandler,
+    listTasasPrecio: listTasasPrecioHandler,
+    createTasaPrecio: createTasaPrecioHandler,
+    updateTasaPrecio: updateTasaPrecioHandler,
+    deleteTasaPrecio: deleteTasaPrecioHandler,
+    listMetodosPago: listMetodosPagoHandler,
+    createMetodoPago: createMetodoPagoHandler,
+    updateMetodoPago: updateMetodoPagoHandler,
+    deleteMetodoPago: deleteMetodoPagoHandler,
+  };
+}

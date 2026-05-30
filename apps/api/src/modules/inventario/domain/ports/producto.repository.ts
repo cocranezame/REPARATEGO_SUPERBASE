@@ -1,0 +1,61 @@
+import type { TipoProducto } from "@kallpasoft/shared";
+import type { Producto } from "../entities/producto.js";
+import type { ProductoCompatibilidad } from "../entities/producto-compatibilidad.js";
+
+export type CreateProductoData = {
+  tipo: TipoProducto;
+  nombre: string;
+  descripcion?: string;
+  categoria_id: string;
+  componente_id?: string;
+  marca_id?: string;
+  unidad_medida?: string;
+  precio_compra?: number;
+  precio_venta: number;
+  stock_minimo?: number;
+  imagen_url?: string;
+};
+
+export type UpdateProductoData = {
+  nombre?: string;
+  descripcion?: string | null;
+  categoria_id?: string;
+  componente_id?: string | null;
+  marca_id?: string | null;
+  unidad_medida?: string;
+  precio_compra?: number | null;
+  precio_venta?: number;
+  stock_minimo?: number;
+  imagen_url?: string | null;
+  activo?: boolean;
+};
+
+export type ListProductosParams = {
+  tipo?: TipoProducto;
+  categoria_id?: string;
+  componente_id?: string;
+  marca_id?: string;
+  search?: string;
+  activo?: boolean;
+  page: number;
+  pageSize: number;
+};
+
+export type ListProductosResult = {
+  items: Producto[];
+  total: number;
+};
+
+export interface IProductoRepository {
+  findById(tenantId: string, id: string): Promise<Producto | null>;
+  list(tenantId: string, params: ListProductosParams): Promise<ListProductosResult>;
+  create(tenantId: string, data: CreateProductoData): Promise<Producto>;
+  update(tenantId: string, id: string, data: UpdateProductoData): Promise<Producto | null>;
+  softDelete(tenantId: string, id: string): Promise<boolean>;
+  listCompatibilidades(tenantId: string, productoId: string): Promise<ProductoCompatibilidad[]>;
+  syncCompatibilidades(
+    tenantId: string,
+    productoId: string,
+    modeloIds: string[]
+  ): Promise<ProductoCompatibilidad[]>;
+}

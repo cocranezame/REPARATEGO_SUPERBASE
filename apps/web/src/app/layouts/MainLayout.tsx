@@ -79,6 +79,11 @@ const NAV_ITEMS: NavItem[] = [
     to: "/compras/pagos",
     icon: <CreditCard className="h-5 w-5" />,
   },
+  {
+    label: "Servicios",
+    to: "/servicios",
+    icon: <Wrench className="h-5 w-5" />,
+  },
 ];
 
 const SEGMENT_LABELS: Record<string, string> = {
@@ -102,6 +107,8 @@ const SEGMENT_LABELS: Record<string, string> = {
   lotes: "Lotes",
   movimientos: "Movimientos",
   pagos: "Pagos OC",
+  servicios: "Servicios",
+  nuevo: "Nueva OS",
 };
 
 function breadcrumbsFromPath(pathname: string): string[] {

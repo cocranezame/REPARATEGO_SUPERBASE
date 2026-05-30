@@ -92,6 +92,13 @@
       "when": 1780152326413,
       "tag": "0012_e9_pago_proveedor",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1780152916218,
+      "tag": "0013_faulty_warstar",
+      "breakpoints": true
     }
   ]
 }

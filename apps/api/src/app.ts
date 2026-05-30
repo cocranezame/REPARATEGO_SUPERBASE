@@ -15,6 +15,7 @@ import { inventarioRoutes } from "./modules/inventario/http/routes.js";
 import { marcaRoutes } from "./modules/marcas/http/routes.js";
 import { modeloRoutes } from "./modules/modelos/http/routes.js";
 import { ordenCompraRoutes } from "./modules/ordenes-compra/http/routes.js";
+import { ordenServicioRoutes } from "./modules/ordenes-servicio/http/routes.js";
 import { pagoProveedorRoutes } from "./modules/pagos-proveedor/http/routes.js";
 import { proveedorRoutes } from "./modules/proveedores/http/routes.js";
 import { solicitudCompraRoutes } from "./modules/solicitudes-compra/http/routes.js";
@@ -47,5 +48,6 @@ app.route("/api/v1", cotizacionCompraRoutes);
 app.route("/api/v1", solicitudCompraRoutes);
 app.route("/api/v1", ordenCompraRoutes);
 app.route("/api/v1", pagoProveedorRoutes);
+app.route("/api/v1", ordenServicioRoutes);
 
 export type AppType = typeof app;

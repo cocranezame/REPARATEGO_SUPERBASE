@@ -181,3 +181,21 @@ Cuando los handlers se definen en un archivo separado y reciben `Context<{ Varia
 Pasar `prop={variableQueEsUndefined}` donde la prop es `?: string` viola la restricción. Con `undefined` explícito en la variable, TypeScript rechaza la asignación.
 
 **Corrección aplicada:** Spread condicional en JSX: `{...(variable !== undefined ? { prop: variable } : {})}` — mismo patrón de C004.
+
+**Regla consolidada para tipos de dominio (E8):**  
+Todo campo opcional en tipos de dominio (entities, ports) que recibe valores de joins Drizzle (que pueden ser `null | undefined`) debe declararse como `?: T | undefined` explícito, no `?: T`. Aplica especialmente cuando el campo proviene de un `leftJoin` + `.map()` que transforma `null` a `undefined`.
+
+---
+
+## C012 — 2026-05-30
+
+**ID:** C012  
+**Afecta:** api  
+**Contexto:** E8 — Lotes y Movimientos
+
+**`exactOptionalPropertyTypes` en tipos de entidades con campos de joins (stock.ts):**  
+`StockItem.sucursal_nombre` declarado como `sucursal_nombre?: string` no acepta `string | undefined` proveniente de un `.map()` de leftJoin. TypeScript TS2322 — Type `string | undefined` is not assignable to type `string`.
+
+**Corrección aplicada:** `sucursal_nombre?: string | undefined` en `StockItem`. Regla: todos los campos opcionales en entidades de dominio que reciben valores de leftJoins deben declararse `?: T | undefined`.
+
+**Nota:** Igual aplica a `Lote.producto_nombre`, `Lote.sucursal_nombre`, `MovimientoInventario.producto_nombre`. Solucionado con `.map()` explícito en el repositorio que asigna `?? undefined`.

@@ -1,5 +1,7 @@
 import type {
+  CreateLoteInput,
   CreateMetodoPagoInput,
+  CreateMovimientoInput,
   CreateProductoInput,
   CreateTasaPrecioInput,
   SyncCompatibilidadesInput,
@@ -12,6 +14,7 @@ import type {
   IProductoRepository,
   ListProductosParams,
 } from "../domain/ports/producto.repository.js";
+import type { IStockRepository } from "../domain/ports/stock.repository.js";
 import type { ITasaPrecioRepository } from "../domain/ports/tasa-precio.repository.js";
 import { createMetodoPago } from "../domain/use-cases/create-metodo-pago.js";
 import { createProducto } from "../domain/use-cases/create-producto.js";
@@ -31,7 +34,13 @@ import type { UpdateProductoInput } from "../domain/use-cases/update-producto.js
 import { updateProducto } from "../domain/use-cases/update-producto.js";
 import type { UpdateTasaPrecioInput } from "../domain/use-cases/update-tasa-precio.js";
 import { updateTasaPrecio } from "../domain/use-cases/update-tasa-precio.js";
-import type { ListProductosQuery, ListSimpleQuery } from "./validators.js";
+import type {
+  ListLotesQuery,
+  ListMovimientosQuery,
+  ListProductosQuery,
+  ListSimpleQuery,
+  ListStockQuery,
+} from "./validators.js";
 
 // biome-ignore lint/suspicious/noExplicitAny: Hono's Input generic doesn't compose well with separately-defined handlers
 type HonoCtx = Context<{ Variables: HonoVariables }, string, any>;
@@ -43,7 +52,8 @@ function isDuplicateKeyError(err: unknown): boolean {
 export function createInventarioHandlers(
   productoRepo: IProductoRepository,
   tasaPrecioRepo: ITasaPrecioRepository,
-  metodoPagoRepo: IMetodoPagoRepository
+  metodoPagoRepo: IMetodoPagoRepository,
+  stockRepo: IStockRepository
 ) {
   // ── Productos ──────────────────────────────────────────────────────────────
 
@@ -228,6 +238,112 @@ export function createInventarioHandlers(
     return c.json({ success: true, data: null });
   }
 
+  // ── Stock ──────────────────────────────────────────────────────────────────
+
+  async function listStockHandler(c: HonoCtx) {
+    const query = c.req.valid("query") as ListStockQuery;
+    const tenantId = c.get("tenantId");
+    const items = await stockRepo.listStock(tenantId, {
+      ...(query.producto_id !== undefined ? { producto_id: query.producto_id } : {}),
+      ...(query.sucursal_id !== undefined ? { sucursal_id: query.sucursal_id } : {}),
+      ...(query.alerta_minimo !== undefined ? { alerta_minimo: query.alerta_minimo } : {}),
+    });
+    return c.json({ success: true, data: items });
+  }
+
+  async function getStockDetalleHandler(c: HonoCtx) {
+    const productoId = c.req.param("productoId") as string;
+    const tenantId = c.get("tenantId");
+    const items = await stockRepo.getStockDetalle(tenantId, productoId);
+    return c.json({ success: true, data: items });
+  }
+
+  // ── Lotes ──────────────────────────────────────────────────────────────────
+
+  async function listLotesHandler(c: HonoCtx) {
+    const query = c.req.valid("query") as ListLotesQuery;
+    const tenantId = c.get("tenantId");
+    const result = await stockRepo.listLotes(tenantId, {
+      page: query.page,
+      pageSize: query.pageSize,
+      ...(query.producto_id !== undefined ? { producto_id: query.producto_id } : {}),
+      ...(query.sucursal_id !== undefined ? { sucursal_id: query.sucursal_id } : {}),
+    });
+    return c.json({
+      success: true,
+      data: result.items,
+      meta: {
+        total: result.total,
+        page: query.page,
+        pageSize: query.pageSize,
+        totalPages: Math.ceil(result.total / query.pageSize),
+      },
+    });
+  }
+
+  async function createLoteHandler(c: HonoCtx) {
+    const body = c.req.valid("json") as CreateLoteInput;
+    const tenantId = c.get("tenantId");
+    const usuarioId = c.get("userId");
+    const lote = await stockRepo.createLote(tenantId, {
+      producto_id: body.producto_id,
+      sucursal_id: body.sucursal_id,
+      cantidad: body.cantidad,
+      precio_unitario: body.precio_unitario,
+      fecha_ingreso: body.fecha_ingreso,
+      usuario_id: usuarioId,
+      ...(body.orden_compra_id !== undefined ? { orden_compra_id: body.orden_compra_id } : {}),
+      ...(body.fecha_vencimiento !== undefined
+        ? { fecha_vencimiento: body.fecha_vencimiento }
+        : {}),
+    });
+    return c.json({ success: true, data: lote }, 201);
+  }
+
+  // ── Movimientos ────────────────────────────────────────────────────────────
+
+  async function listMovimientosHandler(c: HonoCtx) {
+    const query = c.req.valid("query") as ListMovimientosQuery;
+    const tenantId = c.get("tenantId");
+    const result = await stockRepo.listMovimientos(tenantId, {
+      page: query.page,
+      pageSize: query.pageSize,
+      ...(query.producto_id !== undefined ? { producto_id: query.producto_id } : {}),
+      ...(query.tipo !== undefined ? { tipo: query.tipo } : {}),
+      ...(query.sucursal_id !== undefined ? { sucursal_id: query.sucursal_id } : {}),
+      ...(query.desde !== undefined ? { desde: query.desde } : {}),
+      ...(query.hasta !== undefined ? { hasta: query.hasta } : {}),
+    });
+    return c.json({
+      success: true,
+      data: result.items,
+      meta: {
+        total: result.total,
+        page: query.page,
+        pageSize: query.pageSize,
+        totalPages: Math.ceil(result.total / query.pageSize),
+      },
+    });
+  }
+
+  async function createMovimientoHandler(c: HonoCtx) {
+    const body = c.req.valid("json") as CreateMovimientoInput;
+    const tenantId = c.get("tenantId");
+    const usuarioId = c.get("userId");
+    const movimiento = await stockRepo.createMovimiento(tenantId, {
+      producto_id: body.producto_id,
+      sucursal_id: body.sucursal_id,
+      tipo: body.tipo,
+      cantidad: body.cantidad,
+      usuario_id: usuarioId,
+      ...(body.lote_id !== undefined ? { lote_id: body.lote_id } : {}),
+      ...(body.referencia_tipo !== undefined ? { referencia_tipo: body.referencia_tipo } : {}),
+      ...(body.referencia_id !== undefined ? { referencia_id: body.referencia_id } : {}),
+      ...(body.notas !== undefined ? { notas: body.notas } : {}),
+    });
+    return c.json({ success: true, data: movimiento }, 201);
+  }
+
   return {
     listProductos: listProductosHandler,
     createProducto: createProductoHandler,
@@ -244,5 +360,11 @@ export function createInventarioHandlers(
     createMetodoPago: createMetodoPagoHandler,
     updateMetodoPago: updateMetodoPagoHandler,
     deleteMetodoPago: deleteMetodoPagoHandler,
+    listStock: listStockHandler,
+    getStockDetalle: getStockDetalleHandler,
+    listLotes: listLotesHandler,
+    createLote: createLoteHandler,
+    listMovimientos: listMovimientosHandler,
+    createMovimiento: createMovimientoHandler,
   };
 }

@@ -1,9 +1,11 @@
 import type { RolUsuario } from "@kallpasoft/shared";
 import {
+  ArrowLeftRight,
   BookOpen,
   Building2,
   Flag,
   Home,
+  Layers,
   LogOut,
   Menu,
   Package,
@@ -50,6 +52,12 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Clientes", to: "/clientes", icon: <UserRound className="h-5 w-5" /> },
   { label: "Proveedores", to: "/proveedores", icon: <Truck className="h-5 w-5" /> },
   { label: "Inventario", to: "/inventario/productos", icon: <Package className="h-5 w-5" /> },
+  { label: "Lotes", to: "/inventario/lotes", icon: <Layers className="h-5 w-5" /> },
+  {
+    label: "Movimientos",
+    to: "/inventario/movimientos",
+    icon: <ArrowLeftRight className="h-5 w-5" />,
+  },
   {
     label: "Cotizaciones",
     to: "/compras/cotizaciones",
@@ -85,6 +93,8 @@ const SEGMENT_LABELS: Record<string, string> = {
   ordenes: "Órdenes OC",
   "tasas-precio": "Tasas de precio",
   "metodos-pago": "Métodos de pago",
+  lotes: "Lotes",
+  movimientos: "Movimientos",
 };
 
 function breadcrumbsFromPath(pathname: string): string[] {

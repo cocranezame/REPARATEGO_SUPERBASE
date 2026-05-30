@@ -106,7 +106,6 @@ export const lote = pgTable("lote", {
   sucursal_id: uuid("sucursal_id")
     .notNull()
     .references(() => sucursal.id),
-  // FK a orden_compra se agrega en E7 — tabla aún no existe
   orden_compra_id: uuid("orden_compra_id"),
   sku: varchar("sku", { length: 50 }).notNull(),
   cantidad_inicial: integer("cantidad_inicial").notNull(),

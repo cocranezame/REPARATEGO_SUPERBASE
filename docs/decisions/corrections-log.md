@@ -159,3 +159,25 @@ Cuando los handlers se definen en un archivo separado y reciben `Context<{ Varia
 **Corrección aplicada:** Al extender el schema para el formulario, sobreescribir el campo con `es_principal: z.boolean()` (sin `.default()`). El valor por defecto se provee en `useForm defaultValues: { es_principal: false }`, no en el schema.
 
 **Regla:** Nunca usar `.default()` en campos de un schema de formulario React Hook Form. Proveer el valor default en `defaultValues` del `useForm`.
+
+---
+
+## C011 — 2026-05-30
+
+**ID:** C011  
+**Afecta:** api, web  
+**Contexto:** E7 — Solicitudes + OC
+
+**`exactOptionalPropertyTypes` con campos opcionales de Zod en tipos de dominio:**  
+`z.string().optional()` en Zod infiere `string | undefined`. Con `exactOptionalPropertyTypes: true`, un tipo de dominio que declara `notas?: string` (exactamente `string` si presente) no acepta `string | undefined`. Igual para `?: number` en ports de repositorio.
+
+**Corrección aplicada:** Tipos de domain ports usan `?: T | undefined` explícito para campos opcionales que reciben valores de Zod-inferred types:
+- `ConfirmarOrdenItemData.notas?: string | undefined`
+- `UpdateSolicitudData.cantidad_solicitada?: number | undefined`, etc.
+
+**Regla:** Cuando un port type recibe datos de Zod-inferred schemas con `exactOptionalPropertyTypes`, declarar los opcionales como `?: T | undefined`, no `?: T`.
+
+**`exactOptionalPropertyTypes` con props opcionales en JSX (React):**  
+Pasar `prop={variableQueEsUndefined}` donde la prop es `?: string` viola la restricción. Con `undefined` explícito en la variable, TypeScript rechaza la asignación.
+
+**Corrección aplicada:** Spread condicional en JSX: `{...(variable !== undefined ? { prop: variable } : {})}` — mismo patrón de C004.

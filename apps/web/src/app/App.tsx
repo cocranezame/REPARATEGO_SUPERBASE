@@ -5,6 +5,9 @@ import { ClienteDetallePage } from "../modules/clientes/pages/ClienteDetallePage
 import { ClientesPage } from "../modules/clientes/pages/ClientesPage";
 import { ComparadorPage } from "../modules/compras/pages/ComparadorPage";
 import { CotizacionesPage } from "../modules/compras/pages/CotizacionesPage";
+import { OrdenDetallePage } from "../modules/compras/pages/OrdenDetallePage";
+import { OrdenesPage } from "../modules/compras/pages/OrdenesPage";
+import { SolicitudesPage } from "../modules/compras/pages/SolicitudesPage";
 import { DashboardPage } from "../modules/dashboard/pages/DashboardPage";
 import { FeatureFlagsPage } from "../modules/feature-flags/pages/FeatureFlagsPage";
 import { MetodosPagoPage } from "../modules/inventario/pages/MetodosPagoPage";
@@ -45,6 +48,9 @@ export function App() {
             <Route path="/inventario/metodos-pago" element={<MetodosPagoPage />} />
             <Route path="/compras/cotizaciones" element={<CotizacionesPage />} />
             <Route path="/compras/cotizaciones/comparar" element={<ComparadorPage />} />
+            <Route path="/compras/solicitudes" element={<SolicitudesPage />} />
+            <Route path="/compras/ordenes" element={<OrdenesPage />} />
+            <Route path="/compras/ordenes/:id" element={<OrdenDetallePage />} />
           </Route>
         </Route>
       </Routes>

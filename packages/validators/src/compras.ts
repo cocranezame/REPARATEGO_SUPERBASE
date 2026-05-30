@@ -1,6 +1,62 @@
 import { z } from "zod";
 import { uuidSchema } from "./common.js";
 
+// ─── Solicitudes de compra ────────────────────────────────────────────────────
+
+export const createSolicitudCompraSchema = z.object({
+  producto_id: uuidSchema,
+  cantidad_solicitada: z.number().int().min(1),
+  prioridad: z.enum(["BAJA", "NORMAL", "ALTA", "URGENTE"]).optional(),
+  notas: z.string().optional(),
+});
+export type CreateSolicitudCompraInput = z.infer<typeof createSolicitudCompraSchema>;
+
+export const updateSolicitudCompraSchema = z.object({
+  cantidad_solicitada: z.number().int().min(1).optional(),
+  prioridad: z.enum(["BAJA", "NORMAL", "ALTA", "URGENTE"]).optional(),
+  notas: z.string().optional(),
+});
+export type UpdateSolicitudCompraInput = z.infer<typeof updateSolicitudCompraSchema>;
+
+// ─── Órdenes de compra ────────────────────────────────────────────────────────
+
+export const generarOrdenCompraItemSchema = z.object({
+  producto_id: uuidSchema,
+  cantidad: z.number().int().min(1),
+  precio_unitario: z.number().positive(),
+});
+export type GenerarOrdenCompraItemInput = z.infer<typeof generarOrdenCompraItemSchema>;
+
+export const generarOrdenCompraSchema = z.object({
+  proveedor_id: uuidSchema,
+  solicitud_ids: z.array(uuidSchema).min(1),
+  items: z.array(generarOrdenCompraItemSchema).min(1),
+  fecha_entrega_estimada: z.string().optional(),
+  notas: z.string().optional(),
+});
+export type GenerarOrdenCompraInput = z.infer<typeof generarOrdenCompraSchema>;
+
+export const updateEstadoOrdenCompraSchema = z.object({
+  estado: z.enum(["GENERADA", "ENVIADA", "TERMINADA", "INGRESADA", "PENDIENTE_PAGO"]),
+});
+export type UpdateEstadoOrdenCompraInput = z.infer<typeof updateEstadoOrdenCompraSchema>;
+
+export const confirmarOrdenItemSchema = z.object({
+  producto_id: uuidSchema,
+  cantidad_recibida: z.number().int().min(0),
+  precio_unitario: z.number().positive(),
+  conforme: z.boolean(),
+  notas: z.string().optional(),
+});
+export type ConfirmarOrdenItemInput = z.infer<typeof confirmarOrdenItemSchema>;
+
+export const confirmarOrdenCompraSchema = z.object({
+  items: z.array(confirmarOrdenItemSchema).min(1),
+});
+export type ConfirmarOrdenCompraInput = z.infer<typeof confirmarOrdenCompraSchema>;
+
+// ─── Cotizaciones de compra ───────────────────────────────────────────────────
+
 export const createCotizacionCompraItemSchema = z.object({
   producto_id: uuidSchema,
   cantidad: z.number().int().min(1),

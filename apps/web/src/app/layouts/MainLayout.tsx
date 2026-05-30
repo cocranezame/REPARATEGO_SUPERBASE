@@ -51,8 +51,18 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Proveedores", to: "/proveedores", icon: <Truck className="h-5 w-5" /> },
   { label: "Inventario", to: "/inventario/productos", icon: <Package className="h-5 w-5" /> },
   {
-    label: "Compras",
+    label: "Cotizaciones",
     to: "/compras/cotizaciones",
+    icon: <ShoppingCart className="h-5 w-5" />,
+  },
+  {
+    label: "Solicitudes",
+    to: "/compras/solicitudes",
+    icon: <ShoppingCart className="h-5 w-5" />,
+  },
+  {
+    label: "Órdenes OC",
+    to: "/compras/ordenes",
     icon: <ShoppingCart className="h-5 w-5" />,
   },
 ];
@@ -71,6 +81,8 @@ const SEGMENT_LABELS: Record<string, string> = {
   compras: "Compras",
   cotizaciones: "Cotizaciones",
   comparar: "Comparador",
+  solicitudes: "Solicitudes",
+  ordenes: "Órdenes OC",
   "tasas-precio": "Tasas de precio",
   "metodos-pago": "Métodos de pago",
 };

@@ -64,6 +64,27 @@
       "when": 1780124095838,
       "tag": "0008_opposite_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1748736000000,
+      "tag": "0009_rls_compras",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1748822400000,
+      "tag": "0010_e7_compras_oc",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1748822401000,
+      "tag": "0011_rls_e7_compras",
+      "breakpoints": true
     }
   ]
 }

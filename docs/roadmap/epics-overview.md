@@ -12,7 +12,7 @@
 | E4 | Inventario y Productos | ✅ DONE | E04-inventario.md |
 | E5 | Proveedores | ✅ DONE | E05-proveedores.md |
 | E6 | Cotización a Proveedores (Compra) | ✅ DONE | E06-cotizacion-compra.md |
-| E7 | Compras (Solicitudes + OC) | ⬜ TODO | E07-compras.md |
+| E7 | Compras (Solicitudes + OC) | ✅ DONE | E07-compras.md |
 | E8 | Lotes y Movimientos de Inventario | ⬜ TODO | E08-lotes-inventario.md |
 | E9 | Pagos a Proveedores | ⬜ TODO | E09-pagos-proveedores.md |
 | E10 | Servicios (Órdenes de Servicio) | ⬜ TODO | E10-servicios.md |

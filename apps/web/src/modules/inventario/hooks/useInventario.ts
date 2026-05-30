@@ -1,5 +1,7 @@
 import type {
+  CreateLoteInput,
   CreateMetodoPagoInput,
+  CreateMovimientoInput,
   CreateProductoInput,
   CreateTasaPrecioInput,
   SyncCompatibilidadesInput,
@@ -11,11 +13,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../../shared/lib/api-client";
 import type {
   CompatibilidadesListResponse,
+  LoteResponse,
+  LotesListResponse,
+  LotesParams,
   MetodoPagoResponse,
   MetodosPagoListResponse,
+  MovimientoResponse,
+  MovimientosListResponse,
+  MovimientosParams,
   ProductoResponse,
   ProductosListResponse,
   ProductosParams,
+  StockDetalleResponse,
+  StockListResponse,
   TasaPrecioResponse,
   TasasPrecioListResponse,
 } from "../types/inventario";
@@ -192,6 +202,100 @@ export function useDeleteMetodoPago() {
     mutationFn: (id) => apiClient.delete<{ success: true; data: null }>(`/metodos-pago/${id}`),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["metodos-pago"] });
+    },
+  });
+}
+
+// ─── Stock ────────────────────────────────────────────────────────────────────
+
+function buildStockQS(params: {
+  producto_id?: string;
+  sucursal_id?: string;
+  alerta_minimo?: boolean;
+}): string {
+  const q = new URLSearchParams();
+  if (params.producto_id) q.set("producto_id", params.producto_id);
+  if (params.sucursal_id) q.set("sucursal_id", params.sucursal_id);
+  if (params.alerta_minimo !== undefined) q.set("alerta_minimo", String(params.alerta_minimo));
+  return q.toString() ? `?${q.toString()}` : "";
+}
+
+export function useStock(
+  params: { producto_id?: string; sucursal_id?: string; alerta_minimo?: boolean } = {}
+) {
+  return useQuery<StockListResponse>({
+    queryKey: ["stock", params],
+    queryFn: () => apiClient.get<StockListResponse>(`/stock${buildStockQS(params)}`),
+  });
+}
+
+export function useStockDetalle(productoId: string) {
+  return useQuery<StockDetalleResponse>({
+    queryKey: ["stock", productoId, "detalle"],
+    queryFn: () => apiClient.get<StockDetalleResponse>(`/stock/${productoId}/detalle`),
+    enabled: productoId !== "",
+  });
+}
+
+// ─── Lotes ────────────────────────────────────────────────────────────────────
+
+function buildLotesQS(params: LotesParams): string {
+  const q = new URLSearchParams();
+  if (params.producto_id) q.set("producto_id", params.producto_id);
+  if (params.sucursal_id) q.set("sucursal_id", params.sucursal_id);
+  q.set("page", String(params.page ?? 1));
+  q.set("pageSize", String(params.pageSize ?? 20));
+  return `?${q.toString()}`;
+}
+
+export function useLotes(params: LotesParams = {}) {
+  return useQuery<LotesListResponse>({
+    queryKey: ["lotes", params],
+    queryFn: () => apiClient.get<LotesListResponse>(`/lotes${buildLotesQS(params)}`),
+  });
+}
+
+export function useCreateLote() {
+  const qc = useQueryClient();
+  return useMutation<LoteResponse, Error, CreateLoteInput>({
+    mutationFn: (body) => apiClient.post<LoteResponse>("/lotes", body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["lotes"] });
+      void qc.invalidateQueries({ queryKey: ["stock"] });
+    },
+  });
+}
+
+// ─── Movimientos ──────────────────────────────────────────────────────────────
+
+function buildMovimientosQS(params: MovimientosParams): string {
+  const q = new URLSearchParams();
+  if (params.producto_id) q.set("producto_id", params.producto_id);
+  if (params.tipo) q.set("tipo", params.tipo);
+  if (params.sucursal_id) q.set("sucursal_id", params.sucursal_id);
+  if (params.desde) q.set("desde", params.desde);
+  if (params.hasta) q.set("hasta", params.hasta);
+  q.set("page", String(params.page ?? 1));
+  q.set("pageSize", String(params.pageSize ?? 20));
+  return `?${q.toString()}`;
+}
+
+export function useMovimientos(params: MovimientosParams = {}) {
+  return useQuery<MovimientosListResponse>({
+    queryKey: ["movimientos", params],
+    queryFn: () =>
+      apiClient.get<MovimientosListResponse>(`/movimientos${buildMovimientosQS(params)}`),
+  });
+}
+
+export function useCreateMovimiento() {
+  const qc = useQueryClient();
+  return useMutation<MovimientoResponse, Error, CreateMovimientoInput>({
+    mutationFn: (body) => apiClient.post<MovimientoResponse>("/movimientos", body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["movimientos"] });
+      void qc.invalidateQueries({ queryKey: ["stock"] });
+      void qc.invalidateQueries({ queryKey: ["lotes"] });
     },
   });
 }

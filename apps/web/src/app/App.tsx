@@ -10,7 +10,9 @@ import { OrdenesPage } from "../modules/compras/pages/OrdenesPage";
 import { SolicitudesPage } from "../modules/compras/pages/SolicitudesPage";
 import { DashboardPage } from "../modules/dashboard/pages/DashboardPage";
 import { FeatureFlagsPage } from "../modules/feature-flags/pages/FeatureFlagsPage";
+import { LotesPage } from "../modules/inventario/pages/LotesPage";
 import { MetodosPagoPage } from "../modules/inventario/pages/MetodosPagoPage";
+import { MovimientosPage } from "../modules/inventario/pages/MovimientosPage";
 import { ProductoFormPage } from "../modules/inventario/pages/ProductoFormPage";
 import { ProductosPage } from "../modules/inventario/pages/ProductosPage";
 import { TasasPrecioPage } from "../modules/inventario/pages/TasasPrecioPage";
@@ -46,6 +48,8 @@ export function App() {
             <Route path="/inventario/productos/:id" element={<ProductoFormPage />} />
             <Route path="/inventario/tasas-precio" element={<TasasPrecioPage />} />
             <Route path="/inventario/metodos-pago" element={<MetodosPagoPage />} />
+            <Route path="/inventario/lotes" element={<LotesPage />} />
+            <Route path="/inventario/movimientos" element={<MovimientosPage />} />
             <Route path="/compras/cotizaciones" element={<CotizacionesPage />} />
             <Route path="/compras/cotizaciones/comparar" element={<ComparadorPage />} />
             <Route path="/compras/solicitudes" element={<SolicitudesPage />} />

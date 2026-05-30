@@ -11,12 +11,18 @@ import { validateBody, validateQuery } from "../../../middlewares/validate.js";
 import type { HonoVariables } from "../../../types/context.js";
 import { MetodoPagoDrizzleRepository } from "../infra/repositories/metodo-pago.drizzle.js";
 import { ProductoDrizzleRepository } from "../infra/repositories/producto.drizzle.js";
+import { StockDrizzleRepository } from "../infra/repositories/stock.drizzle.js";
 import { TasaPrecioDrizzleRepository } from "../infra/repositories/tasa-precio.drizzle.js";
 import { createInventarioHandlers } from "./handlers.js";
 import {
+  createLoteSchema,
+  createMovimientoSchema,
   createProductoSchema,
+  listLotesQuerySchema,
+  listMovimientosQuerySchema,
   listProductosQuerySchema,
   listSimpleQuerySchema,
+  listStockQuerySchema,
   syncCompatibilidadesSchema,
   updateProductoHttpSchema,
 } from "./validators.js";
@@ -24,7 +30,8 @@ import {
 const productoRepo = new ProductoDrizzleRepository(getDb());
 const tasaPrecioRepo = new TasaPrecioDrizzleRepository(getDb());
 const metodoPagoRepo = new MetodoPagoDrizzleRepository(getDb());
-const h = createInventarioHandlers(productoRepo, tasaPrecioRepo, metodoPagoRepo);
+const stockRepo = new StockDrizzleRepository(getDb());
+const h = createInventarioHandlers(productoRepo, tasaPrecioRepo, metodoPagoRepo, stockRepo);
 
 export const inventarioRoutes = new Hono<{ Variables: HonoVariables }>();
 
@@ -56,3 +63,15 @@ inventarioRoutes.get("/metodos-pago", validateQuery(listSimpleQuerySchema), h.li
 inventarioRoutes.post("/metodos-pago", validateBody(createMetodoPagoSchema), h.createMetodoPago);
 inventarioRoutes.put("/metodos-pago/:id", validateBody(updateMetodoPagoSchema), h.updateMetodoPago);
 inventarioRoutes.delete("/metodos-pago/:id", h.deleteMetodoPago);
+
+// Stock
+inventarioRoutes.get("/stock", validateQuery(listStockQuerySchema), h.listStock);
+inventarioRoutes.get("/stock/:productoId/detalle", h.getStockDetalle);
+
+// Lotes
+inventarioRoutes.get("/lotes", validateQuery(listLotesQuerySchema), h.listLotes);
+inventarioRoutes.post("/lotes", validateBody(createLoteSchema), h.createLote);
+
+// Movimientos
+inventarioRoutes.get("/movimientos", validateQuery(listMovimientosQuerySchema), h.listMovimientos);
+inventarioRoutes.post("/movimientos", validateBody(createMovimientoSchema), h.createMovimiento);

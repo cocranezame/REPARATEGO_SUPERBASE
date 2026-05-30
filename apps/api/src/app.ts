@@ -13,6 +13,7 @@ import { healthRoutes } from "./modules/health/routes.js";
 import { inventarioRoutes } from "./modules/inventario/http/routes.js";
 import { marcaRoutes } from "./modules/marcas/http/routes.js";
 import { modeloRoutes } from "./modules/modelos/http/routes.js";
+import { proveedorRoutes } from "./modules/proveedores/http/routes.js";
 import { sucursalRoutes } from "./modules/sucursales/http/routes.js";
 import { usuarioRoutes } from "./modules/usuarios/http/routes.js";
 import type { HonoVariables } from "./types/context.js";
@@ -37,5 +38,6 @@ app.route("/api/v1", componenteRoutes);
 app.route("/api/v1", marcaRoutes);
 app.route("/api/v1", modeloRoutes);
 app.route("/api/v1", inventarioRoutes);
+app.route("/api/v1", proveedorRoutes);
 
 export type AppType = typeof app;

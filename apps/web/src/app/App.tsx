@@ -9,6 +9,8 @@ import { MetodosPagoPage } from "../modules/inventario/pages/MetodosPagoPage";
 import { ProductoFormPage } from "../modules/inventario/pages/ProductoFormPage";
 import { ProductosPage } from "../modules/inventario/pages/ProductosPage";
 import { TasasPrecioPage } from "../modules/inventario/pages/TasasPrecioPage";
+import { ProveedorDetallePage } from "../modules/proveedores/pages/ProveedorDetallePage";
+import { ProveedoresPage } from "../modules/proveedores/pages/ProveedoresPage";
 import { SucursalesPage } from "../modules/sucursales/pages/SucursalesPage";
 import { UsuariosPage } from "../modules/usuarios/pages/UsuariosPage";
 import { ProtectedRoute } from "../shared/components/ProtectedRoute";
@@ -32,6 +34,8 @@ export function App() {
             <Route path="/catalogos" element={<CatalogosPage />} />
             <Route path="/clientes" element={<ClientesPage />} />
             <Route path="/clientes/:id" element={<ClienteDetallePage />} />
+            <Route path="/proveedores" element={<ProveedoresPage />} />
+            <Route path="/proveedores/:id" element={<ProveedorDetallePage />} />
             <Route path="/inventario/productos" element={<ProductosPage />} />
             <Route path="/inventario/productos/nuevo" element={<ProductoFormPage />} />
             <Route path="/inventario/productos/:id" element={<ProductoFormPage />} />

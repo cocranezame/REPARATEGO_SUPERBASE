@@ -6,5 +6,5 @@
 | E5.2 | RLS policies para proveedores | ✅ DONE |
 | E5.3 | API: CRUD proveedor | ✅ DONE |
 | E5.4 | API: CRUD contactos, métodos de pago, líneas de proveedor | ✅ DONE |
-| E5.5 | Web: Pantalla de proveedores (listado, búsqueda por RUC) | ⬜ TODO |
-| E5.6 | Web: Detalle de proveedor (tabs: contactos, métodos pago, líneas) | ⬜ TODO |
+| E5.5 | Web: Pantalla de proveedores (listado, búsqueda por RUC) | ✅ DONE |
+| E5.6 | Web: Detalle de proveedor (tabs: contactos, métodos pago, líneas) | ✅ DONE |

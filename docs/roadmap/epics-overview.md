@@ -15,7 +15,7 @@
 | E7 | Compras (Solicitudes + OC) | ✅ DONE | E07-compras.md |
 | E8 | Lotes y Movimientos de Inventario | ✅ DONE | E08-lotes-inventario.md |
 | E9 | Pagos a Proveedores | ✅ DONE | E09-pagos-proveedores.md |
-| E10 | Servicios (Órdenes de Servicio) | ⬜ TODO | E10-servicios.md |
+| E10 | Servicios (Órdenes de Servicio) | ✅ DONE | E10-servicios.md |
 | E11 | Ventas | ⬜ TODO | E11-ventas.md |
 | E12 | Domicilios | ⬜ TODO | E12-domicilios.md |
 | E13 | CRM + Agente IA (Nico) | ⬜ TODO | E13-crm.md |

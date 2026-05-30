@@ -199,3 +199,21 @@ Todo campo opcional en tipos de dominio (entities, ports) que recibe valores de 
 **Corrección aplicada:** `sucursal_nombre?: string | undefined` en `StockItem`. Regla: todos los campos opcionales en entidades de dominio que reciben valores de leftJoins deben declararse `?: T | undefined`.
 
 **Nota:** Igual aplica a `Lote.producto_nombre`, `Lote.sucursal_nombre`, `MovimientoInventario.producto_nombre`. Solucionado con `.map()` explícito en el repositorio que asigna `?? undefined`.
+
+---
+
+## C013 — 2026-05-30
+
+**ID:** C013  
+**Afecta:** web  
+**Contexto:** E10 — Servicios
+
+**`exactOptionalPropertyTypes` con hook params que usan `|| undefined`:**  
+En `NuevaOrdenPage`, `useClientes({ search: searchCliente || undefined, pageSize: 50 })` — cuando `searchCliente` es vacío, `search` recibe `undefined`. Con `exactOptionalPropertyTypes: true`, el parámetro `search?: string` en `ClientesParams` no acepta `undefined` como valor asignado (sólo puede estar ausente).
+
+**Corrección aplicada:** Spread condicional en lugar de `|| undefined`:
+```ts
+useClientes({ ...(searchCliente ? { search: searchCliente } : {}), pageSize: 50 })
+```
+
+**Regla consolidada (C004, C011, C013):** En web, cuando se pasa un campo opcional a un hook/componente, siempre usar spread condicional si el valor puede ser `undefined`. Nunca usar `prop={variable || undefined}` ni `{ campo: variable || undefined }`.

@@ -1,6 +1,6 @@
 # Schema Overview — ReparaTego
 
-> Mapa completo de las ~47 tablas, organizadas por módulo.
+> Mapa completo de las ~56 tablas, organizadas por módulo.
 > Todas las tablas llevan `tenant_id` con RLS: `WHERE tenant_id = auth.jwt() ->> 'tenant_id'`
 > PK: UUID con gen_random_uuid(). Timestamps: created_at, updated_at (TIMESTAMPTZ).
 
@@ -14,7 +14,7 @@
 | Inventario | producto, producto_compatibilidad, tasa_precio, metodo_pago_catalogo, lote, movimiento_inventario | db/modules/inventario.md |
 | Proveedores | proveedor, proveedor_contacto, proveedor_metodo_pago, proveedor_linea | db/modules/proveedores.md |
 | Compras | cotizacion_compra, cotizacion_compra_detalle, solicitud_compra, orden_compra, orden_compra_confirmacion | db/modules/compras.md |
-| Servicios | orden_servicio, orden_servicio_componente, orden_servicio_cotizacion, orden_servicio_evidencia | db/modules/servicios.md |
+| Servicios | instancia, instancia_imagen, periferico, costo_revision, orden_servicio, orden_servicio_periferico, orden_servicio_componente, orden_servicio_cotizacion, orden_servicio_evidencia, orden_servicio_sku_asignado, orden_servicio_requerimiento, orden_servicio_aceptacion, orden_servicio_historial, orden_servicio_observacion | db/modules/servicios.md |
 | Ventas | caja, venta, venta_item, venta_pago, venta_envio, cotizacion_venta, cotizacion_venta_item | db/modules/ventas.md |
 | Domicilios | tarifa_distrito, visita_domicilio | db/modules/domicilios.md |
 | Pagos Prov. | pago_proveedor | db/modules/pagos-proveedores.md |
@@ -40,11 +40,18 @@ CREATE TYPE estado_orden_compra AS ENUM ('GENERADA', 'ENVIADA', 'TERMINADA', 'IN
 
 -- Servicios
 CREATE TYPE estado_orden_servicio AS ENUM (
-  'RECEPCION', 'EN_DIAGNOSTICO', 'DIAGNOSTICADO', 'COTIZADO', 'APROBADO',
-  'EN_REPARACION', 'REPARADO', 'LISTO_ENTREGA', 'ENTREGADO', 'DEVOLUCION', 'CANCELADO'
+  'VALIDACION', 'REVISION', 'DIAG_PRELIMINAR', 'DIAG_FINAL', 'COTIZADO', 'APROBADO',
+  'AGREGAR_SKU', 'PRIORIDAD', 'REPARADO', 'AVISADO', 'ENTREGADO', 'GARANTIA', 'DEVOLUCION'
 );
-CREATE TYPE tipo_servicio AS ENUM ('CORRECTIVO', 'PREVENTIVO');
-CREATE TYPE momento_evidencia AS ENUM ('RECEPCION', 'DIAGNOSTICO', 'REPARACION', 'ENTREGA');
+CREATE TYPE tipo_servicio AS ENUM ('REPARACION', 'REVISION');
+CREATE TYPE canal_servicio AS ENUM ('TIENDA', 'DOMICILIO');
+CREATE TYPE tipo_afectacion AS ENUM ('PREVENTIVO', 'CORRECTIVO');
+CREATE TYPE tipo_accion_componente AS ENUM ('REPARACION', 'CAMBIO');
+CREATE TYPE tipo_item_cotizacion AS ENUM ('REPUESTO', 'SERVICIO', 'MANUAL');
+CREATE TYPE estado_sku_asignado AS ENUM ('ASIGNADO', 'CONSUMIDO');
+CREATE TYPE estado_requerimiento AS ENUM ('PENDIENTE', 'EN_COMPRA', 'ATENDIDO', 'ANULADO');
+CREATE TYPE tipo_aceptacion AS ENUM ('VALIDACION', 'PRESUPUESTO');
+CREATE TYPE canal_aceptacion AS ENUM ('PORTAL_CLIENTE', 'MANUAL_TIENDA', 'MANUAL_WHATSAPP');
 
 -- Ventas
 CREATE TYPE tipo_venta AS ENUM ('LIBRE', 'SERVICIO', 'REVISION_DOMICILIO', 'REVISION_DEVOLUCION');
@@ -60,6 +67,8 @@ CREATE TYPE estado_visita AS ENUM (
 
 ## Relaciones clave entre módulos
 
+- **Clientes ↔ Servicios:** cliente 1:N instancia 1:N orden_servicio (el cliente se obtiene vía instancia, nunca directo desde orden_servicio)
+- **Catálogos ↔ Servicios:** producto 1:N instancia (un modelo genérico tiene muchas instancias físicas de distintos clientes)
 - **Inventario ↔ Compras:** lote.orden_compra_id → orden_compra.id (al confirmar OC se crean lotes)
 - **Inventario ↔ Ventas:** movimiento_inventario con referencia_tipo=VENTA → venta.id
 - **Inventario ↔ Servicios:** movimiento_inventario con referencia_tipo=ORDEN_SERVICIO → orden_servicio.id

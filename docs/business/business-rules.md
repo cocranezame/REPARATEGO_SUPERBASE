@@ -95,3 +95,52 @@
 - Bots: respuestas automáticas por keyword, horario o primera vez
 - Eventos del agente se logean para métricas
 - Integración con EventBridge para eventos CRM (nuevo lead, mensaje, etc.)
+
+## Servicios — Reglas de Negocio (C002)
+
+### Registro y validación
+R1  — No puede salir de VALIDACIÓN sin al menos 1 imagen en la instancia.
+R2  — No puede pasar a REVISIÓN sin aceptación del cliente (portal o manual).
+R3  — El costo de revisión se autocompleta según la categoría del producto.
+R20 — Las imágenes del equipo pertenecen a la INSTANCIA, no a la orden. Si el equipo regresa, las imágenes ya están.
+R21 — Una instancia = producto_id + serie + imágenes. El mismo producto puede pertenecer a distintos clientes con instancias diferentes.
+R22 — El canal (TIENDA/DOMICILIO) se selecciona al registrar y define el color de la tarjeta en el kanban (verde/amarillo).
+
+### Componentes y diagnóstico
+R4  — Componentes usan doble clasificación: click izquierdo cicla afectación (preventivo → correctivo → desmarcado), click derecho alterna acción (reparación ↔ cambio). Default es REPARACIÓN.
+R5  — Colores: verde = preventivo, amarillo = correctivo + reparación, rojo = correctivo + cambio.
+R6  — Click derecho solo funciona sobre componentes ya marcados. En mobile se reemplaza por long press.
+R7  — CAMBIO dirige a "Buscar repuesto", REPARACIÓN dirige a "Buscar servicio". Relación fija, no modificable por la vendedora.
+
+### Cotización y presupuesto
+R8  — El presupuesto base es solo CORRECTIVO. El preventivo es opcional y se suma si el cliente lo acepta.
+R9  — Los precios se CONGELAN al registrar la cotización. Cambios posteriores en catálogo no afectan cotizaciones existentes.
+R10 — Items de cotización heredan preventivo/correctivo del componente origen. Items manuales deben ser clasificados por la vendedora.
+R23 — Tab de búsqueda activo por default es el más específico con al menos 1 resultado.
+R24 — Repuestos con stock 0 se muestran pero con botón [+] deshabilitado.
+R25 — Servicios no manejan stock y siempre están disponibles.
+
+### SKUs, ventas y entrega
+R11 — Al pasar de AGREGAR SKU a REPARADO/PRIORIDAD se genera AUTOMÁTICAMENTE una VENTA con SKUs y precios del presupuesto.
+R12 — NO se puede pasar a ENTREGADO si la venta tiene saldo pendiente.
+R13 — En DEVOLUCIÓN se genera venta por costo de revisión según categoría.
+R26 — Si un repuesto cotizado no tiene stock al asignar SKU, se genera requerimiento de compra automático.
+
+### Garantía
+R14 — Al generar nueva OT desde GARANTÍA queda referencia a la orden original (relación padre-hijo).
+R19 — ENTREGADO sale del kanban. Solo visible desde lista de servicios. Puede reactivarse a GARANTÍA.
+
+### Aprobaciones y trazabilidad legal
+R15 — Toda aprobación manual requiere CONTRASEÑA del vendedor.
+R16 — Aprobación manual por WhatsApp requiere CAPTURA adjunta obligatoria.
+R17 — Las aceptaciones guardan IP, timestamp, versión de T&C y texto_mostrado para respaldo legal (INDECOPI).
+
+### Requerimientos
+R18 — Los requerimientos se consultan contra inventario y proveedores antes de generar solicitud de compra.
+
+### Pendientes resueltos (C002)
+PR1 — Vendedora SÍ puede reclasificar preventivo/correctivo antes de registrar cotización. Inmutable después.
+PR2 — Si técnico modifica componentes en DIAG_FINAL tras retroceso desde COTIZADO, la cotización anterior se invalida y debe armarse nueva.
+PR3 — Búsqueda con paginación (50 items por página).
+PR4 — Item MANUAL se clasifica manualmente como preventivo/correctivo por la vendedora.
+PR5 — Sin log de auditoría para tipo_accion por ahora, basta con registro final.

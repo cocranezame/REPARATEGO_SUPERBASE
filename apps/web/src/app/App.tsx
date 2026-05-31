@@ -24,6 +24,10 @@ import { OrdenServicioDetallePage } from "../modules/servicios/pages/OrdenServic
 import { ServiciosPage } from "../modules/servicios/pages/ServiciosPage";
 import { SucursalesPage } from "../modules/sucursales/pages/SucursalesPage";
 import { UsuariosPage } from "../modules/usuarios/pages/UsuariosPage";
+import { CajaPage } from "../modules/ventas/pages/CajaPage";
+import { EnviosPage } from "../modules/ventas/pages/EnviosPage";
+import { HistorialVentasPage } from "../modules/ventas/pages/HistorialVentasPage";
+import { NuevaVentaPage } from "../modules/ventas/pages/NuevaVentaPage";
 import { ProtectedRoute } from "../shared/components/ProtectedRoute";
 import { AuthLayout } from "./layouts/AuthLayout";
 import { MainLayout } from "./layouts/MainLayout";
@@ -63,6 +67,10 @@ export function App() {
             <Route path="/servicios" element={<ServiciosPage />} />
             <Route path="/servicios/nuevo" element={<NuevaOrdenPage />} />
             <Route path="/servicios/:id" element={<OrdenServicioDetallePage />} />
+            <Route path="/ventas/caja" element={<CajaPage />} />
+            <Route path="/ventas/nueva" element={<NuevaVentaPage />} />
+            <Route path="/ventas/historial" element={<HistorialVentasPage />} />
+            <Route path="/ventas/envios" element={<EnviosPage />} />
           </Route>
         </Route>
       </Routes>

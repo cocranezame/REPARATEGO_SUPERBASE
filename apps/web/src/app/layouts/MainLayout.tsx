@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu,
   Package,
+  Receipt,
   ShoppingCart,
   Truck,
   UserRound,
@@ -84,6 +85,11 @@ const NAV_ITEMS: NavItem[] = [
     to: "/servicios",
     icon: <Wrench className="h-5 w-5" />,
   },
+  {
+    label: "Ventas",
+    to: "/ventas/nueva",
+    icon: <Receipt className="h-5 w-5" />,
+  },
 ];
 
 const SEGMENT_LABELS: Record<string, string> = {
@@ -109,6 +115,11 @@ const SEGMENT_LABELS: Record<string, string> = {
   pagos: "Pagos OC",
   servicios: "Servicios",
   nuevo: "Nueva OS",
+  ventas: "Ventas",
+  caja: "Caja",
+  nueva: "Nueva venta",
+  historial: "Historial",
+  envios: "Envíos",
 };
 
 function breadcrumbsFromPath(pathname: string): string[] {

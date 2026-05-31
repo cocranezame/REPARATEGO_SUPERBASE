@@ -6,3 +6,4 @@ export * from "./inventario.js";
 export * from "./proveedores.js";
 export * from "./seguridad.js";
 export * from "./servicios.js";
+export * from "./ventas.js";

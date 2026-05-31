@@ -10,6 +10,10 @@ import { OrdenesPage } from "../modules/compras/pages/OrdenesPage";
 import { PagosPage } from "../modules/compras/pages/PagosPage";
 import { SolicitudesPage } from "../modules/compras/pages/SolicitudesPage";
 import { DashboardPage } from "../modules/dashboard/pages/DashboardPage";
+import { CalendarioPage } from "../modules/domicilios/pages/CalendarioPage";
+import { DomiciliosPage } from "../modules/domicilios/pages/DomiciliosPage";
+import { NuevaVisitaPage } from "../modules/domicilios/pages/NuevaVisitaPage";
+import { TarifasPage } from "../modules/domicilios/pages/TarifasPage";
 import { FeatureFlagsPage } from "../modules/feature-flags/pages/FeatureFlagsPage";
 import { LotesPage } from "../modules/inventario/pages/LotesPage";
 import { MetodosPagoPage } from "../modules/inventario/pages/MetodosPagoPage";
@@ -71,6 +75,10 @@ export function App() {
             <Route path="/ventas/nueva" element={<NuevaVentaPage />} />
             <Route path="/ventas/historial" element={<HistorialVentasPage />} />
             <Route path="/ventas/envios" element={<EnviosPage />} />
+            <Route path="/domicilios" element={<DomiciliosPage />} />
+            <Route path="/domicilios/nueva" element={<NuevaVisitaPage />} />
+            <Route path="/domicilios/calendario" element={<CalendarioPage />} />
+            <Route path="/domicilios/tarifas" element={<TarifasPage />} />
           </Route>
         </Route>
       </Routes>

@@ -17,7 +17,7 @@
 | E9 | Pagos a Proveedores | ✅ DONE | E09-pagos-proveedores.md |
 | E10 | Servicios (Órdenes de Servicio) | ✅ DONE | E10-servicios.md |
 | E11 | Ventas | ✅ DONE | E11-ventas.md |
-| E12 | Domicilios | ⬜ TODO | E12-domicilios.md |
+| E12 | Domicilios | ✅ DONE | E12-domicilios.md |
 | E13 | CRM + Agente IA (Nico) | ⬜ TODO | E13-crm.md |
 | E14 | Dashboard y Reportes | ⬜ TODO | E14-dashboard.md |
 | E15 | QA, Performance y Pulido | ⬜ TODO | E15-qa.md |

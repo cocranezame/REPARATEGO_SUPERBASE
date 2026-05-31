@@ -8,6 +8,7 @@ import {
   Home,
   Layers,
   LogOut,
+  MapPin,
   Menu,
   Package,
   Receipt,
@@ -90,6 +91,11 @@ const NAV_ITEMS: NavItem[] = [
     to: "/ventas/nueva",
     icon: <Receipt className="h-5 w-5" />,
   },
+  {
+    label: "Domicilios",
+    to: "/domicilios",
+    icon: <MapPin className="h-5 w-5" />,
+  },
 ];
 
 const SEGMENT_LABELS: Record<string, string> = {
@@ -120,6 +126,9 @@ const SEGMENT_LABELS: Record<string, string> = {
   nueva: "Nueva venta",
   historial: "Historial",
   envios: "Envíos",
+  domicilios: "Domicilios",
+  calendario: "Calendario",
+  tarifas: "Tarifas",
 };
 
 function breadcrumbsFromPath(pathname: string): string[] {

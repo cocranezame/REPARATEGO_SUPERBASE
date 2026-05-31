@@ -217,3 +217,28 @@ useClientes({ ...(searchCliente ? { search: searchCliente } : {}), pageSize: 50 
 ```
 
 **Regla consolidada (C004, C011, C013):** En web, cuando se pasa un campo opcional a un hook/componente, siempre usar spread condicional si el valor puede ser `undefined`. Nunca usar `prop={variable || undefined}` ni `{ campo: variable || undefined }`.
+
+---
+
+## C014 — 2026-05-30
+
+**ID:** C014  
+**Afecta:** api  
+**Contexto:** E11 — Ventas
+
+**TS5076 — `??` y `||` no se pueden mezclar sin paréntesis:**  
+TypeScript 5.x emite `TS5076` cuando se escribe `a ?? b || c` sin paréntesis. El compilador no puede inferir la precedencia de `??` vs `||` sin agrupación explícita.
+
+Ejemplo incorrecto:
+```ts
+cliente_nombre: r.cliente_razon_social ??
+  `${r.cliente_nombres ?? ""} ${r.cliente_apellidos ?? ""}`.trim() || undefined,
+```
+
+**Corrección aplicada:** Envolver la sub-expresión con `||` entre paréntesis:
+```ts
+cliente_nombre: r.cliente_razon_social ??
+  (`${r.cliente_nombres ?? ""} ${r.cliente_apellidos ?? ""}`.trim() || undefined),
+```
+
+**Regla:** Cuando se combina `??` con `||` en la misma expresión, siempre usar paréntesis explícitos alrededor de la sub-expresión con `||`.

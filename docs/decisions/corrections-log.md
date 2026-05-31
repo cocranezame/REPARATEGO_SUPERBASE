@@ -242,3 +242,70 @@ cliente_nombre: r.cliente_razon_social ??
 ```
 
 **Regla:** Cuando se combina `??` con `||` en la misma expresión, siempre usar paréntesis explícitos alrededor de la sub-expresión con `||`.
+
+---
+
+## C015 — 2026-05-31
+
+**ID:** C015
+**Afecta:** api, infra
+**Contexto:** Seed local + verificación de dev
+
+**Problema 1 — `tsx watch` no carga variables de entorno antes de módulos CJS:**
+La API no tiene dotenv en su `server.ts`. Cuando `tsx watch src/server.ts` arranca, las rutas (auth, etc.) inicializan su repositorio `const repo = new AuthDrizzleRepository(getDb())` a nivel de módulo. `getDb()` llama a `createDbClientFromEnv()` que lee `process.env.DATABASE_URL` — pero dotenv aún no cargó el `.env`. Intentar `import { config } from "dotenv"; config(...)` en server.ts no funciona porque tsx transpila static imports a `require()` calls, y todos los requires se hoistan antes de que `config()` se ejecute.
+
+`tsx --env-file=../../.env watch src/server.ts` también falla: tsx no reconoce `watch` como subcomando cuando hay flags antes de él.
+
+**Corrección aplicada:** Bootstrap file `apps/api/bootstrap.cjs` (CJS puro):
+```js
+require("dotenv").config({ path: "../../.env" });  // carga env ANTES que cualquier módulo TS
+require("tsx/cjs");                                  // registra el hook TypeScript de tsx
+require("./src/server.ts");                          // arranca la API
+```
+
+Dev script cambiado a `node --watch bootstrap.cjs` (Node.js 20+ built-in watch mode).
+
+**Problema 2 — `tsx --env-file` delante de `watch` rompe el parsing de subcomandos:**
+tsx@4.22.3: si se pone cualquier flag antes de `watch`, el parser de tsx no lo reconoce como subcomando y lo trata como el script a ejecutar → `ERR_MODULE_NOT_FOUND: Cannot find module '.../watch'`.
+
+**Regla:** Para la API, siempre usar `bootstrap.cjs` como entry point. No intentar hacer que tsx watch cargue el env file vía flags.
+
+**Problema 3 — `pnpm build` (producción) falla con Rollup + CJS re-exports de validators:**
+Rollup no puede hacer static analysis de `__exportStar(require("./seguridad.js"), exports)` en el build de producción de la Web. Error: `"loginSchema" is not exported by ...dist/index.js`. En `pnpm dev` (Vite dev server con esbuild) no ocurre.
+
+**Nota:** Pendiente de fix para deploy (E0D). En desarrollo, usar `pnpm dev` — no `pnpm build`.
+
+**Nota adicional — Login endpoint:**
+El endpoint `/api/v1/auth/login` requiere 3 campos: `tipo_documento`, `numero_documento`, `password`. Y el header `X-Tenant-Id` para el contexto RLS.
+
+---
+
+## [C002] 2026-05-31 — Refactorizar módulo de servicios completo
+- **Afecta:** servicios, ventas, domicilios, crm, compras, clientes, catálogos, inventario
+- **Antes:**
+  - orden_servicio se vinculaba directo a cliente_id + categoria_id + marca_id + modelo_id
+  - 9 estados: RECEPCION, REVISION, PRESUPUESTO, COTIZADO, APROBADO, EN_REPARACION, AVISADO, ENTREGADO, DEVOLUCION
+  - No existía concepto de INSTANCIA (equipo físico del cliente)
+  - No existían tablas: instancia, periferico, costo_revision, orden_servicio_periferico, orden_servicio_sku_asignado, orden_servicio_requerimiento, orden_servicio_aceptacion, orden_servicio_historial, orden_servicio_observacion
+  - No existía portal del cliente
+  - E10 tenía 10 tickets
+- **Ahora:**
+  - Se introduce INSTANCIA como entidad intermedia: cliente → instancia → orden_servicio. El cliente se obtiene siempre vía instancia, nunca directo desde servicio
+  - 12 estados: VALIDACION, REVISION, DIAG_PRELIMINAR, DIAG_FINAL, COTIZADO, APROBADO, AGREGAR_SKU, PRIORIDAD, REPARADO, AVISADO, ENTREGADO, GARANTIA + DEVOLUCION lateral desde DIAG_FINAL
+  - Se agregan 9 tablas nuevas al módulo de servicios
+  - Se agrega portal del cliente (reparatego.com/mis-equipos) con auth DNI + celular
+  - E10 crece a 28 tickets organizados en 6 sub-épicas
+  - Retrocesos definidos: DIAG_FINAL→DIAG_PRELIMINAR, COTIZADO→DIAG_FINAL, APROBADO→COTIZADO, AGREGAR_SKU→APROBADO, PRIORIDAD→AGREGAR_SKU, AVISADO→REPARADO
+  - Venta se genera AUTOMÁTICAMENTE al pasar de AGREGAR_SKU a REPARADO o PRIORIDAD
+  - Aceptaciones del cliente guardan trazabilidad legal (IP, timestamp, versión T&C, texto_mostrado) para respaldo INDECOPI
+  - Canal TIENDA/DOMICILIO define color de tarjeta en kanban (verde/amarillo)
+- **Razón:** se recibió el informe funcional y técnico v2.0 del módulo de servicios completo que redefine el flujo, introduce instancias, portal del cliente, y amplía significativamente los estados y tablas
+- **Migración:** pendiente (se ejecutará en E10)
+- **Pendientes resueltos:**
+  - P1: Vendedora SÍ puede reclasificar preventivo/correctivo antes de registrar cotización. Inmutable después
+  - P2: Si técnico modifica componentes en DIAG_FINAL tras retroceso desde COTIZADO, la cotización anterior se invalida y debe armarse nueva
+  - P3: Búsqueda con paginación (50 items por página)
+  - P4: Item MANUAL se clasifica manualmente como preventivo/correctivo por la vendedora
+  - P5: Sin log de auditoría para tipo_accion por ahora, basta con registro final
+- **Impacto en schema:** de 47 tablas pasa a ~55 tablas (se agregan 9 tablas nuevas, se agrega tabla periferico a catálogos)
+- **Impacto en roadmap:** E10 se reorganiza de 10 tickets a 28 tickets en 6 sub-épicas

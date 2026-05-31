@@ -149,6 +149,19 @@ export type UpsertComponentesOrdenInput = z.infer<typeof upsertComponentesOrdenS
 
 // ─── Cotización / presupuesto ─────────────────────────────────────────────────
 
+export const buscarPresupuestoQuerySchema = z.object({
+  tipo: z.enum(["REPUESTO", "SERVICIO", "MANUAL"]).optional(),
+  categoria_id: uuidSchema.optional(),
+  marca_id: uuidSchema.optional(),
+  modelo_id: uuidSchema.optional(),
+  componente_id: uuidSchema.optional(),
+  busqueda: z.string().optional(),
+  nivel: z.enum(["COMPAT", "MARCA", "CATEGORIA", "GLOBAL"]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+export type BuscarPresupuestoQuery = z.infer<typeof buscarPresupuestoQuerySchema>;
+
 export const cotizacionItemSchema = z.object({
   tipo_item: z.nativeEnum(TipoItemCotizacion),
   producto_id: uuidSchema.optional(),

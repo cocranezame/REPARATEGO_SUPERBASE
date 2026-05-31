@@ -40,33 +40,98 @@ export type TipoMovimiento = (typeof TipoMovimiento)[keyof typeof TipoMovimiento
 
 // Servicios
 export const EstadoOrdenServicio = {
-  RECEPCION: "RECEPCION",
-  EN_DIAGNOSTICO: "EN_DIAGNOSTICO",
-  DIAGNOSTICADO: "DIAGNOSTICADO",
+  VALIDACION: "VALIDACION",
+  REVISION: "REVISION",
+  DIAG_PRELIMINAR: "DIAG_PRELIMINAR",
+  DIAG_FINAL: "DIAG_FINAL",
   COTIZADO: "COTIZADO",
   APROBADO: "APROBADO",
-  EN_REPARACION: "EN_REPARACION",
+  AGREGAR_SKU: "AGREGAR_SKU",
+  PRIORIDAD: "PRIORIDAD",
   REPARADO: "REPARADO",
-  LISTO_ENTREGA: "LISTO_ENTREGA",
+  AVISADO: "AVISADO",
   ENTREGADO: "ENTREGADO",
+  GARANTIA: "GARANTIA",
   DEVOLUCION: "DEVOLUCION",
-  CANCELADO: "CANCELADO",
 } as const;
 export type EstadoOrdenServicio = (typeof EstadoOrdenServicio)[keyof typeof EstadoOrdenServicio];
 
 export const TipoServicio = {
-  CORRECTIVO: "CORRECTIVO",
-  PREVENTIVO: "PREVENTIVO",
+  REPARACION: "REPARACION",
+  REVISION: "REVISION",
 } as const;
 export type TipoServicio = (typeof TipoServicio)[keyof typeof TipoServicio];
 
-export const MomentoEvidencia = {
-  RECEPCION: "RECEPCION",
-  DIAGNOSTICO: "DIAGNOSTICO",
-  REPARACION: "REPARACION",
-  ENTREGA: "ENTREGA",
+export const CanalServicio = {
+  TIENDA: "TIENDA",
+  DOMICILIO: "DOMICILIO",
 } as const;
-export type MomentoEvidencia = (typeof MomentoEvidencia)[keyof typeof MomentoEvidencia];
+export type CanalServicio = (typeof CanalServicio)[keyof typeof CanalServicio];
+
+export const TipoAfectacion = {
+  PREVENTIVO: "PREVENTIVO",
+  CORRECTIVO: "CORRECTIVO",
+} as const;
+export type TipoAfectacion = (typeof TipoAfectacion)[keyof typeof TipoAfectacion];
+
+export const TipoAccionComponente = {
+  REPARACION: "REPARACION",
+  CAMBIO: "CAMBIO",
+} as const;
+export type TipoAccionComponente = (typeof TipoAccionComponente)[keyof typeof TipoAccionComponente];
+
+export const EtapaComponente = {
+  PRELIMINAR: "PRELIMINAR",
+  FINAL: "FINAL",
+} as const;
+export type EtapaComponente = (typeof EtapaComponente)[keyof typeof EtapaComponente];
+
+export const TipoItemCotizacion = {
+  REPUESTO: "REPUESTO",
+  SERVICIO: "SERVICIO",
+  MANUAL: "MANUAL",
+} as const;
+export type TipoItemCotizacion = (typeof TipoItemCotizacion)[keyof typeof TipoItemCotizacion];
+
+export const EstadoSkuAsignado = {
+  ASIGNADO: "ASIGNADO",
+  CONSUMIDO: "CONSUMIDO",
+} as const;
+export type EstadoSkuAsignado = (typeof EstadoSkuAsignado)[keyof typeof EstadoSkuAsignado];
+
+export const EstadoRequerimiento = {
+  PENDIENTE: "PENDIENTE",
+  EN_COMPRA: "EN_COMPRA",
+  ATENDIDO: "ATENDIDO",
+  ANULADO: "ANULADO",
+} as const;
+export type EstadoRequerimiento = (typeof EstadoRequerimiento)[keyof typeof EstadoRequerimiento];
+
+export const TipoAceptacion = {
+  VALIDACION: "VALIDACION",
+  PRESUPUESTO: "PRESUPUESTO",
+} as const;
+export type TipoAceptacion = (typeof TipoAceptacion)[keyof typeof TipoAceptacion];
+
+export const CanalAceptacion = {
+  PORTAL_CLIENTE: "PORTAL_CLIENTE",
+  MANUAL_TIENDA: "MANUAL_TIENDA",
+  MANUAL_WHATSAPP: "MANUAL_WHATSAPP",
+} as const;
+export type CanalAceptacion = (typeof CanalAceptacion)[keyof typeof CanalAceptacion];
+
+export const MotivoDevolucion = {
+  CLIENTE_CANCELO: "CLIENTE_CANCELO",
+  SIN_SOLUCION: "SIN_SOLUCION",
+} as const;
+export type MotivoDevolucion = (typeof MotivoDevolucion)[keyof typeof MotivoDevolucion];
+
+export const MetodoAceptacion = {
+  CLICK_BUTTON: "CLICK_BUTTON",
+  FIRMA_DIGITAL: "FIRMA_DIGITAL",
+  CHECKBOX: "CHECKBOX",
+} as const;
+export type MetodoAceptacion = (typeof MetodoAceptacion)[keyof typeof MetodoAceptacion];
 
 // Pagos a proveedores
 export const MetodoPagoProveedor = {

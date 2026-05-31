@@ -21,7 +21,8 @@
         "shared",
         "db",
         "api",
-        "web"
+        "web",
+        "decisions"
       ]
     ],
     "scope-empty": [1, "never"],

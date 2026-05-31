@@ -16,7 +16,10 @@ export async function refreshToken(repo: IAuthRepository, token: string): Promis
     throw new ApiError("AUTH_INVALID_TOKEN", "Refresh token inválido o expirado", 401);
   }
 
-  if (!isRefreshTokenValid(payload.jti)) {
+  // In production, enforce JTI rotation (revocation via in-memory/Redis store).
+  // In dev, skip: the store is cleared on every --watch restart, which would
+  // invalidate all sessions after any file change.
+  if (process.env.NODE_ENV === "production" && !isRefreshTokenValid(payload.jti)) {
     throw new ApiError("AUTH_INVALID_TOKEN", "Refresh token revocado", 401);
   }
 

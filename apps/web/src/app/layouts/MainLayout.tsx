@@ -3,24 +3,34 @@ import {
   ArrowLeftRight,
   BookOpen,
   Building2,
+  Calendar,
+  ChevronDown,
+  ClipboardList,
   CreditCard,
   Flag,
+  History,
   Home,
+  Kanban,
   Layers,
   LogOut,
   MapPin,
   Menu,
   Package,
+  PackageCheck,
+  Percent,
+  PlusCircle,
   Receipt,
+  Shield,
   ShoppingCart,
+  Tag,
   Truck,
   UserRound,
   Users,
+  Wallet,
   Wrench,
   X,
 } from "lucide-react";
-import type { ReactNode } from "react";
-import { useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../shared/stores/auth-store";
 
@@ -28,73 +38,165 @@ type NavItem = {
   label: string;
   to: string;
   icon: ReactNode;
+  end?: boolean;
+};
+
+type NavGroup = {
+  id: string;
+  label: string;
+  icon: ReactNode;
+  primaryTo: string;
+  activePrefix: string;
+  items: NavItem[];
   roles?: RolUsuario[];
 };
 
-const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", to: "/dashboard", icon: <Home className="h-5 w-5" /> },
+const NAV_GROUPS: NavGroup[] = [
   {
-    label: "Usuarios",
-    to: "/admin/usuarios",
-    icon: <Users className="h-5 w-5" />,
+    id: "dashboard",
+    label: "Dashboard",
+    icon: <Home className="h-5 w-5" />,
+    primaryTo: "/dashboard",
+    activePrefix: "/dashboard",
+    items: [
+      { label: "Dashboard", to: "/dashboard", icon: <Home className="h-5 w-5" />, end: true },
+    ],
+  },
+  {
+    id: "admin",
+    label: "Administración",
+    icon: <Shield className="h-5 w-5" />,
+    primaryTo: "/admin/usuarios",
+    activePrefix: "/admin",
     roles: ["ADMIN"],
+    items: [
+      { label: "Usuarios", to: "/admin/usuarios", icon: <Users className="h-5 w-5" /> },
+      { label: "Sucursales", to: "/admin/sucursales", icon: <Building2 className="h-5 w-5" /> },
+      { label: "Feature Flags", to: "/admin/feature-flags", icon: <Flag className="h-5 w-5" /> },
+    ],
   },
   {
-    label: "Sucursales",
-    to: "/admin/sucursales",
-    icon: <Building2 className="h-5 w-5" />,
-    roles: ["ADMIN"],
+    id: "catalogos",
+    label: "Catálogos",
+    icon: <BookOpen className="h-5 w-5" />,
+    primaryTo: "/catalogos",
+    activePrefix: "/catalogos",
+    items: [
+      { label: "Catálogos", to: "/catalogos", icon: <BookOpen className="h-5 w-5" />, end: true },
+    ],
   },
   {
-    label: "Feature Flags",
-    to: "/admin/feature-flags",
-    icon: <Flag className="h-5 w-5" />,
-    roles: ["ADMIN"],
-  },
-  { label: "Catálogos", to: "/catalogos", icon: <BookOpen className="h-5 w-5" /> },
-  { label: "Clientes", to: "/clientes", icon: <UserRound className="h-5 w-5" /> },
-  { label: "Proveedores", to: "/proveedores", icon: <Truck className="h-5 w-5" /> },
-  { label: "Inventario", to: "/inventario/productos", icon: <Package className="h-5 w-5" /> },
-  { label: "Lotes", to: "/inventario/lotes", icon: <Layers className="h-5 w-5" /> },
-  {
-    label: "Movimientos",
-    to: "/inventario/movimientos",
-    icon: <ArrowLeftRight className="h-5 w-5" />,
+    id: "clientes",
+    label: "Clientes",
+    icon: <UserRound className="h-5 w-5" />,
+    primaryTo: "/clientes",
+    activePrefix: "/clientes",
+    items: [
+      { label: "Clientes", to: "/clientes", icon: <UserRound className="h-5 w-5" />, end: true },
+    ],
   },
   {
-    label: "Cotizaciones",
-    to: "/compras/cotizaciones",
+    id: "proveedores",
+    label: "Proveedores",
+    icon: <Truck className="h-5 w-5" />,
+    primaryTo: "/proveedores",
+    activePrefix: "/proveedores",
+    items: [
+      {
+        label: "Proveedores",
+        to: "/proveedores",
+        icon: <Truck className="h-5 w-5" />,
+        end: true,
+      },
+    ],
+  },
+  {
+    id: "inventario",
+    label: "Inventario",
+    icon: <Package className="h-5 w-5" />,
+    primaryTo: "/inventario/productos",
+    activePrefix: "/inventario",
+    items: [
+      { label: "Productos", to: "/inventario/productos", icon: <Package className="h-5 w-5" /> },
+      { label: "Lotes", to: "/inventario/lotes", icon: <Layers className="h-5 w-5" /> },
+      {
+        label: "Movimientos",
+        to: "/inventario/movimientos",
+        icon: <ArrowLeftRight className="h-5 w-5" />,
+      },
+      {
+        label: "Tasas de precio",
+        to: "/inventario/tasas-precio",
+        icon: <Percent className="h-5 w-5" />,
+      },
+      {
+        label: "Métodos de pago",
+        to: "/inventario/metodos-pago",
+        icon: <CreditCard className="h-5 w-5" />,
+      },
+    ],
+  },
+  {
+    id: "compras",
+    label: "Compras",
     icon: <ShoppingCart className="h-5 w-5" />,
+    primaryTo: "/compras/cotizaciones",
+    activePrefix: "/compras",
+    items: [
+      {
+        label: "Cotizaciones",
+        to: "/compras/cotizaciones",
+        icon: <ClipboardList className="h-5 w-5" />,
+      },
+      {
+        label: "Solicitudes",
+        to: "/compras/solicitudes",
+        icon: <ShoppingCart className="h-5 w-5" />,
+      },
+      {
+        label: "Órdenes OC",
+        to: "/compras/ordenes",
+        icon: <PackageCheck className="h-5 w-5" />,
+      },
+      { label: "Pagos OC", to: "/compras/pagos", icon: <Wallet className="h-5 w-5" /> },
+    ],
   },
   {
-    label: "Solicitudes",
-    to: "/compras/solicitudes",
-    icon: <ShoppingCart className="h-5 w-5" />,
-  },
-  {
-    label: "Órdenes OC",
-    to: "/compras/ordenes",
-    icon: <ShoppingCart className="h-5 w-5" />,
-  },
-  {
-    label: "Pagos OC",
-    to: "/compras/pagos",
-    icon: <CreditCard className="h-5 w-5" />,
-  },
-  {
+    id: "servicios",
     label: "Servicios",
-    to: "/servicios",
     icon: <Wrench className="h-5 w-5" />,
+    primaryTo: "/servicios",
+    activePrefix: "/servicios",
+    items: [
+      { label: "Lista", to: "/servicios", icon: <Wrench className="h-5 w-5" />, end: true },
+      { label: "Kanban", to: "/servicios/kanban", icon: <Kanban className="h-5 w-5" /> },
+    ],
   },
   {
+    id: "ventas",
     label: "Ventas",
-    to: "/ventas/nueva",
     icon: <Receipt className="h-5 w-5" />,
+    primaryTo: "/ventas/nueva",
+    activePrefix: "/ventas",
+    items: [
+      { label: "Nueva venta", to: "/ventas/nueva", icon: <PlusCircle className="h-5 w-5" /> },
+      { label: "Caja", to: "/ventas/caja", icon: <Receipt className="h-5 w-5" /> },
+      { label: "Historial", to: "/ventas/historial", icon: <History className="h-5 w-5" /> },
+      { label: "Envíos", to: "/ventas/envios", icon: <Truck className="h-5 w-5" /> },
+      { label: "Kanban", to: "/ventas/kanban", icon: <Kanban className="h-5 w-5" /> },
+    ],
   },
   {
+    id: "domicilios",
     label: "Domicilios",
-    to: "/domicilios",
     icon: <MapPin className="h-5 w-5" />,
+    primaryTo: "/domicilios",
+    activePrefix: "/domicilios",
+    items: [
+      { label: "Kanban", to: "/domicilios", icon: <MapPin className="h-5 w-5" />, end: true },
+      { label: "Calendario", to: "/domicilios/calendario", icon: <Calendar className="h-5 w-5" /> },
+      { label: "Tarifas", to: "/domicilios/tarifas", icon: <Tag className="h-5 w-5" /> },
+    ],
   },
 ];
 
@@ -120,6 +222,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   movimientos: "Movimientos",
   pagos: "Pagos OC",
   servicios: "Servicios",
+  kanban: "Kanban",
   nuevo: "Nueva OS",
   ventas: "Ventas",
   caja: "Caja",
@@ -138,28 +241,160 @@ function breadcrumbsFromPath(pathname: string): string[] {
     .map((s) => SEGMENT_LABELS[s] ?? s);
 }
 
-function navLinkClass(isActive: boolean, collapsed: boolean): string {
-  const base = `flex items-center rounded-lg px-3 py-2 text-sm transition-colors mb-0.5`;
-  const align = collapsed ? "justify-center" : "gap-3";
+function navItemClass(isActive: boolean): string {
+  const base = "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors mb-0.5";
   const color = isActive
     ? "bg-primary-700 text-white"
     : "text-neutral-400 hover:bg-neutral-700 hover:text-white";
-  return `${base} ${align} ${color}`;
+  return `${base} ${color}`;
 }
+
+function navItemCollapsedClass(isActive: boolean): string {
+  const base =
+    "flex items-center justify-center rounded-lg px-3 py-2 text-sm transition-colors mb-0.5";
+  const color = isActive
+    ? "bg-primary-700 text-white"
+    : "text-neutral-400 hover:bg-neutral-700 hover:text-white";
+  return `${base} ${color}`;
+}
+
+// ─── Sidebar content (shared between mobile and desktop) ──────────────────────
+
+function SidebarNav({
+  collapsed,
+  pathname,
+  user,
+  openGroups,
+  onToggleGroup,
+  onClose,
+}: {
+  collapsed: boolean;
+  pathname: string;
+  user: { rol: RolUsuario } | null;
+  openGroups: Set<string>;
+  onToggleGroup: (id: string) => void;
+  onClose?: () => void;
+}) {
+  const visibleGroups = NAV_GROUPS.filter(
+    (g) => !g.roles || (user !== null && g.roles.includes(user.rol))
+  );
+
+  if (collapsed) {
+    return (
+      <>
+        {visibleGroups.map((group) => {
+          const isGroupActive = pathname.startsWith(group.activePrefix);
+          return (
+            <NavLink
+              key={group.id}
+              to={group.primaryTo}
+              title={group.label}
+              className={() => navItemCollapsedClass(isGroupActive)}
+            >
+              {group.icon}
+            </NavLink>
+          );
+        })}
+      </>
+    );
+  }
+
+  return (
+    <>
+      {visibleGroups.map((group) => {
+        if (group.items.length === 1) {
+          const item = group.items[0];
+          if (!item) return null;
+          return (
+            <NavLink
+              key={group.id}
+              to={item.to}
+              {...(item.end ? { end: true } : {})}
+              title={item.label}
+              onClick={onClose}
+              className={({ isActive }) => navItemClass(isActive)}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </NavLink>
+          );
+        }
+
+        const isOpen = openGroups.has(group.id);
+        return (
+          <div key={group.id} className="mb-0.5">
+            <button
+              type="button"
+              onClick={() => onToggleGroup(group.id)}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-neutral-400 transition-colors hover:bg-neutral-700 hover:text-white"
+            >
+              {group.icon}
+              <span className="flex-1 text-left">{group.label}</span>
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+            {isOpen && (
+              <div className="ml-4 mt-0.5 border-l border-neutral-700 pl-2">
+                {group.items.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    {...(item.end ? { end: true } : {})}
+                    title={item.label}
+                    onClick={onClose}
+                    className={({ isActive }) => navItemClass(isActive)}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </NavLink>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+// ─── Main layout ──────────────────────────────────────────────────────────────
 
 export function MainLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => {
+    const initial = new Set<string>();
+    const path = window.location.pathname;
+    for (const g of NAV_GROUPS) {
+      if (path.startsWith(g.activePrefix)) initial.add(g.id);
+    }
+    return initial;
+  });
+
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
+  useEffect(() => {
+    for (const g of NAV_GROUPS) {
+      if (pathname.startsWith(g.activePrefix)) {
+        setOpenGroups((prev) => new Set([...prev, g.id]));
+      }
+    }
+  }, [pathname]);
+
   const crumbs = breadcrumbsFromPath(pathname);
 
-  const visibleItems = NAV_ITEMS.filter(
-    (item) => !item.roles || (user !== null && item.roles.includes(user.rol))
-  );
+  function toggleGroup(id: string) {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   function handleLogout() {
     logout();
@@ -201,18 +436,14 @@ export function MainLayout() {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 py-4">
-          {visibleItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              title={item.label}
-              onClick={() => setMobileOpen(false)}
-              className={({ isActive }) => navLinkClass(isActive, false)}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
+          <SidebarNav
+            collapsed={false}
+            pathname={pathname}
+            user={user}
+            openGroups={openGroups}
+            onToggleGroup={toggleGroup}
+            onClose={() => setMobileOpen(false)}
+          />
         </nav>
 
         <div className="shrink-0 border-t border-neutral-700 p-4">
@@ -271,17 +502,13 @@ export function MainLayout() {
         </div>
 
         <nav className="flex-1 overflow-y-auto px-2 py-4">
-          {visibleItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              title={item.label}
-              className={({ isActive }) => navLinkClass(isActive, collapsed)}
-            >
-              {item.icon}
-              {!collapsed && <span>{item.label}</span>}
-            </NavLink>
-          ))}
+          <SidebarNav
+            collapsed={collapsed}
+            pathname={pathname}
+            user={user}
+            openGroups={openGroups}
+            onToggleGroup={toggleGroup}
+          />
         </nav>
 
         <div className="shrink-0 border-t border-neutral-700">

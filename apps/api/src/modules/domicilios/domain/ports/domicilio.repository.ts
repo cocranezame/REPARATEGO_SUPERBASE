@@ -43,11 +43,10 @@ export type UpdateEstadoData = {
 };
 
 export type GenerarOsData = {
-  categoria_id: string;
+  instancia_id: string;
   sucursal_id: string;
-  problema_reportado: string;
+  falla_ingreso: string;
   tipo_servicio?: string | undefined;
-  prioridad?: string | undefined;
   userId: string;
 };
 

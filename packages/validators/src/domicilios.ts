@@ -1,3 +1,4 @@
+import { TipoServicio } from "@kallpasoft/shared";
 import { z } from "zod";
 import { uuidSchema } from "./common.js";
 
@@ -63,11 +64,10 @@ export const updateEstadoVisitaSchema = z.object({
 export type UpdateEstadoVisitaInput = z.infer<typeof updateEstadoVisitaSchema>;
 
 export const generarOsFromVisitaSchema = z.object({
-  categoria_id: uuidSchema,
+  instancia_id: uuidSchema,
   sucursal_id: uuidSchema,
-  problema_reportado: z.string().min(1),
-  tipo_servicio: z.enum(["CORRECTIVO", "PREVENTIVO"]).optional(),
-  prioridad: z.enum(["BAJA", "NORMAL", "ALTA", "URGENTE"]).optional(),
+  falla_ingreso: z.string().min(1).max(2000),
+  tipo_servicio: z.nativeEnum(TipoServicio).optional(),
 });
 export type GenerarOsFromVisitaInput = z.infer<typeof generarOsFromVisitaSchema>;
 

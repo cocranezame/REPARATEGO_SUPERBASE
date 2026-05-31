@@ -23,6 +23,7 @@ import { ProductosPage } from "../modules/inventario/pages/ProductosPage";
 import { TasasPrecioPage } from "../modules/inventario/pages/TasasPrecioPage";
 import { ProveedorDetallePage } from "../modules/proveedores/pages/ProveedorDetallePage";
 import { ProveedoresPage } from "../modules/proveedores/pages/ProveedoresPage";
+import { KanbanServiciosPage } from "../modules/servicios/pages/KanbanServiciosPage";
 import { NuevaOrdenPage } from "../modules/servicios/pages/NuevaOrdenPage";
 import { OrdenServicioDetallePage } from "../modules/servicios/pages/OrdenServicioDetallePage";
 import { ServiciosPage } from "../modules/servicios/pages/ServiciosPage";
@@ -31,6 +32,7 @@ import { UsuariosPage } from "../modules/usuarios/pages/UsuariosPage";
 import { CajaPage } from "../modules/ventas/pages/CajaPage";
 import { EnviosPage } from "../modules/ventas/pages/EnviosPage";
 import { HistorialVentasPage } from "../modules/ventas/pages/HistorialVentasPage";
+import { KanbanVentasPage } from "../modules/ventas/pages/KanbanVentasPage";
 import { NuevaVentaPage } from "../modules/ventas/pages/NuevaVentaPage";
 import { ProtectedRoute } from "../shared/components/ProtectedRoute";
 import { AuthLayout } from "./layouts/AuthLayout";
@@ -69,12 +71,14 @@ export function App() {
             <Route path="/compras/ordenes/:id" element={<OrdenDetallePage />} />
             <Route path="/compras/pagos" element={<PagosPage />} />
             <Route path="/servicios" element={<ServiciosPage />} />
+            <Route path="/servicios/kanban" element={<KanbanServiciosPage />} />
             <Route path="/servicios/nuevo" element={<NuevaOrdenPage />} />
             <Route path="/servicios/:id" element={<OrdenServicioDetallePage />} />
             <Route path="/ventas/caja" element={<CajaPage />} />
             <Route path="/ventas/nueva" element={<NuevaVentaPage />} />
             <Route path="/ventas/historial" element={<HistorialVentasPage />} />
             <Route path="/ventas/envios" element={<EnviosPage />} />
+            <Route path="/ventas/kanban" element={<KanbanVentasPage />} />
             <Route path="/domicilios" element={<DomiciliosPage />} />
             <Route path="/domicilios/nueva" element={<NuevaVisitaPage />} />
             <Route path="/domicilios/calendario" element={<CalendarioPage />} />

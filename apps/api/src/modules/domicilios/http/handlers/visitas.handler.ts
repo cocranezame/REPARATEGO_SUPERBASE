@@ -99,11 +99,10 @@ export class VisitasHandler {
 
     try {
       const visita = await this.repo.generarOrdenServicio(tenantId, id, {
-        categoria_id: body.categoria_id,
+        instancia_id: body.instancia_id,
         sucursal_id: body.sucursal_id,
-        problema_reportado: body.problema_reportado,
+        falla_ingreso: body.falla_ingreso,
         ...(body.tipo_servicio !== undefined ? { tipo_servicio: body.tipo_servicio } : {}),
-        ...(body.prioridad !== undefined ? { prioridad: body.prioridad } : {}),
         userId,
       });
       if (!visita) throw new ApiError("VISITA_NOT_FOUND", "Visita no encontrada", 404);

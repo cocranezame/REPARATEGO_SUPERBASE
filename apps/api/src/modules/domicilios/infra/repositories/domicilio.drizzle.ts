@@ -2,7 +2,10 @@ import type { DbClient } from "@kallpasoft/db";
 import {
   caja as cajaTable,
   cliente as clienteTable,
+  costoRevision as costoRevisionTable,
+  instancia as instanciaTable,
   ordenServicio as osTable,
+  producto as productoTable,
   tarifaDistrito as tarifaTable,
   usuario as usuarioTable,
   ventaItem as ventaItemTable,
@@ -462,22 +465,45 @@ export class DomicilioDrizzleRepository implements IDomicilioRepository {
 
       const codigoOS = await generarCodigoOS(tx, tenantId);
 
+      // Resolve costo_revision via instancia → producto → categoria
+      const instRows = await tx
+        .select({ cat_id: productoTable.categoria_id })
+        .from(instanciaTable)
+        .leftJoin(productoTable, eq(instanciaTable.producto_id, productoTable.id))
+        .where(
+          and(eq(instanciaTable.id, data.instancia_id), eq(instanciaTable.tenant_id, tenantId))
+        )
+        .limit(1);
+
+      let costoRevision = "0";
+      const categoriaId = instRows[0]?.cat_id;
+      if (categoriaId) {
+        const costoRows = await tx
+          .select({ monto: costoRevisionTable.monto })
+          .from(costoRevisionTable)
+          .where(
+            and(
+              eq(costoRevisionTable.tenant_id, tenantId),
+              eq(costoRevisionTable.categoria_id, categoriaId),
+              eq(costoRevisionTable.activo, true)
+            )
+          )
+          .limit(1);
+        costoRevision = costoRows[0]?.monto ?? "0";
+      }
+
       const [nuevaOS] = await tx
         .insert(osTable)
         .values({
           tenant_id: tenantId,
           codigo: codigoOS,
+          instancia_id: data.instancia_id,
           sucursal_id: data.sucursal_id,
-          cliente_id: visita.cliente_id,
-          recibido_por_id: data.userId,
-          categoria_id: data.categoria_id,
-          problema_reportado: data.problema_reportado,
-          ...(data.tipo_servicio !== undefined
-            ? {
-                tipo_servicio: data.tipo_servicio as (typeof osTable.tipo_servicio)["_"]["data"],
-              }
-            : {}),
-          ...(data.prioridad !== undefined ? { prioridad: data.prioridad } : {}),
+          canal: "DOMICILIO",
+          tipo_servicio: (data.tipo_servicio ??
+            "REPARACION") as (typeof osTable.tipo_servicio)["_"]["data"],
+          falla_ingreso: data.falla_ingreso,
+          costo_revision: costoRevision,
           visita_domicilio_id: visitaId,
         })
         .returning({ id: osTable.id });

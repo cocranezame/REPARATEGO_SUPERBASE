@@ -5,13 +5,13 @@ import { uuidSchema } from "./common.js";
 
 export const abrirCajaSchema = z.object({
   sucursal_id: uuidSchema,
-  monto_apertura: z.number().min(0),
+  monto_inicial: z.number().min(0),
 });
 export type AbrirCajaInput = z.infer<typeof abrirCajaSchema>;
 
 export const cerrarCajaSchema = z.object({
-  monto_cierre: z.number().min(0),
-  notas_cierre: z.string().optional(),
+  caja_id: uuidSchema,
+  monto_fisico: z.number().min(0),
 });
 export type CerrarCajaInput = z.infer<typeof cerrarCajaSchema>;
 
@@ -19,100 +19,135 @@ export const listCajasQuerySchema = z.object({
   sucursal_id: uuidSchema.optional(),
   estado: z.enum(["ABIERTA", "CERRADA"]).optional(),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  pageSize: z.coerce.number().int().min(1).max(500).default(20),
 });
 export type ListCajasQuery = z.infer<typeof listCajasQuerySchema>;
 
-// ─── Ventas ───────────────────────────────────────────────────────────────────
+// ─── Crear venta ──────────────────────────────────────────────────────────────
 
-export const ventaItemSchema = z.object({
-  producto_id: uuidSchema.optional(),
+const ventaItemInputSchema = z.object({
+  tipo_item: z.enum(["PRODUCTO", "SERVICIO", "ENVIO", "MANUAL"]),
+  produto_id: uuidSchema.optional(),
+  lote_id: uuidSchema.optional(),
+  sku: z.string().max(30).optional(),
+  numero_serie: z.string().max(100).optional(),
   descripcion: z.string().min(1).max(200),
   cantidad: z.number().int().min(1),
-  precio_unitario: z.number().positive(),
-  descuento: z.number().min(0).optional(),
+  precio_unitario: z.number().min(0),
+  es_preventivo: z.boolean().optional(),
 });
 
-export const createVentaSchema = z.object({
-  caja_id: uuidSchema,
-  cliente_id: uuidSchema.optional(),
-  tipo_venta: z.enum(["LIBRE", "SERVICIO", "REVISION_DOMICILIO", "REVISION_DEVOLUCION"]).optional(),
-  orden_servicio_id: uuidSchema.optional(),
-  visita_domicilio_id: uuidSchema.optional(),
-  items: z.array(ventaItemSchema).min(1),
-  tipo_comprobante: z.enum(["BOLETA", "FACTURA", "NOTA_VENTA"]).optional(),
-  notas: z.string().optional(),
+const pagoInputSchema = z.object({
+  metodo_pago_id: uuidSchema,
+  monto: z.number().positive(),
 });
+
+const datosEnvioInputSchema = z.object({
+  direccion_id: uuidSchema.optional(),
+  metodo_envio: z.string().max(100).optional(),
+  fecha_programada: z.string().optional(),
+  costo_envio: z.number().min(0).optional(),
+});
+
+export const createVentaSchema = z
+  .object({
+    tipo: z.enum(["LIBRE", "SERVICIO", "REVISION_DOMICILIO", "REVISION_DEVOLUCION"]),
+    cliente_id: uuidSchema.optional(),
+    orden_servicio_id: uuidSchema.optional(),
+    visita_domicilio_id: uuidSchema.optional(),
+    items: z.array(ventaItemInputSchema).min(1),
+    requiere_envio: z.boolean().optional(),
+    datos_envio: datosEnvioInputSchema.optional(),
+    pagos: z.array(pagoInputSchema).optional(),
+  })
+  .refine(
+    (data) => {
+      // V7/V18: LIBRE y REVISION_* requieren al menos un pago al crear
+      if (data.tipo !== "SERVICIO") {
+        return (data.pagos?.length ?? 0) > 0;
+      }
+      return true;
+    },
+    { message: "Venta LIBRE y REVISION requieren al menos un pago", path: ["pagos"] }
+  )
+  .refine(
+    (data) => {
+      if (data.requiere_envio === true) {
+        return data.datos_envio !== undefined;
+      }
+      return true;
+    },
+    { message: "datos_envio requerido cuando requiere_envio es true", path: ["datos_envio"] }
+  );
 export type CreateVentaInput = z.infer<typeof createVentaSchema>;
+
+// ─── Listar ventas ────────────────────────────────────────────────────────────
+
+export const listVentasQuerySchema = z.object({
+  estado_pago: z.enum(["PAGO_PENDIENTE", "COMPLETADA", "ANULADA"]).optional(),
+  estado_despacho: z.enum(["SIN_ENVIO", "ENVIO_PENDIENTE", "DESPACHADO"]).optional(),
+  tipo: z.enum(["LIBRE", "SERVICIO", "REVISION_DOMICILIO", "REVISION_DEVOLUCION"]).optional(),
+  caja_id: uuidSchema.optional(),
+  cliente_id: uuidSchema.optional(),
+  desde: z.string().optional(),
+  hasta: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(500).default(20),
+});
+export type ListVentasQuery = z.infer<typeof listVentasQuerySchema>;
+
+// ─── Pago ─────────────────────────────────────────────────────────────────────
+
+export const addVentaPagoSchema = z.object({
+  metodo_pago_id: uuidSchema,
+  monto: z.number().positive(),
+});
+export type AddVentaPagoInput = z.infer<typeof addVentaPagoSchema>;
+
+// ─── Anular venta ─────────────────────────────────────────────────────────────
 
 export const anularVentaSchema = z.object({
   motivo: z.string().min(1).max(500),
 });
 export type AnularVentaInput = z.infer<typeof anularVentaSchema>;
 
-export const listVentasQuerySchema = z.object({
-  tipo_venta: z.enum(["LIBRE", "SERVICIO", "REVISION_DOMICILIO", "REVISION_DEVOLUCION"]).optional(),
-  estado: z.enum(["PENDIENTE", "PAGADA", "PARCIAL", "ANULADA"]).optional(),
-  caja_id: uuidSchema.optional(),
-  cliente_id: uuidSchema.optional(),
-  desde: z.string().optional(),
-  hasta: z.string().optional(),
-  search: z.string().optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
-});
-export type ListVentasQuery = z.infer<typeof listVentasQuerySchema>;
-
-// ─── Pagos de venta ───────────────────────────────────────────────────────────
-
-export const addVentaPagoSchema = z.object({
-  metodo_pago_id: uuidSchema,
-  monto: z.number().positive(),
-  referencia: z.string().max(100).optional(),
-});
-export type AddVentaPagoInput = z.infer<typeof addVentaPagoSchema>;
-
 // ─── Envío ────────────────────────────────────────────────────────────────────
 
-export const createVentaEnvioSchema = z.object({
+export const actualizarEnvioSchema = z.object({
   direccion_id: uuidSchema.optional(),
-  direccion_texto: z.string().min(1).max(255),
+  metodo_envio: z.string().max(100).optional(),
+  fecha_programada: z.string().optional(),
   costo_envio: z.number().min(0).optional(),
-  notas: z.string().optional(),
 });
-export type CreateVentaEnvioInput = z.infer<typeof createVentaEnvioSchema>;
+export type ActualizarEnvioInput = z.infer<typeof actualizarEnvioSchema>;
 
-export const updateEnvioEstadoSchema = z.object({
-  estado: z.enum(["PENDIENTE", "EN_CAMINO", "ENTREGADO"]),
+export const listEnviosCalendarioQuerySchema = z.object({
+  fecha_desde: z.string(),
+  fecha_hasta: z.string(),
+  sucursal_id: uuidSchema.optional(),
 });
-export type UpdateEnvioEstadoInput = z.infer<typeof updateEnvioEstadoSchema>;
+export type ListEnviosCalendarioQuery = z.infer<typeof listEnviosCalendarioQuerySchema>;
 
-// ─── Cotizaciones de venta ────────────────────────────────────────────────────
+// ─── Cotizaciones referenciales ───────────────────────────────────────────────
 
-export const cotizacionVentaItemSchema = z.object({
-  producto_id: uuidSchema.optional(),
+const cotizacionVentaItemInputSchema = z.object({
+  produto_id: uuidSchema.optional(),
   descripcion: z.string().min(1).max(200),
   cantidad: z.number().int().min(1),
-  precio_unitario: z.number().positive(),
+  precio_unitario: z.number().min(0),
 });
 
 export const createCotizacionVentaSchema = z.object({
   cliente_id: uuidSchema.optional(),
-  items: z.array(cotizacionVentaItemSchema).min(1),
-  fecha_vencimiento: z.string().optional(),
-  notas: z.string().optional(),
+  items: z.array(cotizacionVentaItemInputSchema).min(1),
 });
 export type CreateCotizacionVentaInput = z.infer<typeof createCotizacionVentaSchema>;
 
-export const updateCotizacionVentaEstadoSchema = z.object({
-  estado: z.enum(["BORRADOR", "ENVIADA", "APROBADA", "RECHAZADA", "VENCIDA"]),
-});
-export type UpdateCotizacionVentaEstadoInput = z.infer<typeof updateCotizacionVentaEstadoSchema>;
-
 export const listCotizacionesVentaQuerySchema = z.object({
   cliente_id: uuidSchema.optional(),
-  estado: z.enum(["BORRADOR", "ENVIADA", "APROBADA", "RECHAZADA", "VENCIDA"]).optional(),
+  fecha_desde: z.string().optional(),
+  fecha_hasta: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  pageSize: z.coerce.number().int().min(1).max(500).default(20),
 });
 export type ListCotizacionesVentaQuery = z.infer<typeof listCotizacionesVentaQuerySchema>;

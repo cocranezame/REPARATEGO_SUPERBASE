@@ -72,6 +72,25 @@ export const createVentaSchema = z
   )
   .refine(
     (data) => {
+      // V7: LIBRE — pago completo obligatorio (suma pagos = total items)
+      if (data.tipo !== "LIBRE") return true;
+      const centsTotalItems = data.items.reduce(
+        (acc, item) => acc + Math.round(item.precio_unitario * item.cantidad * 100),
+        0
+      );
+      const centsTotalPagos = (data.pagos ?? []).reduce(
+        (acc, p) => acc + Math.round(p.monto * 100),
+        0
+      );
+      return centsTotalItems === centsTotalPagos;
+    },
+    {
+      message: "Venta LIBRE: la suma de pagos debe igualar el total de los items",
+      path: ["pagos"],
+    }
+  )
+  .refine(
+    (data) => {
       if (data.requiere_envio === true) {
         return data.datos_envio !== undefined;
       }

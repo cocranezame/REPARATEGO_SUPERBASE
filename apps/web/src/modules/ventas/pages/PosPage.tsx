@@ -678,6 +678,11 @@ function CarritoPanel({
   const [error, setError] = useState<string | null>(null);
   const [ventaCompletada, setVentaCompletada] = useState(false);
 
+  // Cargar detalle de venta existente para mostrar historial abonos
+  const { data: ventaDetalleRes } = useVenta(currentVentaId ?? "");
+  const ventaDetalle = ventaDetalleRes?.data ?? null;
+  const abonosPrevios = ventaDetalle?.pagos ?? [];
+
   // Search client
   const [clienteSearch, setClienteSearch] = useState("");
   const [selectedClienteId, setSelectedClienteId] = useState<string | null>(clienteId);
@@ -985,6 +990,27 @@ function CarritoPanel({
           </div>
         )}
       </div>
+
+      {/* Historial de abonos previos — visible cuando venta servicio tiene pagos */}
+      {abonosPrevios.length > 0 && (
+        <div className="rounded-xl border border-neutral-200 bg-white p-3">
+          <p className="mb-2 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
+            Abonos registrados
+          </p>
+          <div className="space-y-1">
+            {abonosPrevios.map((pago) => (
+              <div
+                key={pago.id}
+                className="flex items-center justify-between text-xs text-neutral-600"
+              >
+                <span>{pago.metodo_nombre ?? "—"}</span>
+                <span>{new Date(pago.fecha_pago).toLocaleDateString("es-PE")}</span>
+                <span className="font-semibold text-neutral-900">{fmtPEN(Number(pago.monto))}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error !== null && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>

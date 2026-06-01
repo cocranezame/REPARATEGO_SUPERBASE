@@ -21,6 +21,10 @@ import { MovimientosPage } from "../modules/inventario/pages/MovimientosPage";
 import { ProductoFormPage } from "../modules/inventario/pages/ProductoFormPage";
 import { ProductosPage } from "../modules/inventario/pages/ProductosPage";
 import { TasasPrecioPage } from "../modules/inventario/pages/TasasPrecioPage";
+import { PortalGuard } from "../modules/portal/components/PortalGuard";
+import { MisEquiposPage } from "../modules/portal/pages/MisEquiposPage";
+import { PortalLoginPage } from "../modules/portal/pages/PortalLoginPage";
+import { PortalServicioPage } from "../modules/portal/pages/PortalServicioPage";
 import { ProveedorDetallePage } from "../modules/proveedores/pages/ProveedorDetallePage";
 import { ProveedoresPage } from "../modules/proveedores/pages/ProveedoresPage";
 import { KanbanRequerimientosPage } from "../modules/servicios/pages/KanbanRequerimientosPage";
@@ -38,6 +42,7 @@ import { NuevaVentaPage } from "../modules/ventas/pages/NuevaVentaPage";
 import { ProtectedRoute } from "../shared/components/ProtectedRoute";
 import { AuthLayout } from "./layouts/AuthLayout";
 import { MainLayout } from "./layouts/MainLayout";
+import { PortalLayout } from "./layouts/PortalLayout";
 
 export function App() {
   return (
@@ -45,6 +50,15 @@ export function App() {
       <Routes>
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/portal/login" element={<PortalLoginPage />} />
+        </Route>
+
+        {/* Portal del cliente — layout sin sidebar */}
+        <Route element={<PortalGuard />}>
+          <Route element={<PortalLayout />}>
+            <Route path="/portal/mis-equipos" element={<MisEquiposPage />} />
+            <Route path="/portal/servicios/:id" element={<PortalServicioPage />} />
+          </Route>
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route element={<MainLayout />}>

@@ -8,7 +8,6 @@ import {
   ClipboardList,
   CreditCard,
   Flag,
-  History,
   Home,
   Kanban,
   Layers,
@@ -184,8 +183,8 @@ const NAV_GROUPS: NavGroup[] = [
     activePrefix: "/ventas",
     items: [
       { label: "POS", to: "/ventas/pos", icon: <ShoppingCart className="h-5 w-5" /> },
-      { label: "Caja", to: "/ventas/caja", icon: <Receipt className="h-5 w-5" /> },
-      { label: "Historial", to: "/ventas/historial", icon: <History className="h-5 w-5" /> },
+      { label: "Lista", to: "/ventas", icon: <Receipt className="h-5 w-5" />, end: true },
+      { label: "Caja", to: "/ventas/caja", icon: <Wallet className="h-5 w-5" /> },
       { label: "Envíos", to: "/ventas/envios", icon: <Truck className="h-5 w-5" /> },
     ],
   },

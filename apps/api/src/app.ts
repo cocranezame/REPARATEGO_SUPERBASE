@@ -19,6 +19,7 @@ import { marcaRoutes } from "./modules/marcas/http/routes.js";
 import { modeloRoutes } from "./modules/modelos/http/routes.js";
 import { ordenCompraRoutes } from "./modules/ordenes-compra/http/routes.js";
 import { pagoProveedorRoutes } from "./modules/pagos-proveedor/http/routes.js";
+import { portalRoutes } from "./modules/portal/http/routes.js";
 import { proveedorRoutes } from "./modules/proveedores/http/routes.js";
 import { serviciosRoutes } from "./modules/servicios/http/routes.js";
 import { solicitudCompraRoutes } from "./modules/solicitudes-compra/http/routes.js";
@@ -57,5 +58,6 @@ app.route("/api/v1", cajaRoutes);
 app.route("/api/v1", ventaRoutes);
 app.route("/api/v1", cotizacionVentaRoutes);
 app.route("/api/v1", domicilioRoutes);
+app.route("/api/v1", portalRoutes);
 
 export type AppType = typeof app;

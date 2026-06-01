@@ -2,6 +2,8 @@
 
 > Referencia: C002 (2026-05-31)
 > Ruta base: /servicios
+> Estado implementación: DONE (G1-G13, commits en main 2026-05-31)
+> Portal del cliente (E10.6-E10.9): pendiente
 
 ## 3 vistas en el sidebar
 

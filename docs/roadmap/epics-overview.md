@@ -15,7 +15,7 @@
 | E7 | Compras (Solicitudes + OC) | ✅ DONE | E07-compras.md |
 | E8 | Lotes y Movimientos de Inventario | ✅ DONE | E08-lotes-inventario.md |
 | E9 | Pagos a Proveedores | ✅ DONE | E09-pagos-proveedores.md |
-| E10 | Servicios / Órdenes de Servicio — 28 tickets (6 sub-épicas: 10A-10F) | ⬜ TODO | E10-servicios.md |
+| E10 | Servicios / Órdenes de Servicio — 28 tickets (6 sub-épicas: 10A-10F) | 🔶 DB+API+Web DONE, Portal cliente (E10.6-E10.9) TODO | E10-servicios.md |
 | E11 | Ventas | ✅ DONE | E11-ventas.md |
 | E12 | Domicilios | ✅ DONE | E12-domicilios.md |
 | E13 | CRM + Agente IA (Nico) | ⬜ TODO | E13-crm.md |

@@ -15,7 +15,7 @@
 | Proveedores | proveedor, proveedor_contacto, proveedor_metodo_pago, proveedor_linea | db/modules/proveedores.md |
 | Compras | cotizacion_compra, cotizacion_compra_detalle, solicitud_compra, orden_compra, orden_compra_confirmacion | db/modules/compras.md |
 | Servicios | instancia, instancia_imagen, periferico, costo_revision, orden_servicio, orden_servicio_periferico, orden_servicio_componente, orden_servicio_cotizacion, orden_servicio_evidencia, orden_servicio_sku_asignado, orden_servicio_requerimiento, orden_servicio_aceptacion, orden_servicio_historial, orden_servicio_observacion | db/modules/servicios.md |
-| Ventas | caja, venta, venta_item, venta_pago, venta_envio, cotizacion_venta, cotizacion_venta_item | db/modules/ventas.md |
+| Ventas | caja, metodo_pago_catalogo, venta, venta_item, venta_pago, venta_envio, cotizacion_venta, cotizacion_venta_item — *Actualizado por C003: campos anulado_por, nota_credito_monto en venta; campo sku en venta_item* | db/modules/ventas.md |
 | Domicilios | tarifa_distrito, visita_domicilio | db/modules/domicilios.md |
 | Pagos Prov. | pago_proveedor | db/modules/pagos-proveedores.md |
 | CRM | wa_cuenta, etapa_pipeline, etapa_transicion, etiqueta, lead, lead_etiqueta, conversacion, mensaje, plantilla_wa, bot, agente_config, agente_evento, mensaje_interno | db/modules/crm.md |

@@ -184,6 +184,11 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "POS", to: "/ventas/pos", icon: <ShoppingCart className="h-5 w-5" /> },
       { label: "Lista", to: "/ventas", icon: <Receipt className="h-5 w-5" />, end: true },
+      {
+        label: "Cotizaciones",
+        to: "/ventas/cotizaciones",
+        icon: <ClipboardList className="h-5 w-5" />,
+      },
       { label: "Caja", to: "/ventas/caja", icon: <Wallet className="h-5 w-5" /> },
       { label: "Envíos", to: "/ventas/envios", icon: <Truck className="h-5 w-5" /> },
     ],

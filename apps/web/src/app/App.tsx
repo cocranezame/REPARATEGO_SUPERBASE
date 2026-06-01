@@ -35,6 +35,7 @@ import { ServiciosPage } from "../modules/servicios/pages/ServiciosPage";
 import { SucursalesPage } from "../modules/sucursales/pages/SucursalesPage";
 import { UsuariosPage } from "../modules/usuarios/pages/UsuariosPage";
 import { CajaPage } from "../modules/ventas/pages/CajaPage";
+import { CotizacionesVentaPage } from "../modules/ventas/pages/CotizacionesVentaPage";
 import { EnviosPage } from "../modules/ventas/pages/EnviosPage";
 import { HistorialVentasPage } from "../modules/ventas/pages/HistorialVentasPage";
 import { KanbanVentasPage } from "../modules/ventas/pages/KanbanVentasPage";
@@ -95,6 +96,7 @@ export function App() {
             <Route path="/servicios/:id" element={<OrdenServicioDetallePage />} />
             <Route path="/ventas" element={<VentasListaPage />} />
             <Route path="/ventas/caja" element={<CajaPage />} />
+            <Route path="/ventas/cotizaciones" element={<CotizacionesVentaPage />} />
             <Route path="/ventas/:id" element={<VentaDetallePage />} />
             <Route path="/ventas/pos" element={<PosPage />} />
             <Route path="/ventas/nueva" element={<NuevaVentaPage />} />

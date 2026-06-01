@@ -313,6 +313,7 @@ function ModalPagos({
 
   const totalAgregado = metodosSeleccionados.reduce((s, m) => s + m.monto, 0);
   const esServicio = tipoVenta === "SERVICIO";
+  const restante = Math.max(0, saldoPendiente - totalAgregado);
 
   function addMetodo() {
     if (!metodoPagoId || !monto || Number(monto) <= 0) return;
@@ -396,10 +397,24 @@ function ModalPagos({
               <span className="font-semibold text-amber-700">{fmtPEN(saldoPendiente)}</span>
             </div>
             {metodosSeleccionados.length > 0 && (
-              <div className="flex justify-between border-t border-neutral-200 pt-1 text-neutral-600">
-                <span>Suma este pago</span>
-                <span className="font-semibold">{fmtPEN(totalAgregado)}</span>
-              </div>
+              <>
+                <div className="flex justify-between border-t border-neutral-200 pt-1 text-neutral-600">
+                  <span>Suma este pago</span>
+                  <span className="font-semibold">{fmtPEN(totalAgregado)}</span>
+                </div>
+                {!esServicio && restante > 0 && (
+                  <div className="flex justify-between text-red-600">
+                    <span>Falta cubrir</span>
+                    <span className="font-semibold">{fmtPEN(restante)}</span>
+                  </div>
+                )}
+                {!esServicio && restante === 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Pago completo</span>
+                    <span className="font-semibold">✓</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

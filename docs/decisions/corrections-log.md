@@ -309,3 +309,35 @@ El endpoint `/api/v1/auth/login` requiere 3 campos: `tipo_documento`, `numero_do
   - P5: Sin log de auditoría para tipo_accion por ahora, basta con registro final
 - **Impacto en schema:** de 47 tablas pasa a ~55 tablas (se agregan 9 tablas nuevas, se agrega tabla periferico a catálogos)
 - **Impacto en roadmap:** E10 se reorganiza de 10 tickets a 28 tickets en 6 sub-épicas
+
+---
+
+## [C003] 2026-06-01 — Refactorizar módulo de ventas con POS, adelantos y flujo servicios
+- **Afecta:** ventas, servicios, inventario, domicilios, clientes
+- **Antes:**
+  - Venta se generaba solo al pasar de AGREGAR_SKU → REPARADO/PRIORIDAD
+  - No existía POS como interfaz principal
+  - No se distinguía regla de pago entre venta libre y asociada
+  - Escaneo de SKU no era obligatorio
+  - Caja no bloqueaba acceso al módulo completo
+  - Un solo campo estado_pago
+  - Tasa de precio 1:1 con producto
+- **Ahora:**
+  - Venta asociada a servicio se puede generar desde COTIZADO/APROBADO para recibir adelantos parciales. En AGREGAR_SKU se precargan SKUs en la venta ya existente. En AVISADO "Cobrar" abre el POS con la venta existente. En DEVOLUCIÓN genera venta de revisión automáticamente
+  - POS como interfaz principal: panel catálogo (escaneo SKU + filtros + grilla) + panel carrito + modal pagos
+  - Venta LIBRE = pago completo obligatorio, sin excepciones. Venta SERVICIO = admite pagos parciales (adelantos) desde COTIZADO
+  - Escaneo de SKU obligatorio para productos. Un SKU = una unidad física. Múltiples unidades = múltiples escaneos
+  - Sin caja abierta el módulo completo es inaccesible. Solo una caja abierta por usuario
+  - Dos ejes independientes de estado: pago (PAGO_PENDIENTE → COMPLETADA | ANULADA) y despacho (SIN_ENVIO | ENVIO_PENDIENTE → DESPACHADO)
+  - Jerarquía de tasas de precio: POR_REPUESTO > POR_TIPO > POR_COMPONENTE
+- **Razón:** se recibió el informe funcional del módulo de ventas que redefine el flujo de cobro integrado con servicios, introduce POS y reglas diferenciadas de pago
+- **Migración:** pendiente (se ejecutará en E11)
+- **Pendientes resueltos:**
+  - P1: Cotización indefinida, sin vigencia
+  - P2: Se puede anular venta con pagos parciales, requiere validación de ADMINISTRADOR o ASISTENTE. Montos pagados quedan como saldo a favor (nota de crédito, preparación SUNAT)
+  - P3: Voucher NO incluye QR/código de barras. Los códigos de barras son exclusivos de productos inventariados (SKUs) y sirven para escaneo en el POS
+  - P4: Vendedor ve solo sus ventas, Administrador ve todas
+  - P5: Reporte de cierre de caja imprimible
+  - P6: Descuentos/promociones diferido a post-producción
+- **Impacto en servicios (C002):** el flujo de generación de venta cambia — ya no se genera solo en AGREGAR_SKU→REPARADO/PRIORIDAD, sino que puede generarse desde COTIZADO/APROBADO para adelantos. El botón "Cobrar" en AVISADO abre el POS con la venta existente, no crea una nueva
+- **Impacto en schema:** se necesita campo rol ASISTENTE en tabla usuario. Tabla tasa_precio requiere refactorización para soportar jerarquía. Se agrega campo nota_credito/saldo_favor para anulaciones con pagos parciales

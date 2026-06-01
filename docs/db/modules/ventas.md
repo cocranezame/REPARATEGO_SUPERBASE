@@ -1,149 +1,143 @@
-# DB — Ventas
+# Módulo: Ventas — Schema de Base de Datos
 
-> Tablas de caja, ventas, pagos, envíos y cotizaciones de venta.
-> Épica: E11
+> Referencia: C003 (2026-06-01)
+
+## Conceptos clave
+
+- VENTA LIBRE: sin orden de servicio, cliente opcional, pago completo obligatorio
+- VENTA SERVICIO: asociada a orden de servicio, cliente heredado no editable, admite pagos parciales desde COTIZADO
+- COBRO DEVOLUCIÓN: venta automática por revisión al monto fijo por categoría
+- COTIZACIÓN: documento referencial, sin impacto en inventario
+- POS: interfaz principal, escaneo SKU obligatorio para productos
+- Dos ejes de estado independientes: pago y despacho
+
+## Estados
+
+Eje pago: PAGO_PENDIENTE → COMPLETADA (automático cuando suma_pagos = total) | ANULADA (manual por admin/asistente)
+Eje despacho: SIN_ENVIO | ENVIO_PENDIENTE → DESPACHADO
+Ambos ejes transicionan por separado.
 
 ## Tablas
 
-### caja
+### TABLA: caja
+- caja_id SERIAL PK
+- usuario_id FK NOT NULL
+- sucursal_id FK NOT NULL
+- monto_inicial DECIMAL(10,2) NOT NULL
+- monto_esperado DECIMAL(10,2) — calculado al cierre: monto_inicial + ingresos_efectivo - egresos_efectivo
+- monto_fisico DECIMAL(10,2) — ingresado al cierre (monto contado físicamente)
+- diferencia DECIMAL(10,2) — calculado al cierre: monto_fisico - monto_esperado (sobrante/faltante)
+- estado ENUM('ABIERTA','CERRADA') DEFAULT 'ABIERTA'
+- fecha_apertura TIMESTAMP NOT NULL DEFAULT NOW()
+- fecha_cierre TIMESTAMP
+- created_at
+- Regla: solo una caja ABIERTA por usuario a la vez. Sin caja abierta el módulo completo es inaccesible.
 
-| Columna | Tipo | Nullable | Default | Descripción |
-|---------|------|----------|---------|-------------|
-| id | UUID | NO | gen_random_uuid() | PK |
-| tenant_id | UUID | NO | | FK → tenant.id |
-| sucursal_id | UUID | NO | | FK → sucursal.id |
-| usuario_id | UUID | NO | | FK → usuario.id (cajero) |
-| monto_apertura | DECIMAL(12,2) | NO | | |
-| monto_cierre | DECIMAL(12,2) | SI | | Se llena al cerrar |
-| fecha_apertura | TIMESTAMPTZ | NO | now() | |
-| fecha_cierre | TIMESTAMPTZ | SI | | |
-| estado | VARCHAR(10) | NO | 'ABIERTA' | ABIERTA, CERRADA |
-| notas_cierre | TEXT | SI | | |
-| created_at | TIMESTAMPTZ | NO | now() | |
-| updated_at | TIMESTAMPTZ | NO | now() | |
+### TABLA: metodo_pago_catalogo
+- metodo_pago_catalogo_id SERIAL PK
+- nombre VARCHAR(50) UNIQUE NOT NULL — EFECTIVO, YAPE, PLIN, TRANSFERENCIA, TARJETA
+- activo BOOLEAN DEFAULT true
+- created_at
 
-### venta
+### TABLA: venta
+- venta_id SERIAL PK
+- tipo ENUM('LIBRE','SERVICIO','REVISION_DOMICILIO','REVISION_DEVOLUCION') NOT NULL
+- cliente_id FK — nullable en venta libre (R11), heredado y no editable en venta servicio (R10)
+- orden_servicio_id FK — nullable en venta libre
+- visita_domicilio_id FK — si es cobro por revisión domicilio
+- caja_id FK NOT NULL
+- estado_pago ENUM('PAGO_PENDIENTE','COMPLETADA','ANULADA') DEFAULT 'PAGO_PENDIENTE'
+- estado_despacho ENUM('SIN_ENVIO','ENVIO_PENDIENTE','DESPACHADO') DEFAULT 'SIN_ENVIO'
+- total DECIMAL(12,2) NOT NULL
+- motivo_anulacion TEXT
+- anulado_por FK usuario — solo si ANULADA, debe ser ADMINISTRADOR o ASISTENTE
+- nota_credito_monto DECIMAL(12,2) — monto de pagos parciales que quedan como saldo a favor al anular
+- created_by FK usuario NOT NULL — vendedor que generó la venta, no editable (R2)
+- created_at, updated_at
+- Regla: venta LIBRE = pago completo obligatorio (R7). Venta SERVICIO = admite pagos parciales (R8).
+- Regla: estado_pago cambia automáticamente a COMPLETADA cuando suma_pagos = total.
 
-| Columna | Tipo | Nullable | Default | Descripción |
-|---------|------|----------|---------|-------------|
-| id | UUID | NO | gen_random_uuid() | PK |
-| tenant_id | UUID | NO | | FK → tenant.id |
-| codigo | VARCHAR(20) | NO | | Autogenerado: V-XXXX |
-| caja_id | UUID | NO | | FK → caja.id |
-| sucursal_id | UUID | NO | | FK → sucursal.id |
-| cliente_id | UUID | SI | | FK → cliente.id (puede ser venta sin cliente) |
-| tipo_venta | VARCHAR(25) | NO | 'LIBRE' | LIBRE, SERVICIO, REVISION_DOMICILIO, REVISION_DEVOLUCION |
-| orden_servicio_id | UUID | SI | | FK → orden_servicio.id (si tipo=SERVICIO) |
-| visita_domicilio_id | UUID | SI | | FK → visita_domicilio.id (si tipo=REVISION_DOMICILIO) |
-| subtotal | DECIMAL(12,2) | NO | 0 | |
-| descuento | DECIMAL(12,2) | NO | 0 | |
-| igv | DECIMAL(12,2) | NO | 0 | |
-| total | DECIMAL(12,2) | NO | 0 | |
-| estado | VARCHAR(15) | NO | 'PENDIENTE' | PENDIENTE, PAGADA, PARCIAL, ANULADA |
-| tipo_comprobante | VARCHAR(10) | SI | | BOLETA, FACTURA, NOTA_VENTA |
-| serie_comprobante | VARCHAR(10) | SI | | |
-| numero_comprobante | VARCHAR(15) | SI | | |
-| usuario_id | UUID | NO | | FK → usuario.id (vendedor/cajero) |
-| notas | TEXT | SI | | |
-| activo | BOOLEAN | NO | true | |
-| created_at | TIMESTAMPTZ | NO | now() | |
-| updated_at | TIMESTAMPTZ | NO | now() | |
+### TABLA: venta_item
+- item_id SERIAL PK
+- venta_id FK NOT NULL
+- tipo_item ENUM('PRODUCTO','SERVICIO','ENVIO','MANUAL') NOT NULL
+- producto_id FK — si PRODUCTO o SERVICIO del catálogo
+- lote_id FK — si PRODUCTO, para trazabilidad de SKU (R3)
+- sku VARCHAR(30) — SKU escaneado, formato cod_producto + DDMMAA
+- numero_serie VARCHAR(100) — opcional, para garantía
+- descripcion TEXT — nombre del producto/servicio o descripción manual
+- cantidad INTEGER NOT NULL DEFAULT 1
+- precio_unitario DECIMAL(10,2) NOT NULL
+- subtotal DECIMAL(10,2) NOT NULL
+- es_preventivo BOOLEAN DEFAULT false — heredado del presupuesto en venta servicio
+- created_at
+- Regla: escaneo de SKU obligatorio para tipo_item=PRODUCTO. Un SKU = una unidad física (R3).
+- Regla: servicios no tienen SKU ni lote (R6).
+- Regla: costo de envío se registra como item tipo ENVIO con trazabilidad completa (R13).
 
-### venta_item
+### TABLA: venta_pago
+- pago_id SERIAL PK
+- venta_id FK NOT NULL
+- metodo_pago_catalogo_id FK NOT NULL — obligatorio seleccionar método (R12)
+- monto DECIMAL(10,2) NOT NULL
+- caja_id FK NOT NULL — caja donde se registró el pago (R17)
+- created_by FK usuario NOT NULL — quién recibió el pago
+- created_at
+- Regla: todo pago se refleja en la caja del usuario que lo recibió (R17).
+- Regla: un pago puede dividirse entre múltiples métodos (múltiples registros).
 
-| Columna | Tipo | Nullable | Default | Descripción |
-|---------|------|----------|---------|-------------|
-| id | UUID | NO | gen_random_uuid() | PK |
-| tenant_id | UUID | NO | | FK → tenant.id |
-| venta_id | UUID | NO | | FK → venta.id |
-| producto_id | UUID | SI | | FK → producto.id |
-| descripcion | VARCHAR(200) | NO | | |
-| cantidad | INT | NO | | |
-| precio_unitario | DECIMAL(12,2) | NO | | |
-| descuento | DECIMAL(12,2) | NO | 0 | |
-| subtotal | DECIMAL(12,2) | NO | | |
-| created_at | TIMESTAMPTZ | NO | now() | |
+### TABLA: venta_envio
+- envio_id SERIAL PK
+- venta_id FK UNIQUE NOT NULL — 1 envío por venta
+- direccion_id FK cliente_direccion — dirección seleccionada del cliente
+- metodo_envio VARCHAR(100)
+- fecha_programada DATE
+- costo_envio DECIMAL(10,2) DEFAULT 0
+- estado ENUM('PENDIENTE','DESPACHADO') DEFAULT 'PENDIENTE'
+- created_at, updated_at
+- Regla: comparte calendario con módulo domicilios para ver ocupación (R21).
 
-### venta_pago
+### TABLA: cotizacion_venta
+- cotizacion_venta_id SERIAL PK
+- cliente_id FK — nullable
+- caja_id FK NOT NULL — requiere caja abierta
+- total_referencial DECIMAL(12,2)
+- created_by FK usuario
+- created_at
+- Regla: es solo referencial, no afecta inventario ni reserva stock (R15). Sin vigencia, indefinida (P1).
 
-Pagos de una venta (soporta multi-método y pago parcial).
+### TABLA: cotizacion_venta_item
+- item_id SERIAL PK
+- cotizacion_venta_id FK NOT NULL
+- producto_id FK
+- descripcion TEXT
+- cantidad INTEGER NOT NULL DEFAULT 1
+- precio_unitario DECIMAL(10,2) NOT NULL
+- subtotal DECIMAL(10,2) NOT NULL
+- created_at
 
-| Columna | Tipo | Nullable | Default | Descripción |
-|---------|------|----------|---------|-------------|
-| id | UUID | NO | gen_random_uuid() | PK |
-| tenant_id | UUID | NO | | FK → tenant.id |
-| venta_id | UUID | NO | | FK → venta.id |
-| metodo_pago_id | UUID | NO | | FK → metodo_pago_catalogo.id |
-| monto | DECIMAL(12,2) | NO | | |
-| referencia | VARCHAR(100) | SI | | Nro operación, voucher, etc. |
-| fecha_pago | TIMESTAMPTZ | NO | now() | |
-| created_at | TIMESTAMPTZ | NO | now() | |
+## Relaciones clave
 
-### venta_envio
+- caja 1:N venta (una caja tiene muchas ventas)
+- venta 1:N venta_item (una venta tiene muchos items)
+- venta 1:N venta_pago (una venta tiene muchos pagos, posiblemente parciales)
+- venta 1:1 venta_envio (una venta tiene 0 o 1 envío)
+- venta N:1 orden_servicio (una venta puede estar asociada a un servicio)
+- venta N:1 cliente (un cliente tiene muchas ventas)
+- cotizacion_venta 1:N cotizacion_venta_item
+- cliente 1:N cliente_direccion (un cliente tiene múltiples direcciones)
 
-| Columna | Tipo | Nullable | Default | Descripción |
-|---------|------|----------|---------|-------------|
-| id | UUID | NO | gen_random_uuid() | PK |
-| tenant_id | UUID | NO | | FK → tenant.id |
-| venta_id | UUID | NO | | FK → venta.id |
-| direccion_id | UUID | SI | | FK → cliente_direccion.id |
-| direccion_texto | VARCHAR(255) | NO | | |
-| estado | VARCHAR(15) | NO | 'PENDIENTE' | PENDIENTE, EN_CAMINO, ENTREGADO |
-| fecha_envio | TIMESTAMPTZ | SI | | |
-| fecha_entrega | TIMESTAMPTZ | SI | | |
-| costo_envio | DECIMAL(12,2) | NO | 0 | |
-| notas | TEXT | SI | | |
-| created_at | TIMESTAMPTZ | NO | now() | |
-| updated_at | TIMESTAMPTZ | NO | now() | |
+## Flujo de generación de venta desde servicios (integración C002 + C003)
 
-### cotizacion_venta
+1. COTIZADO → cliente aprueba → se genera venta asociada con items del presupuesto → cliente puede dejar adelanto (pago parcial)
+2. APROBADO → cliente puede seguir abonando
+3. AGREGAR_SKU → se precargan SKUs en la venta YA EXISTENTE (no se crea nueva)
+4. AVISADO → "Cobrar" abre POS con la venta existente
+5. Cuando suma_pagos = total → estado_pago = COMPLETADA → habilita ENTREGADO en servicios
+6. DEVOLUCION → genera venta automática tipo REVISION_DEVOLUCION con item "Revisión [categoría]" al monto fijo → pagada → ENTREGADO
 
-Cotización referencial para un cliente.
+## Jerarquía de tasas de precio
 
-| Columna | Tipo | Nullable | Default | Descripción |
-|---------|------|----------|---------|-------------|
-| id | UUID | NO | gen_random_uuid() | PK |
-| tenant_id | UUID | NO | | FK → tenant.id |
-| codigo | VARCHAR(20) | NO | | Autogenerado: COT-V-XXXX |
-| cliente_id | UUID | SI | | FK → cliente.id |
-| subtotal | DECIMAL(12,2) | NO | 0 | |
-| igv | DECIMAL(12,2) | NO | 0 | |
-| total | DECIMAL(12,2) | NO | 0 | |
-| estado | VARCHAR(15) | NO | 'BORRADOR' | BORRADOR, ENVIADA, APROBADA, RECHAZADA, VENCIDA |
-| fecha_vencimiento | DATE | SI | | |
-| usuario_id | UUID | NO | | FK → usuario.id |
-| notas | TEXT | SI | | |
-| activo | BOOLEAN | NO | true | |
-| created_at | TIMESTAMPTZ | NO | now() | |
-| updated_at | TIMESTAMPTZ | NO | now() | |
-
-### cotizacion_venta_item
-
-| Columna | Tipo | Nullable | Default | Descripción |
-|---------|------|----------|---------|-------------|
-| id | UUID | NO | gen_random_uuid() | PK |
-| tenant_id | UUID | NO | | FK → tenant.id |
-| cotizacion_venta_id | UUID | NO | | FK → cotizacion_venta.id |
-| producto_id | UUID | SI | | FK → producto.id |
-| descripcion | VARCHAR(200) | NO | | |
-| cantidad | INT | NO | | |
-| precio_unitario | DECIMAL(12,2) | NO | | |
-| subtotal | DECIMAL(12,2) | NO | | |
-| created_at | TIMESTAMPTZ | NO | now() | |
-
-## Enums
-
-```sql
-CREATE TYPE tipo_venta AS ENUM ('LIBRE', 'SERVICIO', 'REVISION_DOMICILIO', 'REVISION_DEVOLUCION');
-CREATE TYPE estado_venta AS ENUM ('PENDIENTE', 'PAGADA', 'PARCIAL', 'ANULADA');
-CREATE TYPE tipo_comprobante AS ENUM ('BOLETA', 'FACTURA', 'NOTA_VENTA');
-CREATE TYPE estado_cotizacion_venta AS ENUM ('BORRADOR', 'ENVIADA', 'APROBADA', 'RECHAZADA', 'VENCIDA');
-```
-
-## Reglas de negocio
-
-- Venta siempre asociada a una caja abierta
-- Tipos de venta: LIBRE (productos sueltos), SERVICIO (cobro de OS), REVISION_DOMICILIO (cobro de visita cancelada), REVISION_DEVOLUCION
-- Soporta pago multi-método (ej: parte Yape, parte efectivo)
-- Anulación revierte movimientos de stock
-- IGV 18% (configurable por tenant)
+El precio de venta de un producto se deriva de la tasa vigente con jerarquía:
+POR_REPUESTO (tasa específica del producto) > POR_TIPO (tasa por tipo de registro) > POR_COMPONENTE (tasa por componente)
+Se toma la más específica disponible.

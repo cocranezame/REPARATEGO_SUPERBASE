@@ -218,6 +218,15 @@ export const EstadoEnvioVenta = {
 } as const;
 export type EstadoEnvioVenta = (typeof EstadoEnvioVenta)[keyof typeof EstadoEnvioVenta];
 
+export const MetodoPago = {
+  EFECTIVO: "EFECTIVO",
+  YAPE: "YAPE",
+  PLIN: "PLIN",
+  TRANSFERENCIA: "TRANSFERENCIA",
+  TARJETA: "TARJETA",
+} as const;
+export type MetodoPago = (typeof MetodoPago)[keyof typeof MetodoPago];
+
 // Domicilios
 export const EstadoVisita = {
   POR_VALIDAR: "POR_VALIDAR",

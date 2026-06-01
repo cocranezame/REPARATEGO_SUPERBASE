@@ -119,4 +119,5 @@ export type VentaDetalle = Venta & {
   envio: VentaEnvio | null;
   saldo_pendiente: string;
   porcentaje_pagado: number;
+  servicio_asociado?: { id: string; estado: string } | undefined;
 };

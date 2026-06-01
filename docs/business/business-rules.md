@@ -144,3 +144,57 @@ PR2 — Si técnico modifica componentes en DIAG_FINAL tras retroceso desde COTI
 PR3 — Búsqueda con paginación (50 items por página).
 PR4 — Item MANUAL se clasifica manualmente como preventivo/correctivo por la vendedora.
 PR5 — Sin log de auditoría para tipo_accion por ahora, basta con registro final.
+
+## Ventas — Reglas de Negocio (C003)
+
+### Caja
+V1  — Sin caja abierta no se accede a ventas ni cotizaciones. Solo una caja abierta por usuario a la vez.
+V17 — Todo movimiento de pago se refleja en la caja abierta del usuario que lo recibió.
+
+### Registro de venta
+V2  — Toda venta registra automáticamente el usuario que la generó. No es editable.
+V3  — Escaneo de SKU obligatorio para agregar productos al carrito. Un SKU = una unidad física. Múltiples unidades = múltiples escaneos.
+V4  — Stock global = suma de lotes activos por producto. Nunca se edita manualmente.
+V5  — Se valida stock disponible antes de confirmar. Sin stock = no se permite confirmar.
+V6  — Servicios nunca tienen stock, SKU ni lotes. Solo nombre y precio en catálogo.
+
+### Tipos de venta y pagos
+V7  — Venta libre = pago completo obligatorio. No admite pagos parciales sin excepción.
+V8  — Venta asociada a servicio = admite pagos parciales (adelantos) desde COTIZADO/APROBADO.
+V9  — Un servicio solo pasa a ENTREGADO cuando su venta asociada está pagada al 100%.
+V10 — Si la venta está asociada a un servicio, el cliente se hereda vía instancia y no es editable.
+V11 — En venta libre el cliente es opcional.
+V12 — Al registrar cualquier pago se debe seleccionar obligatoriamente el método de pago.
+
+### Envío
+V13 — El costo de envío se registra como item tipo ENVIO con trazabilidad completa.
+V20 — Un cliente puede tener múltiples direcciones. Al marcar envío se elige cuál usar o se agrega nueva.
+V21 — Los envíos (delivery) y domicilios comparten el mismo calendario para visualizar ocupación.
+
+### Cotización y precios
+V14 — El servicio de revisión tiene precio fijo configurado por categoría de equipo.
+V15 — La cotización es solo referencial. No afecta inventario ni reserva stock. Sin vigencia, indefinida.
+V16 — El estado de la venta se determina por el cruce de dos ejes independientes: pago y despacho.
+
+### Devolución y anulación
+V18 — DEVOLUCIÓN genera automáticamente una venta por revisión al monto fijo. Pagada → ENTREGADO.
+V19 — Trazabilidad completa: servicio → venta → items (SKU + lote) → pagos → caja.
+V22 — Al anular una venta se revierte el descuento de stock (SKUs reingresan a sus lotes originales). Requiere validación de ADMINISTRADOR o ASISTENTE.
+
+### Flujo integrado servicios → ventas (C002 + C003)
+V23 — En COTIZADO/APROBADO se genera venta tipo SERVICIO con items del presupuesto para recibir adelantos.
+V24 — En AGREGAR_SKU se precargan los SKUs escaneados en la venta ya existente, no se crea nueva.
+V25 — En AVISADO "Cobrar" abre el POS con la venta existente y abonos previos visibles.
+V26 — En DEVOLUCIÓN se genera automáticamente venta tipo REVISION_DEVOLUCION con item revisión al monto fijo por categoría.
+
+### Permisos
+V27 — Vendedor ve solo sus ventas. Administrador ve todas.
+V28 — Anulación requiere rol ADMINISTRADOR o ASISTENTE. Si hay pagos parciales, se registra nota de crédito como saldo a favor del cliente.
+
+### Pendientes resueltos (C003)
+PV1 — Cotización indefinida, sin vigencia.
+PV2 — Se puede anular venta con pagos parciales. Requiere ADMINISTRADOR o ASISTENTE. Montos pagados quedan como saldo a favor (nota de crédito).
+PV3 — Voucher NO incluye QR/código de barras. Los códigos de barras son exclusivos de productos inventariados (SKUs) para escaneo en POS.
+PV4 — Vendedor ve solo sus ventas, Administrador ve todas.
+PV5 — Reporte de cierre de caja imprimible.
+PV6 — Descuentos/promociones diferido a post-producción.

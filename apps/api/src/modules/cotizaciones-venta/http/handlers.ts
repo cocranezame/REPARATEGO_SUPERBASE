@@ -1,6 +1,6 @@
 import type {
   CreateCotizacionVentaInput,
-  UpdateCotizacionVentaEstadoInput,
+  ListCotizacionesVentaQuery,
 } from "@kallpasoft/validators";
 import type { Context } from "hono";
 import { ApiError } from "../../../middlewares/error-handler.js";
@@ -12,18 +12,14 @@ type HonoCtx = Context<{ Variables: HonoVariables }, string, any>;
 
 export function createCotizacionVentaHandlers(repo: ICotizacionVentaRepository) {
   async function list(c: HonoCtx) {
-    const q = c.req.valid("query") as {
-      cliente_id?: string;
-      estado?: string;
-      page: number;
-      pageSize: number;
-    };
+    const q = c.req.valid("query") as ListCotizacionesVentaQuery;
     const tenantId = c.get("tenantId");
     const result = await repo.list(tenantId, {
       page: q.page,
       pageSize: q.pageSize,
       ...(q.cliente_id !== undefined ? { cliente_id: q.cliente_id } : {}),
-      ...(q.estado !== undefined ? { estado: q.estado } : {}),
+      ...(q.fecha_desde !== undefined ? { fecha_desde: q.fecha_desde } : {}),
+      ...(q.fecha_hasta !== undefined ? { fecha_hasta: q.fecha_hasta } : {}),
     });
     return c.json({
       success: true,
@@ -41,19 +37,20 @@ export function createCotizacionVentaHandlers(repo: ICotizacionVentaRepository) 
     const body = c.req.valid("json") as CreateCotizacionVentaInput;
     const tenantId = c.get("tenantId");
     const userId = c.get("userId");
+    const cajaId = c.get("cajaId");
+
+    if (!cajaId) throw new ApiError("CAJA_CERRADA", "No hay caja abierta", 403);
+
     const cot = await repo.create(tenantId, {
-      usuario_id: userId,
+      caja_id: cajaId,
+      created_by: userId,
       ...(body.cliente_id !== undefined ? { cliente_id: body.cliente_id } : {}),
       items: body.items.map((it) => ({
         descripcion: it.descripcion,
         cantidad: it.cantidad,
         precio_unitario: it.precio_unitario,
-        ...(it.producto_id !== undefined ? { producto_id: it.producto_id } : {}),
+        ...(it.produto_id !== undefined ? { produto_id: it.produto_id } : {}),
       })),
-      ...(body.fecha_vencimiento !== undefined
-        ? { fecha_vencimiento: body.fecha_vencimiento }
-        : {}),
-      ...(body.notas !== undefined ? { notas: body.notas } : {}),
     });
     return c.json({ success: true, data: cot }, 201);
   }
@@ -66,14 +63,5 @@ export function createCotizacionVentaHandlers(repo: ICotizacionVentaRepository) 
     return c.json({ success: true, data: cot });
   }
 
-  async function updateEstado(c: HonoCtx) {
-    const id = c.req.param("id") as string;
-    const body = c.req.valid("json") as UpdateCotizacionVentaEstadoInput;
-    const tenantId = c.get("tenantId");
-    const cot = await repo.updateEstado(tenantId, id, body.estado);
-    if (!cot) throw new ApiError("COTIZACION_NOT_FOUND", "Cotización no encontrada", 404);
-    return c.json({ success: true, data: cot });
-  }
-
-  return { list, create, getById, updateEstado };
+  return { list, create, getById };
 }

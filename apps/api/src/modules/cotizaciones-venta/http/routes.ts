@@ -1,11 +1,12 @@
 import {
   createCotizacionVentaSchema,
   listCotizacionesVentaQuerySchema,
-  updateCotizacionVentaEstadoSchema,
 } from "@kallpasoft/validators";
 import { Hono } from "hono";
 import { getDb } from "../../../lib/db.js";
 import { authMiddleware } from "../../../middlewares/auth.js";
+import { authorize } from "../../../middlewares/authorize.js";
+import { requireCajaAbierta } from "../../../middlewares/require-caja.js";
 import { validateBody, validateQuery } from "../../../middlewares/validate.js";
 import type { HonoVariables } from "../../../types/context.js";
 import { CotizacionVentaDrizzleRepository } from "../infra/repositories/cotizacion-venta.drizzle.js";
@@ -17,20 +18,19 @@ const h = createCotizacionVentaHandlers(repo);
 export const cotizacionVentaRoutes = new Hono<{ Variables: HonoVariables }>();
 
 cotizacionVentaRoutes.use(authMiddleware);
+cotizacionVentaRoutes.use(requireCajaAbierta);
 
+// ─── Cotizaciones referenciales (V15: sin impacto en inventario) ───────────────
 cotizacionVentaRoutes.get(
-  "/cotizaciones-venta",
+  "/ventas/cotizaciones",
+  authorize("VENDEDOR", "ADMIN"),
   validateQuery(listCotizacionesVentaQuerySchema),
   h.list
 );
 cotizacionVentaRoutes.post(
-  "/cotizaciones-venta",
+  "/ventas/cotizaciones",
+  authorize("VENDEDOR"),
   validateBody(createCotizacionVentaSchema),
   h.create
 );
-cotizacionVentaRoutes.get("/cotizaciones-venta/:id", h.getById);
-cotizacionVentaRoutes.put(
-  "/cotizaciones-venta/:id/estado",
-  validateBody(updateCotizacionVentaEstadoSchema),
-  h.updateEstado
-);
+cotizacionVentaRoutes.get("/ventas/cotizaciones/:id", authorize("VENDEDOR", "ADMIN"), h.getById);

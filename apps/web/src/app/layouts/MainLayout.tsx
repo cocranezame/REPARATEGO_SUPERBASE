@@ -170,6 +170,11 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: "Lista", to: "/servicios", icon: <Wrench className="h-5 w-5" />, end: true },
       { label: "Kanban", to: "/servicios/kanban", icon: <Kanban className="h-5 w-5" /> },
+      {
+        label: "Requerimientos",
+        to: "/servicios/requerimientos",
+        icon: <ClipboardList className="h-5 w-5" />,
+      },
     ],
   },
   {
@@ -223,6 +228,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   pagos: "Pagos OC",
   servicios: "Servicios",
   kanban: "Kanban",
+  requerimientos: "Requerimientos",
   nuevo: "Nueva OS",
   ventas: "Ventas",
   caja: "Caja",

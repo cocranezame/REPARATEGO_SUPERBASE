@@ -23,6 +23,7 @@ import { ProductosPage } from "../modules/inventario/pages/ProductosPage";
 import { TasasPrecioPage } from "../modules/inventario/pages/TasasPrecioPage";
 import { ProveedorDetallePage } from "../modules/proveedores/pages/ProveedorDetallePage";
 import { ProveedoresPage } from "../modules/proveedores/pages/ProveedoresPage";
+import { KanbanRequerimientosPage } from "../modules/servicios/pages/KanbanRequerimientosPage";
 import { KanbanServiciosPage } from "../modules/servicios/pages/KanbanServiciosPage";
 import { NuevaOrdenPage } from "../modules/servicios/pages/NuevaOrdenPage";
 import { OrdenServicioDetallePage } from "../modules/servicios/pages/OrdenServicioDetallePage";
@@ -72,6 +73,7 @@ export function App() {
             <Route path="/compras/pagos" element={<PagosPage />} />
             <Route path="/servicios" element={<ServiciosPage />} />
             <Route path="/servicios/kanban" element={<KanbanServiciosPage />} />
+            <Route path="/servicios/requerimientos" element={<KanbanRequerimientosPage />} />
             <Route path="/servicios/nuevo" element={<NuevaOrdenPage />} />
             <Route path="/servicios/:id" element={<OrdenServicioDetallePage />} />
             <Route path="/ventas/caja" element={<CajaPage />} />

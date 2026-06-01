@@ -1,103 +1,104 @@
-import { ArrowLeft, ArrowRight, Check, Plus, Trash2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Check, Plus } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCategorias } from "../../catalogos/hooks/useCategorias";
-import { useComponentes } from "../../catalogos/hooks/useComponentes";
-import { useMarcas } from "../../catalogos/hooks/useMarcas";
-import { useModelos } from "../../catalogos/hooks/useModelos";
 import { useClientes } from "../../clientes/hooks/useClientes";
-import { useCreateOrdenServicio } from "../hooks/useOrdenesServicio";
+import {
+  useCostosRevision,
+  useCreateInstancia,
+  useCreateOrden,
+  useInstancias,
+} from "../hooks/useOrdenesServicio";
+import type { Instancia } from "../types/orden-servicio";
 
 const INPUT =
-  "w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100";
+  "w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none";
 const SELECT =
-  "w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100";
+  "w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-primary-500 focus:outline-none";
 
-const PASOS = ["Cliente", "Equipo", "Problema", "Confirmar"];
+const PASOS = ["Cliente", "Instancia", "Orden", "Confirmar"];
 
-type ComponenteItem = {
-  key: string;
-  componente_id: string;
-  estado_componente: string;
-  notas: string;
-};
+type TipoServicio = "CORRECTIVO" | "PREVENTIVO" | "MIXTO";
+type Canal = "TIENDA" | "DOMICILIO";
 
 export function NuevaOrdenPage() {
   const navigate = useNavigate();
   const [paso, setPaso] = useState(0);
   const [serverError, setServerError] = useState<string | null>(null);
 
+  // Step 0 — Cliente
   const [searchCliente, setSearchCliente] = useState("");
   const [clienteId, setClienteId] = useState("");
   const [clienteNombre, setClienteNombre] = useState("");
 
-  const [categoriaId, setCategoriaId] = useState("");
-  const [marcaId, setMarcaId] = useState("");
-  const [modeloId, setModeloId] = useState("");
-  const [serie, setSerie] = useState("");
-  const [color, setColor] = useState("");
+  // Step 1 — Instancia
+  const [instancia, setInstancia] = useState<Instancia | null>(null);
+  const [showNewInstancia, setShowNewInstancia] = useState(false);
+  const [newProductoId, setNewProductoId] = useState("");
+  const [newNumeroSerie, setNewNumeroSerie] = useState("");
 
-  const [problema, setProblema] = useState("");
-  const [tipoServicio, setTipoServicio] = useState("CORRECTIVO");
-  const [prioridad, setPrioridad] = useState("NORMAL");
-  const [notasInternas, setNotasInternas] = useState("");
-  const nextKey = useRef(2);
-  const [componenteItems, setComponenteItems] = useState<ComponenteItem[]>([]);
+  // Step 2 — Orden
+  const [fallaIngreso, setFallaIngreso] = useState("");
+  const [tipoServicio, setTipoServicio] = useState<TipoServicio>("CORRECTIVO");
+  const [canal, setCanal] = useState<Canal>("TIENDA");
 
+  // Hooks
   const { data: clientesData } = useClientes({
     ...(searchCliente ? { search: searchCliente } : {}),
     pageSize: 50,
   });
-  const { data: categoriasData } = useCategorias({ activo: true, pageSize: 200 });
-  const { data: marcasData } = useMarcas({ activo: true, pageSize: 200 });
-  const { data: modelosData } = useModelos({
-    activo: true,
-    pageSize: 200,
-    ...(marcaId ? { marca_id: marcaId } : {}),
-    ...(categoriaId ? { categoria_id: categoriaId } : {}),
+  const { data: instanciasData, isLoading: instanciasLoading } = useInstancias({
+    cliente_id: clienteId,
+    pageSize: 50,
   });
-  const { data: componentesData } = useComponentes({ activo: true, pageSize: 200 });
+  const { data: costosData } = useCostosRevision();
+  const createInstancia = useCreateInstancia();
+  const createOrden = useCreateOrden();
 
-  const createMutation = useCreateOrdenServicio();
+  const instancias = instanciasData?.data ?? [];
+  const costos = costosData?.data ?? [];
 
-  function addComponente() {
-    const k = String(nextKey.current++);
-    setComponenteItems((prev) => [
-      ...prev,
-      { key: k, componente_id: "", estado_componente: "DAÑADO", notas: "" },
-    ]);
-  }
-
-  function removeComponente(k: string) {
-    setComponenteItems((prev) => prev.filter((it) => it.key !== k));
-  }
-
-  function updateComponente(k: string, field: keyof Omit<ComponenteItem, "key">, value: string) {
-    setComponenteItems((prev) => prev.map((it) => (it.key === k ? { ...it, [field]: value } : it)));
-  }
+  const costoRevision = instancia?.categoria_id
+    ? (costos.find((c) => c.categoria_id === instancia.categoria_id)?.monto ?? "0")
+    : "0";
 
   function canAdvance(): boolean {
     if (paso === 0) return clienteId !== "";
-    if (paso === 1) return categoriaId !== "";
-    if (paso === 2) return problema.trim() !== "";
+    if (paso === 1) return instancia !== null;
+    if (paso === 2) return fallaIngreso.trim() !== "";
     return true;
   }
 
-  async function handleConfirmar() {
+  async function handleCrearInstancia() {
+    if (!newProductoId) {
+      setServerError("El ID de producto es obligatorio");
+      return;
+    }
     setServerError(null);
     try {
-      const result = await createMutation.mutateAsync({
+      const result = await createInstancia.mutateAsync({
         cliente_id: clienteId,
-        sucursal_id: "00000000-0000-0000-0000-000000000000",
-        categoria_id: categoriaId,
-        ...(marcaId ? { marca_id: marcaId } : {}),
-        ...(modeloId ? { modelo_id: modeloId } : {}),
-        ...(serie ? { serie_equipo: serie } : {}),
-        ...(color ? { color_equipo: color } : {}),
-        problema_reportado: problema,
-        tipo_servicio: tipoServicio as "CORRECTIVO" | "PREVENTIVO",
-        prioridad: prioridad as "BAJA" | "NORMAL" | "ALTA" | "URGENTE",
-        ...(notasInternas ? { notas_internas: notasInternas } : {}),
+        producto_id: newProductoId,
+        ...(newNumeroSerie ? { numero_serie: newNumeroSerie } : {}),
+      });
+      setInstancia(result.data);
+      setShowNewInstancia(false);
+      setNewProductoId("");
+      setNewNumeroSerie("");
+    } catch (err) {
+      setServerError((err as Error).message);
+    }
+  }
+
+  async function handleConfirmar() {
+    if (!instancia) return;
+    setServerError(null);
+    try {
+      const result = await createOrden.mutateAsync({
+        instancia_id: instancia.id,
+        canal,
+        tipo_servicio: tipoServicio,
+        falla_ingreso: fallaIngreso,
+        costo_revision: parseFloat(costoRevision),
       });
       navigate(`/servicios/${result.data.id}`);
     } catch (err) {
@@ -135,7 +136,9 @@ export function NuevaOrdenPage() {
               {i < paso ? <Check className="h-3.5 w-3.5" /> : i + 1}
             </div>
             <span
-              className={`hidden text-xs sm:block ${i === paso ? "font-medium text-neutral-900" : "text-neutral-400"}`}
+              className={`hidden text-xs sm:block ${
+                i === paso ? "font-medium text-neutral-900" : "text-neutral-400"
+              }`}
             >
               {label}
             </span>
@@ -184,11 +187,12 @@ export function NuevaOrdenPage() {
                     onClick={() => {
                       setClienteId(c.id);
                       setClienteNombre(nombre);
+                      setInstancia(null);
                     }}
                     className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${
                       clienteId === c.id
                         ? "bg-primary-50 text-primary-800"
-                        : "hover:bg-neutral-50 text-neutral-800"
+                        : "text-neutral-800 hover:bg-neutral-50"
                     }`}
                   >
                     <span className="font-medium">{nombre}</span>
@@ -198,115 +202,151 @@ export function NuevaOrdenPage() {
               })}
             </div>
             {clienteId && (
-              <p className="text-xs text-primary-700 font-medium">Seleccionado: {clienteNombre}</p>
+              <p className="text-xs font-medium text-primary-700">Seleccionado: {clienteNombre}</p>
             )}
           </>
         )}
 
-        {/* Step 1 — Equipo */}
+        {/* Step 1 — Instancia */}
         {paso === 1 && (
           <>
-            <h2 className="text-base font-semibold text-neutral-900">Datos del equipo</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1">
-                <label htmlFor="nueva-categoria" className="text-xs font-medium text-neutral-700">
-                  Categoría <span className="text-danger-600">*</span>
-                </label>
-                <select
-                  id="nueva-categoria"
-                  value={categoriaId}
-                  onChange={(e) => setCategoriaId(e.target.value)}
-                  className={SELECT}
-                >
-                  <option value="">Seleccionar...</option>
-                  {(categoriasData?.data ?? []).map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombre}
-                    </option>
-                  ))}
-                </select>
+            <h2 className="text-base font-semibold text-neutral-900">Equipo del cliente</h2>
+            <p className="text-xs text-neutral-500">
+              Selecciona un equipo existente de {clienteNombre} o registra uno nuevo.
+            </p>
+
+            {instanciasLoading && (
+              <div className="flex items-center justify-center py-6">
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
               </div>
-              <div className="flex flex-col gap-1">
-                <label htmlFor="nueva-marca" className="text-xs font-medium text-neutral-700">
-                  Marca
-                </label>
-                <select
-                  id="nueva-marca"
-                  value={marcaId}
-                  onChange={(e) => {
-                    setMarcaId(e.target.value);
-                    setModeloId("");
-                  }}
-                  className={SELECT}
-                >
-                  <option value="">Sin especificar</option>
-                  {(marcasData?.data ?? []).map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.nombre}
-                    </option>
-                  ))}
-                </select>
+            )}
+
+            {!instanciasLoading && instancias.length > 0 && (
+              <div className="max-h-48 overflow-y-auto rounded-lg border border-neutral-200 divide-y divide-neutral-100">
+                {instancias.map((inst) => (
+                  <button
+                    key={inst.id}
+                    type="button"
+                    onClick={() => {
+                      setInstancia(inst);
+                      setShowNewInstancia(false);
+                    }}
+                    className={`w-full px-4 py-3 text-left text-sm transition-colors ${
+                      instancia?.id === inst.id
+                        ? "bg-primary-50 text-primary-800"
+                        : "text-neutral-800 hover:bg-neutral-50"
+                    }`}
+                  >
+                    <p className="font-medium">{inst.producto_nombre ?? "Producto desconocido"}</p>
+                    <div className="flex gap-3 text-xs text-neutral-500">
+                      {inst.numero_serie && <span>S/N: {inst.numero_serie}</span>}
+                      <span className="text-xs text-neutral-400">
+                        {new Date(inst.created_at).toLocaleDateString("es-PE")}
+                      </span>
+                    </div>
+                  </button>
+                ))}
               </div>
-              <div className="flex flex-col gap-1">
-                <label htmlFor="nueva-modelo" className="text-xs font-medium text-neutral-700">
-                  Modelo
-                </label>
-                <select
-                  id="nueva-modelo"
-                  value={modeloId}
-                  onChange={(e) => setModeloId(e.target.value)}
-                  className={SELECT}
-                >
-                  <option value="">Sin especificar</option>
-                  {(modelosData?.data ?? []).map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.nombre}
-                    </option>
-                  ))}
-                </select>
+            )}
+
+            {!instanciasLoading && instancias.length === 0 && !showNewInstancia && (
+              <p className="text-sm text-neutral-400">Este cliente no tiene equipos registrados.</p>
+            )}
+
+            {!showNewInstancia ? (
+              <button
+                type="button"
+                onClick={() => setShowNewInstancia(true)}
+                className="flex items-center gap-1 text-xs text-primary-600 hover:underline"
+              >
+                <Plus className="h-3 w-3" />
+                Registrar nuevo equipo
+              </button>
+            ) : (
+              <div className="rounded-lg border border-neutral-200 p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-neutral-800">Nuevo equipo</h3>
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="inst-producto-id"
+                    className="text-xs font-medium text-neutral-700"
+                  >
+                    ID de Producto (UUID) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="inst-producto-id"
+                    type="text"
+                    value={newProductoId}
+                    onChange={(e) => setNewProductoId(e.target.value)}
+                    placeholder="UUID del modelo de dispositivo"
+                    className={INPUT}
+                  />
+                  <p className="text-xs text-neutral-400">
+                    Ingresa el UUID del modelo de producto del catálogo
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="inst-serie" className="text-xs font-medium text-neutral-700">
+                    Número de serie
+                  </label>
+                  <input
+                    id="inst-serie"
+                    type="text"
+                    value={newNumeroSerie}
+                    onChange={(e) => setNewNumeroSerie(e.target.value)}
+                    placeholder="Opcional"
+                    className={INPUT}
+                  />
+                </div>
+                {serverError && (
+                  <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+                    {serverError}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewInstancia(false);
+                      setServerError(null);
+                    }}
+                    className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs text-neutral-700"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={createInstancia.isPending}
+                    onClick={handleCrearInstancia}
+                    className="rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+                  >
+                    {createInstancia.isPending ? "Creando..." : "Crear equipo"}
+                  </button>
+                </div>
               </div>
-              <div className="flex flex-col gap-1">
-                <label htmlFor="nueva-serie" className="text-xs font-medium text-neutral-700">
-                  N.º de serie
-                </label>
-                <input
-                  id="nueva-serie"
-                  type="text"
-                  value={serie}
-                  onChange={(e) => setSerie(e.target.value)}
-                  placeholder="Opcional"
-                  className={INPUT}
-                />
+            )}
+
+            {instancia && (
+              <div className="rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-800">
+                <span className="font-medium">Equipo seleccionado:</span>{" "}
+                {instancia.producto_nombre ?? "Equipo"}{" "}
+                {instancia.numero_serie && `(S/N: ${instancia.numero_serie})`}
               </div>
-              <div className="flex flex-col gap-1 col-span-2">
-                <label htmlFor="nueva-color" className="text-xs font-medium text-neutral-700">
-                  Color
-                </label>
-                <input
-                  id="nueva-color"
-                  type="text"
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  placeholder="Opcional"
-                  className={INPUT}
-                />
-              </div>
-            </div>
+            )}
           </>
         )}
 
-        {/* Step 2 — Problema */}
+        {/* Step 2 — Orden */}
         {paso === 2 && (
           <>
-            <h2 className="text-base font-semibold text-neutral-900">Problema y componentes</h2>
+            <h2 className="text-base font-semibold text-neutral-900">Datos de la orden</h2>
             <div className="flex flex-col gap-1">
-              <label htmlFor="nueva-problema" className="text-xs font-medium text-neutral-700">
-                Problema reportado <span className="text-danger-600">*</span>
+              <label htmlFor="nueva-falla" className="text-xs font-medium text-neutral-700">
+                Falla reportada <span className="text-red-500">*</span>
               </label>
               <textarea
-                id="nueva-problema"
-                value={problema}
-                onChange={(e) => setProblema(e.target.value)}
+                id="nueva-falla"
+                value={fallaIngreso}
+                onChange={(e) => setFallaIngreso(e.target.value)}
                 rows={3}
                 placeholder="Describe el problema que reporta el cliente..."
                 className={INPUT}
@@ -314,101 +354,45 @@ export function NuevaOrdenPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
-                <label
-                  htmlFor="nueva-tipo-servicio"
-                  className="text-xs font-medium text-neutral-700"
-                >
+                <label htmlFor="nueva-tipo" className="text-xs font-medium text-neutral-700">
                   Tipo de servicio
                 </label>
                 <select
-                  id="nueva-tipo-servicio"
+                  id="nueva-tipo"
                   value={tipoServicio}
-                  onChange={(e) => setTipoServicio(e.target.value)}
+                  onChange={(e) => setTipoServicio(e.target.value as TipoServicio)}
                   className={SELECT}
                 >
                   <option value="CORRECTIVO">Correctivo</option>
                   <option value="PREVENTIVO">Preventivo</option>
+                  <option value="MIXTO">Mixto</option>
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label htmlFor="nueva-prioridad" className="text-xs font-medium text-neutral-700">
-                  Prioridad
+                <label htmlFor="nueva-canal" className="text-xs font-medium text-neutral-700">
+                  Canal
                 </label>
                 <select
-                  id="nueva-prioridad"
-                  value={prioridad}
-                  onChange={(e) => setPrioridad(e.target.value)}
+                  id="nueva-canal"
+                  value={canal}
+                  onChange={(e) => setCanal(e.target.value as Canal)}
                   className={SELECT}
                 >
-                  <option value="BAJA">Baja</option>
-                  <option value="NORMAL">Normal</option>
-                  <option value="ALTA">Alta</option>
-                  <option value="URGENTE">Urgente</option>
+                  <option value="TIENDA">Tienda (presencial)</option>
+                  <option value="DOMICILIO">Domicilio</option>
                 </select>
               </div>
             </div>
-            <div className="flex flex-col gap-1">
-              <label htmlFor="nueva-notas" className="text-xs font-medium text-neutral-700">
-                Notas internas
-              </label>
-              <input
-                id="nueva-notas"
-                type="text"
-                value={notasInternas}
-                onChange={(e) => setNotasInternas(e.target.value)}
-                placeholder="Opcional"
-                className={INPUT}
-              />
-            </div>
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium text-neutral-700">
-                  Componentes preliminares (opcional)
+            <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm">
+              <span className="text-neutral-500">Costo de revisión:</span>{" "}
+              <span className="font-semibold text-neutral-800">
+                S/ {Number(costoRevision).toFixed(2)}
+              </span>
+              {!instancia?.categoria_id && (
+                <span className="ml-2 text-xs text-neutral-400">
+                  (sin tarifa para esta categoría)
                 </span>
-                <button
-                  type="button"
-                  onClick={addComponente}
-                  className="flex items-center gap-1 text-xs text-primary-600 hover:underline"
-                >
-                  <Plus className="h-3 w-3" /> Agregar
-                </button>
-              </div>
-              <div className="space-y-2">
-                {componenteItems.map((it) => (
-                  <div key={it.key} className="grid grid-cols-[1fr_120px_auto] items-center gap-2">
-                    <select
-                      value={it.componente_id}
-                      onChange={(e) => updateComponente(it.key, "componente_id", e.target.value)}
-                      className="rounded-lg border border-neutral-300 bg-white px-2 py-1.5 text-sm"
-                    >
-                      <option value="">Componente...</option>
-                      {(componentesData?.data ?? []).map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.nombre}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={it.estado_componente}
-                      onChange={(e) =>
-                        updateComponente(it.key, "estado_componente", e.target.value)
-                      }
-                      className="rounded-lg border border-neutral-300 bg-white px-2 py-1.5 text-sm"
-                    >
-                      <option value="DAÑADO">Dañado</option>
-                      <option value="FALTANTE">Faltante</option>
-                      <option value="OK">OK</option>
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => removeComponente(it.key)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-danger-600"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+              )}
             </div>
           </>
         )}
@@ -418,36 +402,32 @@ export function NuevaOrdenPage() {
           <>
             <h2 className="text-base font-semibold text-neutral-900">Confirmar recepción</h2>
             <div className="rounded-lg bg-neutral-50 p-4 text-sm space-y-2">
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Cliente</span>
-                <span className="font-medium">{clienteNombre}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Problema</span>
-                <span className="max-w-xs text-right font-medium">{problema}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Tipo</span>
-                <span className="font-medium">{tipoServicio}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">Prioridad</span>
-                <span className="font-medium">{prioridad}</span>
-              </div>
-              {componenteItems.filter((it) => it.componente_id).length > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-neutral-500">Componentes</span>
-                  <span className="font-medium">
-                    {componenteItems.filter((it) => it.componente_id).length} registrado(s)
-                  </span>
+              {[
+                { label: "Cliente", value: clienteNombre },
+                {
+                  label: "Equipo",
+                  value: instancia?.producto_nombre ?? "—",
+                },
+                {
+                  label: "N/S",
+                  value: instancia?.numero_serie ?? "—",
+                },
+                { label: "Falla", value: fallaIngreso },
+                { label: "Tipo", value: tipoServicio },
+                { label: "Canal", value: canal },
+                { label: "Costo revisión", value: `S/ ${Number(costoRevision).toFixed(2)}` },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex justify-between gap-4">
+                  <span className="text-neutral-500">{label}</span>
+                  <span className="text-right font-medium text-neutral-800">{value}</span>
                 </div>
-              )}
+              ))}
             </div>
             <p className="text-xs text-neutral-500">
-              Se creará la OS en estado <strong>RECEPCIÓN</strong>.
+              Se creará la OS en estado <strong>VALIDACIÓN</strong>.
             </p>
             {serverError !== null && (
-              <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-danger-600">
+              <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">
                 {serverError}
               </div>
             )}
@@ -468,7 +448,10 @@ export function NuevaOrdenPage() {
           <button
             type="button"
             disabled={!canAdvance()}
-            onClick={() => setPaso((p) => p + 1)}
+            onClick={() => {
+              setServerError(null);
+              setPaso((p) => p + 1);
+            }}
             className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50"
           >
             Siguiente <ArrowRight className="h-4 w-4" />
@@ -476,12 +459,12 @@ export function NuevaOrdenPage() {
         ) : (
           <button
             type="button"
-            disabled={createMutation.isPending}
+            disabled={createOrden.isPending}
             onClick={handleConfirmar}
             className="flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
           >
             <Check className="h-4 w-4" />
-            {createMutation.isPending ? "Creando..." : "Crear OS"}
+            {createOrden.isPending ? "Creando..." : "Crear OS"}
           </button>
         )}
       </div>

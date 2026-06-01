@@ -1,56 +1,42 @@
 import { Plus, Search } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useOrdenesServicio } from "../hooks/useOrdenesServicio";
-import type { EstadoOrdenServicio, OrdenServicioDto } from "../types/orden-servicio";
+import { useOrdenes } from "../hooks/useOrdenesServicio";
+import type { EstadoOS, OrdenServicioResumen } from "../types/orden-servicio";
 
-const ESTADO_COLORS: Record<EstadoOrdenServicio, string> = {
-  RECEPCION: "bg-blue-100 text-blue-700",
-  EN_DIAGNOSTICO: "bg-purple-100 text-purple-700",
-  DIAGNOSTICADO: "bg-indigo-100 text-indigo-700",
+const ESTADO_COLORS: Record<EstadoOS, string> = {
+  VALIDACION: "bg-slate-100 text-slate-700",
+  REVISION: "bg-purple-100 text-purple-700",
+  DIAG_PRELIMINAR: "bg-blue-100 text-blue-700",
+  DIAG_FINAL: "bg-indigo-100 text-indigo-700",
   COTIZADO: "bg-yellow-100 text-yellow-700",
   APROBADO: "bg-orange-100 text-orange-700",
-  EN_REPARACION: "bg-cyan-100 text-cyan-700",
+  AGREGAR_SKU: "bg-amber-100 text-amber-700",
+  PRIORIDAD: "bg-red-100 text-red-700",
   REPARADO: "bg-teal-100 text-teal-700",
-  LISTO_ENTREGA: "bg-green-100 text-green-700",
-  ENTREGADO: "bg-neutral-100 text-neutral-600",
-  DEVOLUCION: "bg-red-100 text-red-700",
-  CANCELADO: "bg-neutral-100 text-neutral-400",
+  AVISADO: "bg-cyan-100 text-cyan-700",
+  ENTREGADO: "bg-green-100 text-green-700",
+  GARANTIA: "bg-amber-100 text-amber-700",
+  DEVOLUCION: "bg-red-100 text-red-600",
 };
 
-const PRIORIDAD_COLORS: Record<string, string> = {
-  BAJA: "text-neutral-400",
-  NORMAL: "text-neutral-600",
-  ALTA: "text-orange-600 font-semibold",
-  URGENTE: "text-red-600 font-bold",
-};
-
-const ESTADOS: EstadoOrdenServicio[] = [
-  "RECEPCION",
-  "EN_DIAGNOSTICO",
-  "DIAGNOSTICADO",
+const ESTADOS: EstadoOS[] = [
+  "VALIDACION",
+  "REVISION",
+  "DIAG_PRELIMINAR",
+  "DIAG_FINAL",
   "COTIZADO",
   "APROBADO",
-  "EN_REPARACION",
+  "AGREGAR_SKU",
+  "PRIORIDAD",
   "REPARADO",
-  "LISTO_ENTREGA",
+  "AVISADO",
   "ENTREGADO",
+  "GARANTIA",
   "DEVOLUCION",
-  "CANCELADO",
 ];
 
-function EstadoBadge({ estado }: { estado: EstadoOrdenServicio }) {
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${ESTADO_COLORS[estado]}`}
-    >
-      {estado.replace(/_/g, " ")}
-    </span>
-  );
-}
-
-function fmtDate(d: string | null | undefined): string {
-  if (!d) return "—";
+function fmtDate(d: string): string {
   return new Date(d).toLocaleDateString("es-PE", {
     day: "2-digit",
     month: "2-digit",
@@ -58,40 +44,43 @@ function fmtDate(d: string | null | undefined): string {
   });
 }
 
-// ─── Row ─────────────────────────────────────────────────────────────────────
-
-function OSRow({ os }: { os: OrdenServicioDto }) {
+function OSRow({ os }: { os: OrdenServicioResumen }) {
   return (
     <tr className="hover:bg-neutral-50">
-      <td className="whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold text-neutral-900">
+      <td className="whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold">
         <Link to={`/servicios/${os.id}`} className="text-primary-600 hover:underline">
           {os.codigo}
         </Link>
       </td>
       <td className="px-4 py-3 text-sm text-neutral-700">{os.cliente_nombre ?? "—"}</td>
-      <td className="px-4 py-3 text-xs text-neutral-600">
-        {[os.categoria_nombre, os.marca_nombre, os.modelo_nombre].filter(Boolean).join(" / ") ||
-          "—"}
+      <td className="px-4 py-3 text-xs text-neutral-600">{os.producto_nombre ?? "—"}</td>
+      <td className="px-4 py-3 text-xs text-neutral-500">
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs ${
+            os.canal === "DOMICILIO" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"
+          }`}
+        >
+          {os.canal}
+        </span>
       </td>
-      <td className="px-4 py-3 text-sm text-neutral-600">{os.tecnico_nombre ?? "Sin asignar"}</td>
+      <td className="px-4 py-3 text-xs text-neutral-600">{os.tecnico_nombre ?? "—"}</td>
       <td className="px-4 py-3">
-        <EstadoBadge estado={os.estado} />
-      </td>
-      <td className={`px-4 py-3 text-xs ${PRIORIDAD_COLORS[os.prioridad] ?? ""}`}>
-        {os.prioridad}
+        <span
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${ESTADO_COLORS[os.estado]}`}
+        >
+          {os.estado.replace(/_/g, " ")}
+        </span>
       </td>
       <td className="whitespace-nowrap px-4 py-3 text-xs text-neutral-500">
-        {fmtDate(os.fecha_recepcion)}
+        {fmtDate(os.created_at)}
       </td>
     </tr>
   );
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
-
 export function ServiciosPage() {
   const [search, setSearch] = useState("");
-  const [estado, setEstado] = useState<EstadoOrdenServicio | "">("");
+  const [estado, setEstado] = useState<EstadoOS | "">("");
   const [page, setPage] = useState(1);
 
   const params = {
@@ -101,18 +90,12 @@ export function ServiciosPage() {
     ...(estado ? { estado } : {}),
   };
 
-  const { data, isLoading, isError } = useOrdenesServicio(params);
+  const { data, isLoading, isError } = useOrdenes(params);
   const ordenes = data?.data ?? [];
   const meta = data?.meta;
 
-  function handleSearch(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setPage(1);
-  }
-
   return (
     <div className="space-y-4">
-      {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-neutral-900">Servicios (OS)</h1>
         <Link
@@ -124,27 +107,24 @@ export function ServiciosPage() {
         </Link>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-neutral-200 bg-white p-4">
-        <form onSubmit={handleSearch} className="flex flex-1 items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              placeholder="Buscar por código, problema, serie..."
-              className="w-full rounded-lg border border-neutral-300 py-2 pl-9 pr-3 text-sm focus:border-primary-500 focus:outline-none"
-            />
-          </div>
-        </form>
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Buscar por código, cliente, falla..."
+            className="w-full rounded-lg border border-neutral-300 py-2 pl-9 pr-3 text-sm focus:border-primary-500 focus:outline-none"
+          />
+        </div>
         <select
           value={estado}
           onChange={(e) => {
-            setEstado(e.target.value as EstadoOrdenServicio | "");
+            setEstado(e.target.value as EstadoOS | "");
             setPage(1);
           }}
           className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
@@ -158,7 +138,6 @@ export function ServiciosPage() {
         </select>
       </div>
 
-      {/* Table */}
       <div className="rounded-xl border border-neutral-200 bg-white">
         {isLoading && (
           <div className="flex items-center justify-center py-20">
@@ -166,34 +145,23 @@ export function ServiciosPage() {
           </div>
         )}
         {isError && (
-          <p className="py-10 text-center text-sm text-danger-600">Error al cargar órdenes.</p>
+          <p className="py-10 text-center text-sm text-red-600">Error al cargar órdenes.</p>
         )}
         {!isLoading && !isError && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-200 bg-neutral-50">
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-neutral-500">
-                    Código
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-neutral-500">
-                    Cliente
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-neutral-500">
-                    Equipo
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-neutral-500">
-                    Técnico
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-neutral-500">
-                    Estado
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-neutral-500">
-                    Prioridad
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium uppercase text-neutral-500">
-                    Recepción
-                  </th>
+                  {["Código", "Cliente", "Producto", "Canal", "Técnico", "Estado", "Fecha"].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        className="px-4 py-3 text-left text-xs font-medium uppercase text-neutral-500"
+                      >
+                        {h}
+                      </th>
+                    )
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
@@ -212,7 +180,6 @@ export function ServiciosPage() {
           </div>
         )}
 
-        {/* Pagination */}
         {meta && meta.totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-neutral-200 px-4 py-3">
             <p className="text-xs text-neutral-500">

@@ -175,15 +175,7 @@ export const EstadoSolicitudCompra = {
 export type EstadoSolicitudCompra =
   (typeof EstadoSolicitudCompra)[keyof typeof EstadoSolicitudCompra];
 
-// Ventas
-export const EstadoVenta = {
-  PENDIENTE: "PENDIENTE",
-  PAGADA: "PAGADA",
-  PARCIAL: "PARCIAL",
-  ANULADA: "ANULADA",
-} as const;
-export type EstadoVenta = (typeof EstadoVenta)[keyof typeof EstadoVenta];
-
+// Ventas (C003)
 export const TipoVenta = {
   LIBRE: "LIBRE",
   SERVICIO: "SERVICIO",
@@ -192,22 +184,39 @@ export const TipoVenta = {
 } as const;
 export type TipoVenta = (typeof TipoVenta)[keyof typeof TipoVenta];
 
-export const TipoComprobante = {
-  BOLETA: "BOLETA",
-  FACTURA: "FACTURA",
-  NOTA_VENTA: "NOTA_VENTA",
+export const EstadoCaja = {
+  ABIERTA: "ABIERTA",
+  CERRADA: "CERRADA",
 } as const;
-export type TipoComprobante = (typeof TipoComprobante)[keyof typeof TipoComprobante];
+export type EstadoCaja = (typeof EstadoCaja)[keyof typeof EstadoCaja];
 
-export const EstadoCotizacionVenta = {
-  BORRADOR: "BORRADOR",
-  ENVIADA: "ENVIADA",
-  APROBADA: "APROBADA",
-  RECHAZADA: "RECHAZADA",
-  VENCIDA: "VENCIDA",
+export const EstadoPagoVenta = {
+  PAGO_PENDIENTE: "PAGO_PENDIENTE",
+  COMPLETADA: "COMPLETADA",
+  ANULADA: "ANULADA",
 } as const;
-export type EstadoCotizacionVenta =
-  (typeof EstadoCotizacionVenta)[keyof typeof EstadoCotizacionVenta];
+export type EstadoPagoVenta = (typeof EstadoPagoVenta)[keyof typeof EstadoPagoVenta];
+
+export const EstadoDespachoVenta = {
+  SIN_ENVIO: "SIN_ENVIO",
+  ENVIO_PENDIENTE: "ENVIO_PENDIENTE",
+  DESPACHADO: "DESPACHADO",
+} as const;
+export type EstadoDespachoVenta = (typeof EstadoDespachoVenta)[keyof typeof EstadoDespachoVenta];
+
+export const TipoItemVenta = {
+  PRODUCTO: "PRODUCTO",
+  SERVICIO: "SERVICIO",
+  ENVIO: "ENVIO",
+  MANUAL: "MANUAL",
+} as const;
+export type TipoItemVenta = (typeof TipoItemVenta)[keyof typeof TipoItemVenta];
+
+export const EstadoEnvioVenta = {
+  PENDIENTE: "PENDIENTE",
+  DESPACHADO: "DESPACHADO",
+} as const;
+export type EstadoEnvioVenta = (typeof EstadoEnvioVenta)[keyof typeof EstadoEnvioVenta];
 
 // Domicilios
 export const EstadoVisita = {

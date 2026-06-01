@@ -341,3 +341,20 @@ El endpoint `/api/v1/auth/login` requiere 3 campos: `tipo_documento`, `numero_do
   - P6: Descuentos/promociones diferido a post-producción
 - **Impacto en servicios (C002):** el flujo de generación de venta cambia — ya no se genera solo en AGREGAR_SKU→REPARADO/PRIORIDAD, sino que puede generarse desde COTIZADO/APROBADO para adelantos. El botón "Cobrar" en AVISADO abre el POS con la venta existente, no crea una nueva
 - **Impacto en schema:** se necesita campo rol ASISTENTE en tabla usuario. Tabla tasa_precio requiere refactorización para soportar jerarquía. Se agrega campo nota_credito/saldo_favor para anulaciones con pagos parciales
+
+---
+
+## C016 — 2026-06-01
+
+**ID:** C016
+**Afecta:** db, infra
+**Contexto:** E11.1 — Migraciones ventas C003
+
+**Divergencia entre archivos de migración manual y journal de drizzle-kit:**
+Los archivos `0015_rls_ventas.sql`, `0016_rls_domicilios.sql` y `0016_e10_servicios_c002.sql` existen en `packages/db/drizzle/` pero NO están registrados en `meta/_journal.json`. El journal termina en `idx: 15 / tag: 0015_rainy_kitty_pryde`. Estos archivos fueron escritos y aplicados manualmente (fuera del flujo drizzle-kit).
+
+Consecuencia: si se ejecuta `drizzle-kit generate` en el estado actual, comparará el Drizzle TypeScript schema contra el snapshot `0015_snapshot.json` (que solo incluye domicilios) e intentará regenerar todo el módulo de servicios y las RLS de ventas como si no existieran en la DB.
+
+**Corrección aplicada:** A partir de E11, usar exclusivamente migraciones manuales numeradas (`0017_*`, `0018_*`, …). No ejecutar `drizzle-kit generate` ni `drizzle-kit migrate` — solo `drizzle-kit studio` para inspección visual si se necesita. Las migraciones se aplican con psql directo al contenedor local (`psql -h localhost -p 5435 -U postgres -d reparatego_dev -f <archivo>.sql`).
+
+**Regla:** Para este proyecto, drizzle-kit solo se usa como fuente de snapshots de tipo para TypeScript (type inference). Las migraciones de producción son SQL manual versionado.

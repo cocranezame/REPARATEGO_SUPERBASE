@@ -39,6 +39,7 @@ import { EnviosPage } from "../modules/ventas/pages/EnviosPage";
 import { HistorialVentasPage } from "../modules/ventas/pages/HistorialVentasPage";
 import { KanbanVentasPage } from "../modules/ventas/pages/KanbanVentasPage";
 import { NuevaVentaPage } from "../modules/ventas/pages/NuevaVentaPage";
+import { PosPage } from "../modules/ventas/pages/PosPage";
 import { ProtectedRoute } from "../shared/components/ProtectedRoute";
 import { AuthLayout } from "./layouts/AuthLayout";
 import { MainLayout } from "./layouts/MainLayout";
@@ -91,6 +92,7 @@ export function App() {
             <Route path="/servicios/nuevo" element={<NuevaOrdenPage />} />
             <Route path="/servicios/:id" element={<OrdenServicioDetallePage />} />
             <Route path="/ventas/caja" element={<CajaPage />} />
+            <Route path="/ventas/pos" element={<PosPage />} />
             <Route path="/ventas/nueva" element={<NuevaVentaPage />} />
             <Route path="/ventas/historial" element={<HistorialVentasPage />} />
             <Route path="/ventas/envios" element={<EnviosPage />} />

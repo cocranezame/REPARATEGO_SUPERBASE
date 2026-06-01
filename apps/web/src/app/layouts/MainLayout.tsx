@@ -18,7 +18,6 @@ import {
   Package,
   PackageCheck,
   Percent,
-  PlusCircle,
   Receipt,
   Shield,
   ShoppingCart,
@@ -169,7 +168,7 @@ const NAV_GROUPS: NavGroup[] = [
     activePrefix: "/servicios",
     items: [
       { label: "Lista", to: "/servicios", icon: <Wrench className="h-5 w-5" />, end: true },
-      { label: "Kanban", to: "/servicios/kanban", icon: <Kanban className="h-5 w-5" /> },
+      { label: "Kanban Servicios", to: "/servicios/kanban", icon: <Kanban className="h-5 w-5" /> },
       {
         label: "Requerimientos",
         to: "/servicios/requerimientos",
@@ -181,14 +180,13 @@ const NAV_GROUPS: NavGroup[] = [
     id: "ventas",
     label: "Ventas",
     icon: <Receipt className="h-5 w-5" />,
-    primaryTo: "/ventas/nueva",
+    primaryTo: "/ventas/pos",
     activePrefix: "/ventas",
     items: [
-      { label: "Nueva venta", to: "/ventas/nueva", icon: <PlusCircle className="h-5 w-5" /> },
+      { label: "POS", to: "/ventas/pos", icon: <ShoppingCart className="h-5 w-5" /> },
       { label: "Caja", to: "/ventas/caja", icon: <Receipt className="h-5 w-5" /> },
       { label: "Historial", to: "/ventas/historial", icon: <History className="h-5 w-5" /> },
       { label: "Envíos", to: "/ventas/envios", icon: <Truck className="h-5 w-5" /> },
-      { label: "Kanban", to: "/ventas/kanban", icon: <Kanban className="h-5 w-5" /> },
     ],
   },
   {
@@ -232,6 +230,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   nuevo: "Nueva OS",
   ventas: "Ventas",
   caja: "Caja",
+  pos: "Punto de Venta",
   nueva: "Nueva venta",
   historial: "Historial",
   envios: "Envíos",

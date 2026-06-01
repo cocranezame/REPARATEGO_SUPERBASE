@@ -11,6 +11,8 @@ export const RolUsuario = {
   TECNICO: "TECNICO",
   VENDEDOR: "VENDEDOR",
   CAJERO: "CAJERO",
+  // ASISTENTE: pendiente de migración DB — ver C018 en corrections-log
+  ASISTENTE: "ASISTENTE",
 } as const;
 export type RolUsuario = (typeof RolUsuario)[keyof typeof RolUsuario];
 

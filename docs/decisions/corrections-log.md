@@ -377,3 +377,27 @@ Los tres módulos de ventas en `apps/api/src/modules/` fueron implementados ante
 **Corrección aplicada:** Reescritura completa de los tres módulos en E11.2, siguiendo el mismo patrón DDD del resto de la API. Rutas actualizadas a `/ventas/caja/*`, `/ventas/*`, `/ventas/cotizaciones/*`.
 
 **Regla:** Al implementar módulos API, verificar siempre que los nombres de campos de la entidad de dominio coincidan con el schema Drizzle actual, no con el pre-migración.
+
+---
+
+## C018 — 2026-06-01
+
+**ID:** C018
+**Afecta:** api, db
+**Contexto:** E11.2 — Anulación de ventas (V28)
+
+**Rol ASISTENTE pendiente de migración DB:**
+V28 establece que la anulación de ventas requiere rol ADMINISTRADOR o ASISTENTE. El enum `rol_usuario` en PostgreSQL actualmente tiene valores: ADMIN, TECNICO, VENDEDOR, CAJERO. No existe el valor ASISTENTE en la DB.
+
+Se agregó `ASISTENTE: "ASISTENTE"` al enum TypeScript `RolUsuario` en `packages/shared/src/enums.ts` para que el sistema de autorización lo reconozca cuando llegue a existir en la DB. Sin embargo, actualmente ningún usuario puede tener `rol = "ASISTENTE"` porque la inserción fallaría en PostgreSQL.
+
+El endpoint `PATCH /ventas/:id/anular` actualmente solo permite ADMIN hasta que la DB sea migrada.
+
+**Corrección aplicada:** TypeScript: `ASISTENTE` agregado a `RolUsuario`. DB: pendiente.
+
+**Migración DB necesaria:**
+```sql
+ALTER TYPE rol_usuario ADD VALUE IF NOT EXISTS 'ASISTENTE';
+```
+
+**Regla:** Una vez ejecutada la migración, actualizar `PATCH /ventas/:id/anular` en `apps/api/src/modules/ventas/http/routes.ts` para incluir `authorize("ADMIN", "ASISTENTE")`.

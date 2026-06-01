@@ -40,6 +40,7 @@ import { HistorialVentasPage } from "../modules/ventas/pages/HistorialVentasPage
 import { KanbanVentasPage } from "../modules/ventas/pages/KanbanVentasPage";
 import { NuevaVentaPage } from "../modules/ventas/pages/NuevaVentaPage";
 import { PosPage } from "../modules/ventas/pages/PosPage";
+import { VentaDetallePage } from "../modules/ventas/pages/VentaDetallePage";
 import { VentasListaPage } from "../modules/ventas/pages/VentasListaPage";
 import { ProtectedRoute } from "../shared/components/ProtectedRoute";
 import { AuthLayout } from "./layouts/AuthLayout";
@@ -94,6 +95,7 @@ export function App() {
             <Route path="/servicios/:id" element={<OrdenServicioDetallePage />} />
             <Route path="/ventas" element={<VentasListaPage />} />
             <Route path="/ventas/caja" element={<CajaPage />} />
+            <Route path="/ventas/:id" element={<VentaDetallePage />} />
             <Route path="/ventas/pos" element={<PosPage />} />
             <Route path="/ventas/nueva" element={<NuevaVentaPage />} />
             <Route path="/ventas/historial" element={<HistorialVentasPage />} />

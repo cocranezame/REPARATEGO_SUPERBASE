@@ -1,7 +1,7 @@
 # Épica 10 — Servicios / Órdenes de Servicio
 
 > Referencia: C002 (2026-05-31)
-> Estado: DB+API+Web DONE (Portal cliente pendiente)
+> Estado: DONE (Portal cliente incluido)
 > Branch: main (mergeado)
 > 28 tickets / 6 sub-épicas
 
@@ -15,10 +15,10 @@
 
 ## Sub-épica 10B: Portal del cliente (T6-T9)
 
-- E10.6 — Auth portal cliente: login DNI + celular, JWT temporal, ruta /mis-equipos — estado: TODO
-- E10.7 — Vista validación portal: datos servicio, producto, fotos, falla, costo revisión, T&C, botón aceptar con trazabilidad legal (IP, timestamp, versión T&C, texto_mostrado) — estado: TODO
-- E10.8 — Vista presupuesto portal: diagnóstico, solución, evidencias, presupuesto correctivo/preventivo, selector preventivo, botón aprobar — estado: TODO
-- E10.9 — Vistas informativas portal: en revisión, en reparación, listo para recoger, entregado, devuelto — estado: TODO
+- E10.6 — Auth portal cliente: login DNI + celular, JWT temporal, ruta /mis-equipos — estado: DONE
+- E10.7 — Vista validación portal: datos servicio, producto, fotos, falla, costo revisión, T&C, botón aceptar con trazabilidad legal (IP, timestamp, versión T&C, texto_mostrado) — estado: DONE
+- E10.8 — Vista presupuesto portal: diagnóstico, solución, evidencias, presupuesto correctivo/preventivo, selector preventivo, botón aprobar — estado: DONE
+- E10.9 — Vistas informativas portal: en revisión, en reparación, listo para recoger, entregado, devuelto — estado: DONE
 
 ## Sub-épica 10C: Kanban estados 1-4 + Cotización (T10-T16)
 

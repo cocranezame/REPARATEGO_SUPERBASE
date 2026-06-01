@@ -1160,6 +1160,22 @@ export function PosPage() {
 
   return (
     <CajaGuard caja={caja}>
+      {/* Banner integración servicios — visible cuando viene desde módulo servicios */}
+      {ventaIdParam && tipoVenta !== "LIBRE" && (
+        <div className="mb-3 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2.5 text-sm">
+          <span className="font-semibold text-primary-800">
+            {tipoVenta === "SERVICIO" && "Cobro de servicio — "}
+            {tipoVenta === "REVISION_DEVOLUCION" && "Revisión por devolución — "}
+            {tipoVenta === "REVISION_DOMICILIO" && "Revisión domicilio — "}
+          </span>
+          <span className="text-primary-700">
+            Venta precargada desde servicio.
+            {tipoVenta === "SERVICIO" && " Cliente y items del presupuesto fijados (V23/V25)."}
+            {tipoVenta === "REVISION_DEVOLUCION" && " Item de revisión fijo por categoría (V26)."}
+          </span>
+        </div>
+      )}
+
       <div className="flex h-[calc(100vh-8rem)] gap-4 overflow-hidden">
         {/* Panel izquierdo — catálogo */}
         <div className="flex w-1/2 flex-col gap-3 overflow-y-auto lg:w-3/5">

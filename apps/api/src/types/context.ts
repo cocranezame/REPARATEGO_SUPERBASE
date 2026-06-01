@@ -4,4 +4,5 @@ export type HonoVariables = {
   tenantId: string;
   userId: string;
   rol: RolUsuario;
+  cajaId?: string | undefined;
 };

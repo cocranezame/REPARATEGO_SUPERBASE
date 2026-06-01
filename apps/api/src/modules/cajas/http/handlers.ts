@@ -1,4 +1,4 @@
-import type { AbrirCajaInput, CerrarCajaInput } from "@kallpasoft/validators";
+import type { AbrirCajaInput, CerrarCajaInput, ListCajasQuery } from "@kallpasoft/validators";
 import type { Context } from "hono";
 import { ApiError } from "../../../middlewares/error-handler.js";
 import type { HonoVariables } from "../../../types/context.js";
@@ -9,12 +9,7 @@ type HonoCtx = Context<{ Variables: HonoVariables }, string, any>;
 
 export function createCajaHandlers(repo: ICajaRepository) {
   async function list(c: HonoCtx) {
-    const q = c.req.valid("query") as {
-      sucursal_id?: string;
-      estado?: string;
-      page: number;
-      pageSize: number;
-    };
+    const q = c.req.valid("query") as ListCajasQuery;
     const tenantId = c.get("tenantId");
     const result = await repo.list(tenantId, {
       page: q.page,
@@ -34,14 +29,14 @@ export function createCajaHandlers(repo: ICajaRepository) {
     });
   }
 
-  async function actual(c: HonoCtx) {
+  async function activa(c: HonoCtx) {
     const tenantId = c.get("tenantId");
     const userId = c.get("userId");
     const caja = await repo.findActual(tenantId, userId);
     return c.json({ success: true, data: caja });
   }
 
-  async function abrir(c: HonoCtx) {
+  async function apertura(c: HonoCtx) {
     const body = c.req.valid("json") as AbrirCajaInput;
     const tenantId = c.get("tenantId");
     const userId = c.get("userId");
@@ -52,19 +47,24 @@ export function createCajaHandlers(repo: ICajaRepository) {
     const caja = await repo.abrir(tenantId, {
       sucursal_id: body.sucursal_id,
       usuario_id: userId,
-      monto_apertura: body.monto_apertura,
+      monto_inicial: body.monto_inicial,
     });
     return c.json({ success: true, data: caja }, 201);
   }
 
-  async function cerrar(c: HonoCtx) {
-    const id = c.req.param("id") as string;
+  async function cierre(c: HonoCtx) {
     const body = c.req.valid("json") as CerrarCajaInput;
     const tenantId = c.get("tenantId");
+    const userId = c.get("userId");
+
+    const cajaActual = await repo.findActual(tenantId, userId);
+    if (!cajaActual || cajaActual.id !== body.caja_id) {
+      throw new ApiError("CAJA_NO_AUTORIZADA", "No tienes una caja abierta con ese ID", 403);
+    }
+
     try {
-      const caja = await repo.cerrar(tenantId, id, {
-        monto_cierre: body.monto_cierre,
-        ...(body.notas_cierre !== undefined ? { notas_cierre: body.notas_cierre } : {}),
+      const caja = await repo.cerrar(tenantId, body.caja_id, {
+        monto_fisico: body.monto_fisico,
       });
       if (!caja) throw new ApiError("CAJA_NOT_FOUND", "Caja no encontrada", 404);
       return c.json({ success: true, data: caja });
@@ -74,12 +74,13 @@ export function createCajaHandlers(repo: ICajaRepository) {
     }
   }
 
-  async function resumen(c: HonoCtx) {
+  async function reporte(c: HonoCtx) {
     const id = c.req.param("id") as string;
     const tenantId = c.get("tenantId");
-    const data = await repo.resumen(tenantId, id);
+    const data = await repo.reporte(tenantId, id);
+    if (!data) throw new ApiError("CAJA_NOT_FOUND", "Caja no encontrada", 404);
     return c.json({ success: true, data });
   }
 
-  return { list, actual, abrir, cerrar, resumen };
+  return { list, activa, apertura, cierre, reporte };
 }

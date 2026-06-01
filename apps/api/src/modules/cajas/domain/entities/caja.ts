@@ -1,14 +1,17 @@
+export type EstadoCaja = "ABIERTA" | "CERRADA";
+
 export type Caja = {
   id: string;
   tenant_id: string;
   sucursal_id: string;
   usuario_id: string;
-  monto_apertura: string;
-  monto_cierre: string | null;
+  monto_inicial: string;
+  monto_esperado: string | null;
+  monto_fisico: string | null;
+  diferencia: string | null;
   fecha_apertura: Date;
   fecha_cierre: Date | null;
-  estado: string;
-  notas_cierre: string | null;
+  estado: EstadoCaja;
   created_at: Date;
   updated_at: Date;
   sucursal_nombre?: string | undefined;
@@ -16,9 +19,8 @@ export type Caja = {
 };
 
 export type ResumenCaja = {
-  caja_id: string;
+  caja: Caja;
   total_ventas: number;
   cantidad_ventas: number;
   total_por_metodo: Array<{ metodo: string; total: number }>;
-  diferencia: number;
 };

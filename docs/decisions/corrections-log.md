@@ -358,3 +358,22 @@ Consecuencia: si se ejecuta `drizzle-kit generate` en el estado actual, comparar
 **Corrección aplicada:** A partir de E11, usar exclusivamente migraciones manuales numeradas (`0017_*`, `0018_*`, …). No ejecutar `drizzle-kit generate` ni `drizzle-kit migrate` — solo `drizzle-kit studio` para inspección visual si se necesita. Las migraciones se aplican con psql directo al contenedor local (`psql -h localhost -p 5435 -U postgres -d reparatego_dev -f <archivo>.sql`).
 
 **Regla:** Para este proyecto, drizzle-kit solo se usa como fuente de snapshots de tipo para TypeScript (type inference). Las migraciones de producción son SQL manual versionado.
+
+---
+
+## C017 — 2026-06-01
+
+**ID:** C017
+**Afecta:** api (modules/cajas, modules/ventas, modules/cotizaciones-venta)
+**Contexto:** E11.2 — Implementación endpoints ventas C003
+
+**Módulos API en estado pre-C003 (schema obsoleto):**
+Los tres módulos de ventas en `apps/api/src/modules/` fueron implementados antes de la migración C003 y usan campos que ya no existen en el schema:
+
+- `modules/cajas`: usa `monto_apertura` (→ `monto_inicial`), `monto_cierre`+`notas_cierre` (→ `monto_fisico`+`diferencia`). Rutas en `/cajas/*` en vez de `/ventas/caja/*`.
+- `modules/ventas`: usa `activo`, `estado` (viejo), `usuario_id` (→ `created_by`), `notas`, `subtotal`, `igv`, `descuento`, `tipo_comprobante`. Validators importan tipos que ya no existen (`createVentaEnvioSchema`, `updateEnvioEstadoSchema`). No implementa lógica C003 (SKU obligatorio, stock por lote, tipo_item, pagos parciales vs completos, dos ejes de estado, anulación con nota de crédito).
+- `modules/cotizaciones-venta`: usa `activo`, `estado`, `usuario_id` (→ `created_by`), `subtotal`, `igv`, `fecha_vencimiento`, `notas`. No usa `total_referencial` ni `caja_id`.
+
+**Corrección aplicada:** Reescritura completa de los tres módulos en E11.2, siguiendo el mismo patrón DDD del resto de la API. Rutas actualizadas a `/ventas/caja/*`, `/ventas/*`, `/ventas/cotizaciones/*`.
+
+**Regla:** Al implementar módulos API, verificar siempre que los nombres de campos de la entidad de dominio coincidan con el schema Drizzle actual, no con el pre-migración.

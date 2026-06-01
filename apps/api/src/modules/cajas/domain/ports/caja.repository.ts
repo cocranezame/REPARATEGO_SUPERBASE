@@ -3,12 +3,11 @@ import type { Caja, ResumenCaja } from "../entities/caja.js";
 export type AbrirCajaData = {
   sucursal_id: string;
   usuario_id: string;
-  monto_apertura: number;
+  monto_inicial: number;
 };
 
 export type CerrarCajaData = {
-  monto_cierre: number;
-  notas_cierre?: string | undefined;
+  monto_fisico: number;
 };
 
 export type ListCajasParams = {
@@ -29,5 +28,5 @@ export interface ICajaRepository {
   findById(tenantId: string, id: string): Promise<Caja | null>;
   abrir(tenantId: string, data: AbrirCajaData): Promise<Caja>;
   cerrar(tenantId: string, id: string, data: CerrarCajaData): Promise<Caja | null>;
-  resumen(tenantId: string, id: string): Promise<ResumenCaja>;
+  reporte(tenantId: string, id: string): Promise<ResumenCaja | null>;
 }

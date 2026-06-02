@@ -242,3 +242,51 @@ I26 — VENDEDOR: solo lectura de stock disponible y precios de venta.
 ### Auditoría
 I27 — Todo registro almacena usuario que lo creó y fecha de creación/actualización.
 I28 — Soft delete (campo activo) en productos, servicios y proveedores. Nunca eliminación física.
+
+## CRM + Agente IA Nico — Reglas de Negocio (C005)
+
+### Webhook y mensajes
+N1  — Todo mensaje entrante se guarda ANTES de procesarlo con el agente. Si el agente falla, el mensaje no se pierde.
+N2  — Idempotencia obligatoria: wa_message_id único por mensaje. Si Meta reenvía el mismo webhook, se ignora el duplicado.
+N3  — Validación HMAC timing-safe en cada POST del webhook. Si falla → 403.
+N4  — Tokens de WhatsApp se almacenan encriptados con pgcrypto. Nunca se exponen en endpoints GET ni en logs.
+N5  — La ventana de 24h de Meta se respeta estrictamente. Fuera de ventana solo se envían plantillas HSM con estado_meta=APROBADA.
+
+### Agente Nico
+N6  — Nico solo opera en canal WhatsApp. En el panel web no responde.
+N7  — Cuando una conversación pasa a modo VENDEDOR, Nico deja de responder hasta que se le devuelva el control explícitamente.
+N8  — Nico NO puede modificar stock, anular servicios ni cambiar precios. Sus tools son de lectura sobre inventario y de escritura limitada sobre clientes y servicios.
+N9  — Nico no inventa datos. Si no tiene la información, pregunta al cliente o consulta la BD. Si la BD no tiene el dato, lo dice.
+N10 — La derivación a vendedor siempre incluye motivo y contexto para que el vendedor no parta de cero.
+N11 — Toda tool ejecutada por Nico se loguea con timestamp, resultado, duración y error (si hubo) en crm_accion_agente.
+N12 — Nico requiere confirmación del CLIENTE antes de crear un servicio ("¿Confirmo tu reparación?").
+N13 — Nico responde 24/7. Si necesita vendedor humano fuera de horario, deja nota y avisa que responderán en horario laboral.
+N14 — Nico solo envía texto y links por ahora. No envía imágenes ni archivos.
+N15 — Context builder comprime: etiquetas del lead + últimos N mensajes + datos capturados + objetivo de etapa actual. N configurable por agente (default 20).
+
+### Pipeline y etapas
+N16 — Las etapas del pipeline tienen transiciones dirigidas. No se puede saltar de cualquier etapa a cualquier otra.
+N17 — Cada etapa tiene un operador definido (IA/BOT/HUMANO/SISTEMA). El sistema respeta quién debe operar en cada momento.
+N18 — Si operador=IA, Nico responde. Si operador=HUMANO, el vendedor responde. Si operador=BOT, se ejecuta el flujo determinístico configurado. Si operador=SISTEMA, la etapa es automática (final).
+N19 — Las etapas, operadores, objetivos, transiciones, colores y tiempos son EDITABLES desde el panel de administración.
+N20 — Excepción de transiciones: desde DERIVACION_VENDEDOR el vendedor puede mover el lead a cualquier etapa.
+
+### Leads y etiquetas
+N21 — Cuando un número nuevo escribe por WhatsApp, se crea automáticamente un lead y una conversación.
+N22 — Las etiquetas se asignan automáticamente por Nico (vía tool guardarDato) o manualmente por el vendedor.
+N23 — Los campos UTM (utm_source, utm_campaign, utm_medium) se capturan automáticamente de la URL de origen al crear el lead. No requieren intervención manual. Una vez guardados son inmutables (C001).
+N24 — Asignación de vendedor: round-robin por sucursal como default. Configurable después.
+
+### Bots
+N25 — Los bots son flujos determinísticos (no IA) con pasos secuenciales predefinidos en config JSONB.
+N26 — Los bots coexisten con Nico pero son independientes. Si operador de etapa = BOT, se ejecuta el bot vinculado.
+N27 — El bot de recordatorio tiene un máximo de N intentos configurables (default 3, 24h entre cada uno). Después marca al lead como SIN_RESPUESTA.
+
+### Mensajería interna
+N28 — La mensajería interna es completamente separada de WhatsApp. Chat entre empleados dentro del panel. No comparte tablas ni flujos.
+
+### Seguridad y permisos
+N29 — Un solo webhook endpoint para todos los negocios. Ruteo interno por phone_number_id.
+N30 — ADMINISTRADOR: acceso total al CRM, configuración de etapas/etiquetas/agentes/bots/plantillas/cuentas WhatsApp.
+N31 — VENDEDOR: bandeja de conversaciones, chat en vivo, kanban de leads, ficha de lead, notas.
+N32 — TECNICO: solo mensajería interna.

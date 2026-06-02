@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuthStore } from "../../../shared/stores/auth-store";
 import { useMetodosPago } from "../../inventario/hooks/useInventario";
+import { imprimirVoucherDetalle } from "../components/VoucherPrint";
 import { useAnularVenta, useDespachar, useRegistrarPago, useVenta } from "../hooks/useVentas";
 import type { VentaDetalleDto } from "../types/ventas";
 
@@ -278,30 +279,7 @@ export function VentaDetallePage() {
   const porcentajePagado = venta.porcentaje_pagado ?? 0;
 
   function printVoucher() {
-    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>Voucher ${venta.codigo}</title>
-<style>body{font-family:monospace;padding:24px;max-width:400px;margin:0 auto}
-h2{text-align:center;font-size:14px}hr{border:1px dashed #ccc}
-.row{display:flex;justify-content:space-between;margin:3px 0;font-size:12px}
-.total{font-weight:bold;font-size:14px}</style></head><body>
-<h2>REPARATEGO</h2><h2>VOUCHER DE VENTA</h2><hr/>
-<div class="row"><span>N°:</span><span>${venta.codigo}</span></div>
-<div class="row"><span>Fecha:</span><span>${new Date(venta.created_at).toLocaleString("es-PE")}</span></div>
-<div class="row"><span>Cliente:</span><span>${venta.cliente_nombre ?? "Sin cliente"}</span></div>
-${venta.vendedor_nombre ? `<div class="row"><span>Vendedor:</span><span>${venta.vendedor_nombre}</span></div>` : ""}
-${venta.orden_servicio_id ? `<div class="row"><span>Servicio:</span><span>${venta.orden_servicio_id.slice(0, 8)}</span></div>` : ""}
-<hr/>
-${venta.items.map((it) => `<div class="row"><span>${it.descripcion} x${it.cantidad}</span><span>S/ ${Number(it.subtotal).toFixed(2)}</span></div>`).join("")}
-<hr/>
-<div class="row total"><span>TOTAL:</span><span>S/ ${Number(venta.total).toFixed(2)}</span></div>
-${venta.pagos.map((p) => `<div class="row"><span>${p.metodo_nombre ?? ""}:</span><span>S/ ${Number(p.monto).toFixed(2)}</span></div>`).join("")}
-<hr/>
-<p style="text-align:center;font-size:11px">Gracias por su preferencia</p>
-</body></html>`;
-    const w = window.open("", "_blank", "width=480,height=700");
-    if (!w) return;
-    w.document.write(html);
-    w.document.close();
-    w.onload = () => w.print();
+    imprimirVoucherDetalle(venta);
   }
 
   return (

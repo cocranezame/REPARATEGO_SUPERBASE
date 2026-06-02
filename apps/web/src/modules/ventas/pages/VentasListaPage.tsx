@@ -2,8 +2,8 @@ import { Eye, Printer } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../../shared/stores/auth-store";
+import { imprimirVoucherSimple } from "../components/VoucherPrint";
 import { useVentas } from "../hooks/useVentas";
-import type { VentaDto } from "../types/ventas";
 
 // ─── Badges ───────────────────────────────────────────────────────────────────
 
@@ -30,33 +30,6 @@ const DESPACHO_LABEL: Record<string, string> = {
   ENVIO_PENDIENTE: "Envío pendiente",
   DESPACHADO: "Despachado",
 };
-
-// ─── Voucher imprimible ───────────────────────────────────────────────────────
-
-function imprimirVoucher(venta: VentaDto) {
-  const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><title>Voucher ${venta.codigo}</title>
-<style>body{font-family:monospace;padding:24px;max-width:400px;margin:0 auto}
-h2{text-align:center;font-size:14px}hr{border:1px dashed #ccc}
-.row{display:flex;justify-content:space-between;margin:3px 0;font-size:12px}
-.total{font-weight:bold;font-size:14px}</style></head><body>
-<h2>REPARATEGO</h2>
-<h2>VOUCHER DE VENTA</h2><hr/>
-<div class="row"><span>N°:</span><span>${venta.codigo}</span></div>
-<div class="row"><span>Fecha:</span><span>${new Date(venta.created_at).toLocaleString("es-PE")}</span></div>
-<div class="row"><span>Cliente:</span><span>${venta.cliente_nombre ?? "Sin cliente"}</span></div>
-<div class="row"><span>Tipo:</span><span>${venta.tipo_venta}</span></div>
-<hr/>
-<div class="row total"><span>TOTAL:</span><span>S/ ${Number(venta.total).toFixed(2)}</span></div>
-<div class="row"><span>Saldo:</span><span>S/ ${Number(venta.saldo_pendiente).toFixed(2)}</span></div>
-<hr/>
-<p style="text-align:center;font-size:11px">Gracias por su preferencia</p>
-</body></html>`;
-  const w = window.open("", "_blank", "width=480,height=600");
-  if (!w) return;
-  w.document.write(html);
-  w.document.close();
-  w.onload = () => w.print();
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -275,7 +248,7 @@ export function VentasListaPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => imprimirVoucher(v)}
+                          onClick={() => imprimirVoucherSimple(v)}
                           title="Imprimir voucher"
                           className="flex h-7 w-7 items-center justify-center rounded text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
                         >

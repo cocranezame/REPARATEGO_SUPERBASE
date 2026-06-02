@@ -30,9 +30,16 @@ export type ProductoCompatibilidadDto = {
 export type TasaPrecioDto = {
   id: string;
   tenant_id: string;
-  nombre: string;
-  porcentaje: string;
-  activo: boolean;
+  nivel: "POR_REPUESTO" | "POR_TIPO" | "POR_COMPONENTE";
+  producto_id: string | null;
+  tipo_registro: "PRODUCTO" | "SERVICIO" | null;
+  componente_id: string | null;
+  tasa_tipo: "PORCENTAJE" | "FIJO";
+  tasa_valor: string;
+  ultimo_costo: string | null;
+  promedio_historico: string | null;
+  precio_venta: string | null;
+  created_by: string;
   created_at: string;
   updated_at: string;
 };
@@ -208,4 +215,86 @@ export type MovimientosParams = {
   hasta?: string;
   page?: number;
   pageSize?: number;
+};
+
+// ─── Dashboard Inventario ─────────────────────────────────────────────────────
+
+export type DashboardProductoAlertaDto = {
+  producto_id: string;
+  nombre: string;
+  codigo: string;
+  stock_actual: number;
+  stock_minimo: number;
+};
+
+export type DashboardInventarioDto = {
+  total_productos: number;
+  total_servicios: number;
+  productos_stock_bajo_minimo: DashboardProductoAlertaDto[];
+  cotizaciones_pendientes: number;
+  valor_total_inventario: string;
+};
+
+export type DashboardInventarioResponse = {
+  success: true;
+  data: DashboardInventarioDto;
+};
+
+// ─── Alertas stock mínimo ──────────────────────────────────────────────────────
+
+export type AlertaStockDto = {
+  producto_id: string;
+  nombre: string;
+  codigo: string;
+  stock_actual: number;
+  stock_minimo: number;
+  diferencia: number;
+};
+
+export type AlertasStockResponse = {
+  success: true;
+  data: { productos: AlertaStockDto[] };
+};
+
+// ─── Proveedores sugeridos ─────────────────────────────────────────────────────
+
+export type ProveedorSugeridoDto = {
+  proveedor_id: string;
+  razon_social: string;
+  ruc: string;
+  calificacion: number | null;
+  telefono: string | null;
+};
+
+export type ProveedoresSugeridosDto = {
+  seguros: ProveedorSugeridoDto[];
+  posibles: ProveedorSugeridoDto[];
+};
+
+export type ProveedoresSugeridosResponse = {
+  success: true;
+  data: ProveedoresSugeridosDto;
+};
+
+// ─── Mensaje WhatsApp ──────────────────────────────────────────────────────────
+
+export type MensajeWhatsappDto = {
+  url: string;
+};
+
+export type MensajeWhatsappResponse = {
+  success: true;
+  data: MensajeWhatsappDto;
+};
+
+// ─── Ingreso manual ────────────────────────────────────────────────────────────
+
+export type IngresoManualResultDto = {
+  lote: LoteDto;
+  editado: boolean;
+};
+
+export type IngresoManualResponse = {
+  success: true;
+  data: IngresoManualResultDto;
 };

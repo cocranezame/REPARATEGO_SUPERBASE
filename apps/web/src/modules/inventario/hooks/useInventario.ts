@@ -4,6 +4,7 @@ import type {
   CreateMovimientoInput,
   CreateProductoInput,
   CreateTasaPrecioInput,
+  IngresoManualInput,
   SyncCompatibilidadesInput,
   UpdateMetodoPagoInput,
   UpdateProductoInput,
@@ -12,10 +13,14 @@ import type {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../../shared/lib/api-client";
 import type {
+  AlertasStockResponse,
   CompatibilidadesListResponse,
+  DashboardInventarioResponse,
+  IngresoManualResponse,
   LoteResponse,
   LotesListResponse,
   LotesParams,
+  MensajeWhatsappResponse,
   MetodoPagoResponse,
   MetodosPagoListResponse,
   MovimientoResponse,
@@ -24,6 +29,7 @@ import type {
   ProductoResponse,
   ProductosListResponse,
   ProductosParams,
+  ProveedoresSugeridosResponse,
   StockDetalleResponse,
   StockListResponse,
   TasaPrecioResponse,
@@ -122,15 +128,56 @@ export function useSyncCompatibilidades() {
   });
 }
 
+// ─── Dashboard Inventario ─────────────────────────────────────────────────────
+
+export function useDashboardInventario() {
+  return useQuery<DashboardInventarioResponse>({
+    queryKey: ["inventario-dashboard"],
+    queryFn: () => apiClient.get<DashboardInventarioResponse>("/inventario/dashboard"),
+  });
+}
+
+// ─── Alertas stock mínimo ──────────────────────────────────────────────────────
+
+export function useAlertasStock() {
+  return useQuery<AlertasStockResponse>({
+    queryKey: ["inventario-alertas-stock"],
+    queryFn: () => apiClient.get<AlertasStockResponse>("/inventario/stock/alertas"),
+  });
+}
+
+// ─── Proveedores sugeridos ────────────────────────────────────────────────────
+
+export function useProveedoresSugeridos(productoId: string) {
+  return useQuery<ProveedoresSugeridosResponse>({
+    queryKey: ["inventario-proveedores-sugeridos", productoId],
+    queryFn: () =>
+      apiClient.get<ProveedoresSugeridosResponse>(
+        `/inventario/cotizaciones/proveedores-sugeridos/${productoId}`
+      ),
+    enabled: productoId !== "",
+  });
+}
+
+// ─── Mensaje WhatsApp ──────────────────────────────────────────────────────────
+
+export function useMensajeWhatsapp(cotizacionId: string, detalleId: string) {
+  return useQuery<MensajeWhatsappResponse>({
+    queryKey: ["inventario-mensaje-whatsapp", cotizacionId, detalleId],
+    queryFn: () =>
+      apiClient.get<MensajeWhatsappResponse>(
+        `/inventario/cotizaciones/${cotizacionId}/mensaje-whatsapp/${detalleId}`
+      ),
+    enabled: cotizacionId !== "" && detalleId !== "",
+  });
+}
+
 // ─── Tasas de precio ──────────────────────────────────────────────────────────
 
-export function useTasasPrecio(activo?: boolean) {
+export function useTasasPrecio() {
   return useQuery<TasasPrecioListResponse>({
-    queryKey: ["tasas-precio", { activo }],
-    queryFn: () => {
-      const q = activo !== undefined ? `?activo=${activo}` : "";
-      return apiClient.get<TasasPrecioListResponse>(`/tasas-precio${q}`);
-    },
+    queryKey: ["tasas-precio"],
+    queryFn: () => apiClient.get<TasasPrecioListResponse>("/tasas-precio"),
   });
 }
 
@@ -296,6 +343,20 @@ export function useCreateMovimiento() {
       void qc.invalidateQueries({ queryKey: ["movimientos"] });
       void qc.invalidateQueries({ queryKey: ["stock"] });
       void qc.invalidateQueries({ queryKey: ["lotes"] });
+    },
+  });
+}
+
+export function useIngresoManual() {
+  const qc = useQueryClient();
+  return useMutation<IngresoManualResponse, Error, IngresoManualInput>({
+    mutationFn: (body) => apiClient.post<IngresoManualResponse>("/movimientos/ingreso", body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["lotes"] });
+      void qc.invalidateQueries({ queryKey: ["stock"] });
+      void qc.invalidateQueries({ queryKey: ["movimientos"] });
+      void qc.invalidateQueries({ queryKey: ["inventario-alertas-stock"] });
+      void qc.invalidateQueries({ queryKey: ["inventario-dashboard"] });
     },
   });
 }

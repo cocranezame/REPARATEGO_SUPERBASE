@@ -18,7 +18,7 @@
 | Ventas | caja, metodo_pago_catalogo, venta, venta_item, venta_pago, venta_envio, cotizacion_venta, cotizacion_venta_item — *Actualizado por C003: campos anulado_por, nota_credito_monto en venta; campo sku en venta_item* | db/modules/ventas.md |
 | Domicilios | tarifa_distrito, visita_domicilio | db/modules/domicilios.md |
 | Pagos Prov. | pago_proveedor | db/modules/pagos-proveedores.md |
-| CRM | wa_cuenta, etapa_pipeline, etapa_transicion, etiqueta, lead, lead_etiqueta, conversacion, mensaje, plantilla_wa, bot, agente_config, agente_evento, mensaje_interno | db/modules/crm.md |
+| CRM | wa_cuenta, crm_etapa, crm_etapa_transicion, crm_etiqueta, crm_lead, crm_lead_etiqueta, crm_conversacion, crm_mensaje, crm_nota, crm_agente, crm_accion_agente, crm_plantilla, crm_bot, crm_evento, crm_mensaje_interno — *Actualizado por C005: campos UTM (C001) en crm_lead, webhook_verify_token en wa_cuenta, bot_id en crm_etapa, campos metadata y mensajes_sin_leer, asignado_por en crm_lead_etiqueta, prompt_base y max_mensajes_contexto en crm_agente, meta_template_name en crm_plantilla, codigo en crm_etiqueta y crm_bot* | db/modules/crm.md |
 
 ## Enums globales
 
@@ -64,6 +64,20 @@ CREATE TYPE estado_cotizacion_venta AS ENUM ('BORRADOR', 'ENVIADA', 'APROBADA', 
 CREATE TYPE estado_visita AS ENUM (
   'POR_VALIDAR', 'VALIDADA', 'ASIGNADA', 'EN_CAMINO', 'EN_SITIO', 'TERMINADA', 'CANCELADA'
 );
+
+-- CRM (C005)
+CREATE TYPE modo_conversacion AS ENUM ('NICO', 'VENDEDOR');
+CREATE TYPE estado_conversacion AS ENUM ('ACTIVA', 'CERRADA');
+CREATE TYPE direccion_mensaje AS ENUM ('ENTRANTE', 'SALIENTE');
+CREATE TYPE origen_mensaje AS ENUM ('CLIENTE', 'AGENTE', 'VENDEDOR', 'BOT', 'SISTEMA');
+CREATE TYPE tipo_mensaje AS ENUM ('TEXTO', 'IMAGEN', 'PLANTILLA', 'LINK');
+CREATE TYPE grupo_etiqueta AS ENUM ('IDENTIFICACION', 'RUTA_ACTIVA', 'CAPTURA_DATOS', 'ESTADO_OPERATIVO');
+CREATE TYPE operador_etapa AS ENUM ('IA', 'BOT', 'HUMANO', 'SISTEMA');
+CREATE TYPE tipo_bot AS ENUM ('COTIZACION_REPUESTO', 'SERVICIO_PROCESO', 'RECORDATORIO');
+CREATE TYPE estado_meta_plantilla AS ENUM ('PENDIENTE', 'APROBADA', 'RECHAZADA');
+CREATE TYPE origen_nota AS ENUM ('NICO', 'VENDEDOR');
+CREATE TYPE origen_evento AS ENUM ('SISTEMA', 'NICO', 'VENDEDOR', 'BOT');
+CREATE TYPE asignado_por_etiqueta AS ENUM ('NICO', 'VENDEDOR', 'SISTEMA');
 ```
 
 ## Relaciones clave entre módulos

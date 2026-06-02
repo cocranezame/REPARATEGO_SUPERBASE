@@ -1,7 +1,7 @@
 # Epics Overview — ReparaTego
 
 > Estado de cada épica. Se actualiza al completar tickets.
-> Total: 18 épicas + deploy, ~164 tickets
+> Total: 18 épicas + deploy, ~182 tickets
 
 | Épica | Nombre | Estado | Doc |
 |-------|--------|--------|-----|
@@ -18,7 +18,7 @@
 | E10 | Servicios / Órdenes de Servicio — 28 tickets (6 sub-épicas: 10A-10F) | ✅ DONE | E10-servicios.md |
 | E11 | Ventas — 22 tickets (5 sub-épicas: 11A-11E) | ✅ DONE | E11-ventas.md |
 | E12 | Domicilios | ✅ DONE | E12-domicilios.md |
-| E13 | CRM + Agente IA (Nico) | ⬜ TODO | E13-crm.md |
+| E13 | CRM + Agente IA (Nico) — 35 tickets (7 sub-épicas: 13A-13G) | ⬜ TODO | E13-crm.md |
 | E14 | Dashboard y Reportes | ⬜ TODO | E14-dashboard.md |
 | E15 | QA, Performance y Pulido | ⬜ TODO | E15-qa.md |
 | E0D | Deploy a Producción | ⬜ TODO | E00D-deploy.md |

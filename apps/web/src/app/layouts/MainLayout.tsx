@@ -1,5 +1,6 @@
 import type { RolUsuario } from "@kallpasoft/shared";
 import {
+  AlertTriangle,
   ArrowLeftRight,
   BookOpen,
   Building2,
@@ -112,10 +113,16 @@ const NAV_GROUPS: NavGroup[] = [
     id: "inventario",
     label: "Inventario",
     icon: <Package className="h-5 w-5" />,
-    primaryTo: "/inventario/productos",
+    primaryTo: "/inventario",
     activePrefix: "/inventario",
     items: [
+      { label: "Dashboard", to: "/inventario", icon: <Package className="h-5 w-5" />, end: true },
       { label: "Productos", to: "/inventario/productos", icon: <Package className="h-5 w-5" /> },
+      {
+        label: "Stock y alertas",
+        to: "/inventario/stock",
+        icon: <AlertTriangle className="h-5 w-5" />,
+      },
       { label: "Lotes", to: "/inventario/lotes", icon: <Layers className="h-5 w-5" /> },
       {
         label: "Movimientos",

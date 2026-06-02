@@ -15,11 +15,13 @@ import { DomiciliosPage } from "../modules/domicilios/pages/DomiciliosPage";
 import { NuevaVisitaPage } from "../modules/domicilios/pages/NuevaVisitaPage";
 import { TarifasPage } from "../modules/domicilios/pages/TarifasPage";
 import { FeatureFlagsPage } from "../modules/feature-flags/pages/FeatureFlagsPage";
+import { DashboardInventarioPage } from "../modules/inventario/pages/DashboardInventarioPage";
 import { LotesPage } from "../modules/inventario/pages/LotesPage";
 import { MetodosPagoPage } from "../modules/inventario/pages/MetodosPagoPage";
 import { MovimientosPage } from "../modules/inventario/pages/MovimientosPage";
 import { ProductoFormPage } from "../modules/inventario/pages/ProductoFormPage";
 import { ProductosPage } from "../modules/inventario/pages/ProductosPage";
+import { StockPage } from "../modules/inventario/pages/StockPage";
 import { TasasPrecioPage } from "../modules/inventario/pages/TasasPrecioPage";
 import { PortalGuard } from "../modules/portal/components/PortalGuard";
 import { MisEquiposPage } from "../modules/portal/pages/MisEquiposPage";
@@ -76,6 +78,8 @@ export function App() {
             <Route path="/clientes/:id" element={<ClienteDetallePage />} />
             <Route path="/proveedores" element={<ProveedoresPage />} />
             <Route path="/proveedores/:id" element={<ProveedorDetallePage />} />
+            <Route path="/inventario" element={<DashboardInventarioPage />} />
+            <Route path="/inventario/stock" element={<StockPage />} />
             <Route path="/inventario/productos" element={<ProductosPage />} />
             <Route path="/inventario/productos/nuevo" element={<ProductoFormPage />} />
             <Route path="/inventario/productos/:id" element={<ProductoFormPage />} />

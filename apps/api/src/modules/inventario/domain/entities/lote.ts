@@ -7,6 +7,7 @@ export type Lote = {
   sucursal_nombre?: string;
   orden_compra_id: string | null;
   sku: string;
+  correlativo: number;
   cantidad_inicial: number;
   cantidad_actual: number;
   precio_unitario: string;

@@ -13,6 +13,8 @@ export const RolUsuario = {
   CAJERO: "CAJERO",
   // ASISTENTE: pendiente de migración DB — ver C018 en corrections-log
   ASISTENTE: "ASISTENTE",
+  // ALMACEN: pendiente de migración DB — ver C019 en corrections-log
+  ALMACEN: "ALMACEN",
 } as const;
 export type RolUsuario = (typeof RolUsuario)[keyof typeof RolUsuario];
 

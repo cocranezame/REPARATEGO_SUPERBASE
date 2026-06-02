@@ -344,6 +344,26 @@ El endpoint `/api/v1/auth/login` requiere 3 campos: `tipo_documento`, `numero_do
 
 ---
 
+## C019 — 2026-06-01
+
+**ID:** C019
+**Afecta:** db, api
+**Contexto:** E4 — Inventario C004
+
+**Rol ALMACEN pendiente de migración DB:**
+I24-I26 definen permisos diferenciados para el rol ALMACEN. El enum `rol_usuario` en PostgreSQL actualmente no incluye el valor `ALMACEN`. Se agregó `ALMACEN: "ALMACEN"` al enum TypeScript `RolUsuario` en `packages/shared/src/enums.ts` para que el sistema de autorización lo reconozca cuando exista en la DB. Actualmente ningún usuario puede tener `rol = "ALMACEN"` porque la inserción fallaría en PostgreSQL.
+
+Las rutas de inventario ya usan `authorize("ADMIN", "ALMACEN")` y `authorize("ADMIN", "ALMACEN", "VENDEDOR")` preparadas para este rol.
+
+**Migración DB necesaria:**
+```sql
+ALTER TYPE rol_usuario ADD VALUE IF NOT EXISTS 'ALMACEN';
+```
+
+**Regla:** Una vez ejecutada la migración, el rol ALMACEN funcionará automáticamente con los permisos definidos en las rutas de inventario.
+
+---
+
 ## C016 — 2026-06-01
 
 **ID:** C016

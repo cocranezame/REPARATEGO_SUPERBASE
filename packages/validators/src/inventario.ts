@@ -1,4 +1,10 @@
-import { TipoMovimiento, TipoProducto } from "@kallpasoft/shared";
+import {
+  NivelTasaPrecio,
+  TasaTipo,
+  TipoMovimiento,
+  TipoProducto,
+  TipoRegistroTasa,
+} from "@kallpasoft/shared";
 import { z } from "zod";
 import { uuidSchema } from "./common.js";
 
@@ -27,16 +33,41 @@ export const syncCompatibilidadesSchema = z.object({
 });
 export type SyncCompatibilidadesInput = z.infer<typeof syncCompatibilidadesSchema>;
 
-export const createTasaPrecioSchema = z.object({
-  nombre: z.string().min(1).max(50),
-  porcentaje: z.number().min(0).max(999.99),
-});
+export const createTasaPrecioSchema = z
+  .object({
+    nivel: z.nativeEnum(NivelTasaPrecio),
+    producto_id: uuidSchema.optional(),
+    tipo_registro: z.nativeEnum(TipoRegistroTasa).optional(),
+    componente_id: uuidSchema.optional(),
+    tasa_tipo: z.nativeEnum(TasaTipo),
+    tasa_valor: z.number().min(0),
+  })
+  .refine(
+    (d) => {
+      if (d.nivel === "POR_REPUESTO") return !!d.producto_id;
+      if (d.nivel === "POR_TIPO") return !!d.tipo_registro;
+      if (d.nivel === "POR_COMPONENTE") return !!d.componente_id;
+      return true;
+    },
+    { message: "El campo requerido para el nivel no fue proporcionado" }
+  );
 export type CreateTasaPrecioInput = z.infer<typeof createTasaPrecioSchema>;
 
-export const updateTasaPrecioSchema = createTasaPrecioSchema.partial().extend({
-  activo: z.boolean().optional(),
+export const updateTasaPrecioSchema = z.object({
+  tasa_tipo: z.nativeEnum(TasaTipo).optional(),
+  tasa_valor: z.number().min(0).optional(),
 });
 export type UpdateTasaPrecioInput = z.infer<typeof updateTasaPrecioSchema>;
+
+export const ingresoManualSchema = z.object({
+  producto_id: uuidSchema,
+  sucursal_id: uuidSchema,
+  proveedor_id: uuidSchema.optional(),
+  cotizacion_id: uuidSchema.optional(),
+  cantidad: z.number().int().positive(),
+  precio_unitario: z.number().positive(),
+});
+export type IngresoManualInput = z.infer<typeof ingresoManualSchema>;
 
 export const createMetodoPagoSchema = z.object({
   nombre: z.string().min(1).max(50),

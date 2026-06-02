@@ -541,6 +541,12 @@ export function ProductoFormPage() {
                 <div className="flex flex-col gap-1">
                   <label htmlFor="pf-sm" className={LABEL}>
                     Stock mínimo
+                    <span
+                      className="ml-1 cursor-help text-neutral-400"
+                      title="Cantidad mínima antes de generar alerta de reabastecimiento"
+                    >
+                      ⓘ
+                    </span>
                   </label>
                   <input
                     id="pf-sm"
@@ -549,6 +555,7 @@ export function ProductoFormPage() {
                     min="0"
                     placeholder="0"
                     className={INPUT}
+                    title="Cantidad mínima antes de generar alerta de reabastecimiento"
                     {...register("stock_minimo")}
                   />
                 </div>

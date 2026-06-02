@@ -198,3 +198,47 @@ PV3 — Voucher NO incluye QR/código de barras. Los códigos de barras son excl
 PV4 — Vendedor ve solo sus ventas, Administrador ve todas.
 PV5 — Reporte de cierre de caja imprimible.
 PV6 — Descuentos/promociones diferido a post-producción.
+
+## Inventario — Reglas de Negocio (C004)
+
+### Productos y servicios
+I1  — No pueden existir productos duplicados por combinación categoría + componente + marca + modelo aunque el nombre sea diferente.
+I2  — No pueden existir servicios duplicados por combinación categoría + componente + marca + modelo + nombre aunque la descripción sea diferente.
+I3  — Servicios no llevan control de stock. No tienen SKU ni lotes.
+I4  — Código autogenerado: 3 primeras letras de la categoría en mayúsculas + ID del registro, sin guion ni separador.
+I5  — Descripción de servicio es opcional.
+
+### Proveedores y cotización
+I6  — Un proveedor no puede tener combinaciones repetidas de categoría + componente en sus líneas de abastecimiento.
+I7  — Proveedores se clasifican automáticamente: SEGURO (coinciden categoría + componente) y POSIBLE (solo categoría).
+I8  — La cotización no tiene proveedor ganador. La decisión de compra se toma al momento del ingreso.
+I9  — Se permiten múltiples ingresos desde la misma cotización con diferentes proveedores.
+I10 — Mensaje WhatsApp generado como URL (wa.me/{numero}?text={mensaje}) sin necesidad de API de WhatsApp Business.
+
+### Lotes y SKU
+I11 — SKU formato: código producto + DDMMAA sin separador + correlativo si hay más de un proveedor mismo producto mismo día.
+I12 — Ingreso manual: mismo producto + mismo día + mismo proveedor = editar lote existente sumando cantidad. Diferente proveedor mismo día = nuevo lote con correlativo.
+I13 — Ingreso por OC: SIEMPRE crea lote nuevo, nunca edita existente. Transacción atómica con rollback completo.
+I14 — Al completar ingreso por OC: OC y solicitudes vinculadas cambian a INGRESADA, OC sale del kanban.
+
+### Stock y movimientos
+I15 — Stock global = suma de lotes activos por producto. Nunca se edita manualmente.
+I16 — Campo stock_minimo por producto para alertas de reabastecimiento (default 0).
+I17 — Consumo de lotes: FIFO por defecto (se consume primero el lote más antiguo con stock disponible). Excepción: cuando se escanea SKU específico en POS/servicio, se consume ese lote puntual.
+I18 — Tipos de salida: VENTA, SERVICIO, MERMA, REAJUSTE.
+I19 — Merma y reajuste requieren rol ADMINISTRADOR o ALMACEN.
+
+### Tasas y precios
+I20 — Jerarquía de tasas: POR_REPUESTO > POR_TIPO > POR_COMPONENTE. Se toma la más específica disponible.
+I21 — Tasa editable en cualquier momento con recálculo instantáneo del precio de venta.
+I22 — Último costo se obtiene de la cotización usada en el último movimiento de ingreso del producto.
+I23 — Precio de venta se recalcula automáticamente al cambiar tasa o al registrar nuevo ingreso.
+
+### Permisos
+I24 — ADMINISTRADOR: acceso total al módulo inventario.
+I25 — ALMACEN: stock, lotes, movimientos (lectura y escritura), merma y reajuste.
+I26 — VENDEDOR: solo lectura de stock disponible y precios de venta.
+
+### Auditoría
+I27 — Todo registro almacena usuario que lo creó y fecha de creación/actualización.
+I28 — Soft delete (campo activo) en productos, servicios y proveedores. Nunca eliminación física.

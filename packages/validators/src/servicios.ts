@@ -66,7 +66,7 @@ export const listInstanciasQuerySchema = z.object({
   cliente_id: uuidSchema.optional(),
   producto_id: uuidSchema.optional(),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  pageSize: z.coerce.number().int().min(1).max(500).default(20),
 });
 export type ListInstanciasQuery = z.infer<typeof listInstanciasQuerySchema>;
 
@@ -120,7 +120,7 @@ export const listOrdenesServicioQuerySchema = z.object({
   hasta: z.string().optional(),
   search: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  pageSize: z.coerce.number().int().min(1).max(500).default(20),
 });
 export type ListOrdenesServicioQuery = z.infer<typeof listOrdenesServicioQuerySchema>;
 
@@ -158,7 +158,7 @@ export const buscarPresupuestoQuerySchema = z.object({
   busqueda: z.string().optional(),
   nivel: z.enum(["COMPAT", "MARCA", "CATEGORIA", "GLOBAL"]).optional(),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  pageSize: z.coerce.number().int().min(1).max(500).default(20),
 });
 export type BuscarPresupuestoQuery = z.infer<typeof buscarPresupuestoQuerySchema>;
 
@@ -239,7 +239,7 @@ export const listRequerimientosQuerySchema = z.object({
   estado: z.nativeEnum(EstadoRequerimiento).optional(),
   orden_servicio_id: uuidSchema.optional(),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+  pageSize: z.coerce.number().int().min(1).max(500).default(50),
 });
 export type ListRequerimientosQuery = z.infer<typeof listRequerimientosQuerySchema>;
 
@@ -269,7 +269,7 @@ export type AceptacionPortalInput = z.infer<typeof aceptacionPortalSchema>;
 
 export const listHistorialQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+  pageSize: z.coerce.number().int().min(1).max(500).default(50),
 });
 export type ListHistorialQuery = z.infer<typeof listHistorialQuerySchema>;
 

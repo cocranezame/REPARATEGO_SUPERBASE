@@ -87,7 +87,7 @@ export const listVisitasDomicilioQuerySchema = z.object({
   desde: z.string().optional(),
   hasta: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  pageSize: z.coerce.number().int().min(1).max(500).default(20),
 });
 export type ListVisitasDomicilioQuery = z.infer<typeof listVisitasDomicilioQuerySchema>;
 

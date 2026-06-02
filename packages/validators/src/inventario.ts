@@ -79,7 +79,7 @@ export const listLotesQuerySchema = z.object({
   producto_id: uuidSchema.optional(),
   sucursal_id: uuidSchema.optional(),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  pageSize: z.coerce.number().int().min(1).max(500).default(20),
 });
 export type ListLotesQuery = z.infer<typeof listLotesQuerySchema>;
 
@@ -90,7 +90,7 @@ export const listMovimientosQuerySchema = z.object({
   desde: z.string().optional(),
   hasta: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  pageSize: z.coerce.number().int().min(1).max(500).default(20),
 });
 export type ListMovimientosQuery = z.infer<typeof listMovimientosQuerySchema>;
 

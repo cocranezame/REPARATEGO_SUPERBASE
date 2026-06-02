@@ -1,6 +1,7 @@
 import { AlertTriangle, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../../../shared/stores/auth-store";
 import { useCategorias } from "../../catalogos/hooks/useCategorias";
 import { useComponentes } from "../../catalogos/hooks/useComponentes";
 import { useDeleteProducto, useProductos } from "../hooks/useInventario";
@@ -77,6 +78,8 @@ function ConfirmModal({
 
 export function ProductosPage() {
   const navigate = useNavigate();
+  const rol = useAuthStore((s) => s.user?.rol);
+  const puedeEscribir = rol === "ADMIN" || rol === "ALMACEN" || rol === "TECNICO";
 
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("");
@@ -132,14 +135,16 @@ export function ProductosPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-neutral-900">Productos</h1>
-        <button
-          type="button"
-          onClick={() => navigate("/inventario/productos/nuevo")}
-          className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
-        >
-          <Plus className="h-4 w-4" />
-          Nuevo producto
-        </button>
+        {puedeEscribir && (
+          <button
+            type="button"
+            onClick={() => navigate("/inventario/productos/nuevo")}
+            className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+          >
+            <Plus className="h-4 w-4" />
+            Nuevo producto
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -299,26 +304,28 @@ export function ProductosPage() {
                     <td className="px-4 py-3">
                       <EstadoBadge activo={p.activo} />
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/inventario/productos/${p.id}`)}
-                          title="Editar"
-                          className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPendingDelete(p)}
-                          title="Eliminar"
-                          className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-danger-600"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </td>
+                    {puedeEscribir && (
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/inventario/productos/${p.id}`)}
+                            title="Editar"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPendingDelete(p)}
+                            title="Eliminar"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-danger-600"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}

@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
+import { useAuthStore } from "../../../shared/stores/auth-store";
 import { useSucursales } from "../../sucursales/hooks/useSucursales";
 import { useMovimientos, useProductos } from "../hooks/useInventario";
 import type { MovimientosParams, TipoMovimiento } from "../types/inventario";
@@ -43,6 +44,9 @@ export function MovimientosPage() {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState<MovimientosParams>({});
 
+  const rol = useAuthStore((s) => s.user?.rol);
+  const puedeRegistrarMerma = rol === "ADMIN" || rol === "ALMACEN";
+
   const params: MovimientosParams = { ...filters, page, pageSize: PAGE_SIZE };
   const { data, isLoading, isError } = useMovimientos(params);
   const { data: productosData } = useProductos({ activo: true, pageSize: 200 });
@@ -60,6 +64,15 @@ export function MovimientosPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-neutral-900">Historial de movimientos</h1>
+        <span title={puedeRegistrarMerma ? undefined : "Requiere rol Administrador o Almacén"}>
+          <button
+            type="button"
+            disabled={!puedeRegistrarMerma}
+            className="rounded-lg border border-neutral-300 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Registrar merma/reajuste
+          </button>
+        </span>
       </div>
 
       {/* Filtros */}

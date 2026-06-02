@@ -2,6 +2,37 @@
 
 > Referencia: C003 (2026-06-01)
 > Ruta base: /ventas
+> Estado: ✅ IMPLEMENTADO — E11.3 (2026-06-01, 12 commits)
+
+## Archivos implementados
+
+| Archivo | Descripción |
+|---------|-------------|
+| `types/ventas.ts` | DTOs C003: CajaDto, VentaDto, VentaDetalleDto, CotizacionVentaDto |
+| `hooks/useVentas.ts` | 15 hooks TanStack Query con endpoints C003 correctos |
+| `pages/CajaPage.tsx` | Apertura/cierre caja, reporte imprimible |
+| `pages/PosPage.tsx` | POS completo: catálogo + carrito + pagos + envío + integración servicios |
+| `pages/VentasListaPage.tsx` | Lista con filtros, badges estado, voucher por fila |
+| `pages/VentaDetallePage.tsx` | Detalle 4 secciones + anulación + pago rápido + despachar |
+| `pages/CotizacionesVentaPage.tsx` | Lista + crear + ver + imprimir cotizaciones |
+| `components/VoucherPrint.tsx` | Utilidad compartida: imprimirVoucherDetalle + imprimirVoucherSimple |
+
+## Rutas web
+
+| Ruta | Componente | Descripción |
+|------|------------|-------------|
+| `/ventas/pos` | `PosPage` | POS principal (requiere caja abierta) |
+| `/ventas` | `VentasListaPage` | Lista con filtros y paginación |
+| `/ventas/:id` | `VentaDetallePage` | Detalle de venta |
+| `/ventas/cotizaciones` | `CotizacionesVentaPage` | Cotizaciones referenciales |
+| `/ventas/caja` | `CajaPage` | Estado y gestión de caja |
+| `/ventas/envios` | `EnviosPage` | Lista de envíos (pre-existente) |
+
+## Notas de implementación
+
+- Escaneo SKU en POS: busca por código o nombre en productos activos (sin endpoint dedicado de lote por SKU — workaround hasta que se agregue)
+- VentaDetallePage accede como ruta `/ventas/:id` — debe estar declarada DESPUÉS de rutas estáticas en App.tsx
+- `imprimirVoucherDetalle` / `imprimirVoucherSimple` usan `window.open` + `window.print()` sin dependencias
 
 ## Vistas en el sidebar
 

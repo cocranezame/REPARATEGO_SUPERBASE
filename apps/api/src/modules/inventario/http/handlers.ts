@@ -4,6 +4,7 @@ import type {
   CreateMovimientoInput,
   CreateProductoInput,
   CreateTasaPrecioInput,
+  IngresoManualInput,
   SyncCompatibilidadesInput,
 } from "@kallpasoft/validators";
 import type { Context } from "hono";
@@ -55,6 +56,22 @@ export function createInventarioHandlers(
   metodoPagoRepo: IMetodoPagoRepository,
   stockRepo: IStockRepository
 ) {
+  // ── GRUPO 1: Dashboard ─────────────────────────────────────────────────────
+
+  async function getDashboardHandler(c: HonoCtx) {
+    const tenantId = c.get("tenantId");
+    const data = await stockRepo.getDashboard(tenantId);
+    return c.json({ success: true, data });
+  }
+
+  // ── GRUPO 2: Alertas stock mínimo ──────────────────────────────────────────
+
+  async function getStockAlertasHandler(c: HonoCtx) {
+    const tenantId = c.get("tenantId");
+    const items = await stockRepo.getStockAlertas(tenantId);
+    return c.json({ success: true, data: { productos: items } });
+  }
+
   // ── Productos ──────────────────────────────────────────────────────────────
 
   async function listProductosHandler(c: HonoCtx) {
@@ -158,24 +175,28 @@ export function createInventarioHandlers(
     }
   }
 
-  // ── Tasas de precio ────────────────────────────────────────────────────────
+  // ── GRUPO 3: Tasas de precio (jerarquía) ───────────────────────────────────
 
   async function listTasasPrecioHandler(c: HonoCtx) {
-    const query = c.req.valid("query") as ListSimpleQuery;
     const tenantId = c.get("tenantId");
-    const items = await listTasasPrecio(tasaPrecioRepo, tenantId, query.activo);
+    const items = await listTasasPrecio(tasaPrecioRepo, tenantId);
     return c.json({ success: true, data: items });
   }
 
   async function createTasaPrecioHandler(c: HonoCtx) {
     const body = c.req.valid("json") as CreateTasaPrecioInput;
     const tenantId = c.get("tenantId");
+    const userId = c.get("userId");
     try {
-      const tasa = await createTasaPrecio(tasaPrecioRepo, tenantId, body);
+      const tasa = await createTasaPrecio(tasaPrecioRepo, tenantId, userId, body);
       return c.json({ success: true, data: tasa }, 201);
     } catch (err) {
       if (isDuplicateKeyError(err)) {
-        throw new ApiError("DUPLICATE_TASA_PRECIO", "Nombre de tasa ya registrado", 409);
+        throw new ApiError(
+          "DUPLICATE_TASA_PRECIO",
+          "Ya existe una tasa para este nivel/producto",
+          409
+        );
       }
       throw err;
     }
@@ -300,6 +321,41 @@ export function createInventarioHandlers(
     return c.json({ success: true, data: lote }, 201);
   }
 
+  // ── GRUPO 6: Ingreso manual ────────────────────────────────────────────────
+
+  async function ingresoManualHandler(c: HonoCtx) {
+    const body = c.req.valid("json") as IngresoManualInput;
+    const tenantId = c.get("tenantId");
+    const usuarioId = c.get("userId");
+    const result = await stockRepo.ingresoManual(tenantId, {
+      producto_id: body.producto_id,
+      sucursal_id: body.sucursal_id,
+      cantidad: body.cantidad,
+      precio_unitario: body.precio_unitario,
+      usuario_id: usuarioId,
+      ...(body.proveedor_id !== undefined ? { proveedor_id: body.proveedor_id } : {}),
+      ...(body.cotizacion_id !== undefined ? { cotizacion_id: body.cotizacion_id } : {}),
+    });
+    return c.json({ success: true, data: result }, 201);
+  }
+
+  // ── GRUPO 7: Ingreso automático OC ────────────────────────────────────────
+
+  async function ingresoOCHandler(c: HonoCtx) {
+    const ordenCompraId = c.req.param("ordenCompraId") as string;
+    const tenantId = c.get("tenantId");
+    const usuarioId = c.get("userId");
+    try {
+      await stockRepo.ingresoOC(tenantId, ordenCompraId, usuarioId);
+      return c.json({ success: true, data: null });
+    } catch (err) {
+      const msg = (err as Error).message;
+      if (msg.includes("TERMINADA")) throw new ApiError("INVALID_OC_STATE", msg, 422);
+      if (msg.includes("no encontrada")) throw new ApiError("OC_NOT_FOUND", msg, 404);
+      throw err;
+    }
+  }
+
   // ── Movimientos ────────────────────────────────────────────────────────────
 
   async function listMovimientosHandler(c: HonoCtx) {
@@ -344,7 +400,35 @@ export function createInventarioHandlers(
     return c.json({ success: true, data: movimiento }, 201);
   }
 
+  // ── GRUPO 4: Proveedores sugeridos ─────────────────────────────────────────
+
+  async function getProveedoresSugeridosHandler(c: HonoCtx) {
+    const productoId = c.req.param("productoId") as string;
+    const tenantId = c.get("tenantId");
+    const data = await stockRepo.getProveedoresSugeridos(tenantId, productoId);
+    return c.json({ success: true, data });
+  }
+
+  // ── GRUPO 5: WhatsApp ─────────────────────────────────────────────────────
+
+  async function getMensajeWhatsappHandler(c: HonoCtx) {
+    const cotizacionId = c.req.param("id") as string;
+    const detalleId = c.req.param("detalleId") as string;
+    const tenantId = c.get("tenantId");
+    try {
+      const result = await stockRepo.getMensajeWhatsapp(tenantId, cotizacionId, detalleId);
+      return c.json({ success: true, data: result });
+    } catch (err) {
+      const msg = (err as Error).message;
+      if (msg.includes("no encontrado") || msg.includes("no tiene teléfono"))
+        throw new ApiError("WHATSAPP_ERROR", msg, 422);
+      throw err;
+    }
+  }
+
   return {
+    getDashboard: getDashboardHandler,
+    getStockAlertas: getStockAlertasHandler,
     listProductos: listProductosHandler,
     createProducto: createProductoHandler,
     getProductoById: getProductoByIdHandler,
@@ -364,7 +448,11 @@ export function createInventarioHandlers(
     getStockDetalle: getStockDetalleHandler,
     listLotes: listLotesHandler,
     createLote: createLoteHandler,
+    ingresoManual: ingresoManualHandler,
+    ingresoOC: ingresoOCHandler,
     listMovimientos: listMovimientosHandler,
     createMovimiento: createMovimientoHandler,
+    getProveedoresSugeridos: getProveedoresSugeridosHandler,
+    getMensajeWhatsapp: getMensajeWhatsappHandler,
   };
 }

@@ -9,12 +9,12 @@
 | E1 | Seguridad y Acceso | ✅ DONE | E01-seguridad.md |
 | E2 | Catálogos Maestros | ✅ DONE | E02-catalogos.md |
 | E3 | Clientes | ✅ DONE | E03-clientes.md |
-| E4 | Inventario y Productos | ✅ DONE | E04-inventario.md |
-| E5 | Proveedores | ✅ DONE | E05-proveedores.md |
-| E6 | Cotización a Proveedores (Compra) | ✅ DONE | E06-cotizacion-compra.md |
+| E4 | Inventario y Productos — *Requiere parche C004 — ver corrections-log.md* | ✅ DONE | E04-inventario.md |
+| E5 | Proveedores — *Requiere parche C004 — ver corrections-log.md* | ✅ DONE | E05-proveedores.md |
+| E6 | Cotización a Proveedores (Compra) — *Requiere parche C004 — ver corrections-log.md* | ✅ DONE | E06-cotizacion-compra.md |
 | E7 | Compras (Solicitudes + OC) | ✅ DONE | E07-compras.md |
-| E8 | Lotes y Movimientos de Inventario | ✅ DONE | E08-lotes-inventario.md |
-| E9 | Pagos a Proveedores | ✅ DONE | E09-pagos-proveedores.md |
+| E8 | Lotes y Movimientos de Inventario — *Requiere parche C004 — ver corrections-log.md* | ✅ DONE | E08-lotes-inventario.md |
+| E9 | Pagos a Proveedores — *Requiere parche C004 — ver corrections-log.md* | ✅ DONE | E09-pagos-proveedores.md |
 | E10 | Servicios / Órdenes de Servicio — 28 tickets (6 sub-épicas: 10A-10F) | ✅ DONE | E10-servicios.md |
 | E11 | Ventas — 22 tickets (5 sub-épicas: 11A-11E) | ✅ DONE | E11-ventas.md |
 | E12 | Domicilios | ✅ DONE | E12-domicilios.md |

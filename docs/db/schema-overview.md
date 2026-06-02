@@ -11,7 +11,7 @@
 | Seguridad | tenant, usuario, sucursal, feature_flag | db/modules/seguridad.md |
 | Catálogos | categoria, componente, marca, modelo | db/modules/catalogos.md |
 | Clientes | cliente, cliente_direccion | db/modules/clientes.md |
-| Inventario | producto, producto_compatibilidad, tasa_precio, metodo_pago_catalogo, lote, movimiento_inventario | db/modules/inventario.md |
+| Inventario | producto, producto_compatibilidad, tasa_precio, metodo_pago_catalogo, lote, movimiento_inventario — *Actualizado por C004: campo stock_minimo en producto, campo correlativo en lote, tabla tasa_precio refactorizada con jerarquía de 3 niveles (POR_REPUESTO, POR_TIPO, POR_COMPONENTE)* | db/modules/inventario.md |
 | Proveedores | proveedor, proveedor_contacto, proveedor_metodo_pago, proveedor_linea | db/modules/proveedores.md |
 | Compras | cotizacion_compra, cotizacion_compra_detalle, solicitud_compra, orden_compra, orden_compra_confirmacion | db/modules/compras.md |
 | Servicios | instancia, instancia_imagen, periferico, costo_revision, orden_servicio, orden_servicio_periferico, orden_servicio_componente, orden_servicio_cotizacion, orden_servicio_evidencia, orden_servicio_sku_asignado, orden_servicio_requerimiento, orden_servicio_aceptacion, orden_servicio_historial, orden_servicio_observacion | db/modules/servicios.md |

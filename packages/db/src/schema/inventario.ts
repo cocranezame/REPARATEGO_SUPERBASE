@@ -1,5 +1,11 @@
-import { TipoMovimiento, TipoProducto } from "@kallpasoft/shared";
-import { relations } from "drizzle-orm";
+import {
+  NivelTasaPrecio,
+  TasaTipo,
+  TipoMovimiento,
+  TipoProducto,
+  TipoRegistroTasa,
+} from "@kallpasoft/shared";
+import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   date,
@@ -19,6 +25,9 @@ import { sucursal, tenant, usuario } from "./seguridad.js";
 
 export const tipoProductoEnum = pgEnum("tipo_producto", TipoProducto);
 export const tipoMovimientoEnum = pgEnum("tipo_movimiento", TipoMovimiento);
+export const nivelTasaPrecioEnum = pgEnum("nivel_tasa_precio", NivelTasaPrecio);
+export const tipoRegistroTasaEnum = pgEnum("tipo_registro_tasa", TipoRegistroTasa);
+export const tasaTipoEnum = pgEnum("tasa_tipo", TasaTipo);
 
 export const producto = pgTable(
   "producto",
@@ -72,17 +81,40 @@ export const productoCompatibilidad = pgTable(
   ]
 );
 
-export const tasaPrecio = pgTable("tasa_precio", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  tenant_id: uuid("tenant_id")
-    .notNull()
-    .references(() => tenant.id),
-  nombre: varchar("nombre", { length: 50 }).notNull(),
-  porcentaje: decimal("porcentaje", { precision: 5, scale: 2 }).notNull(),
-  activo: boolean("activo").notNull().default(true),
-  created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const tasaPrecio = pgTable(
+  "tasa_precio",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenant_id: uuid("tenant_id")
+      .notNull()
+      .references(() => tenant.id),
+    nivel: nivelTasaPrecioEnum("nivel").notNull(),
+    producto_id: uuid("producto_id").references(() => producto.id),
+    tipo_registro: tipoRegistroTasaEnum("tipo_registro"),
+    componente_id: uuid("componente_id").references(() => componente.id),
+    tasa_tipo: tasaTipoEnum("tasa_tipo").notNull(),
+    tasa_valor: decimal("tasa_valor", { precision: 10, scale: 2 }).notNull(),
+    ultimo_costo: decimal("ultimo_costo", { precision: 10, scale: 2 }),
+    promedio_historico: decimal("promedio_historico", { precision: 10, scale: 2 }),
+    precio_venta: decimal("precio_venta", { precision: 10, scale: 2 }),
+    created_by: uuid("created_by")
+      .notNull()
+      .references(() => usuario.id),
+    created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("uq_tasa_precio_repuesto")
+      .on(t.tenant_id, t.producto_id)
+      .where(sql`nivel = 'POR_REPUESTO'`),
+    uniqueIndex("uq_tasa_precio_tipo")
+      .on(t.tenant_id, t.tipo_registro)
+      .where(sql`nivel = 'POR_TIPO'`),
+    uniqueIndex("uq_tasa_precio_componente")
+      .on(t.tenant_id, t.componente_id)
+      .where(sql`nivel = 'POR_COMPONENTE'`),
+  ]
+);
 
 export const metodoPagoCatalogo = pgTable("metodo_pago_catalogo", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -108,6 +140,7 @@ export const lote = pgTable("lote", {
     .references(() => sucursal.id),
   orden_compra_id: uuid("orden_compra_id"),
   sku: varchar("sku", { length: 50 }).notNull(),
+  correlativo: integer("correlativo").notNull().default(1),
   cantidad_inicial: integer("cantidad_inicial").notNull(),
   cantidad_actual: integer("cantidad_actual").notNull(),
   precio_unitario: decimal("precio_unitario", { precision: 12, scale: 2 }).notNull(),
@@ -170,6 +203,9 @@ export const productoCompatibilidadRelations = relations(productoCompatibilidad,
 
 export const tasaPrecioRelations = relations(tasaPrecio, ({ one }) => ({
   tenant: one(tenant, { fields: [tasaPrecio.tenant_id], references: [tenant.id] }),
+  producto: one(producto, { fields: [tasaPrecio.producto_id], references: [producto.id] }),
+  componente: one(componente, { fields: [tasaPrecio.componente_id], references: [componente.id] }),
+  createdBy: one(usuario, { fields: [tasaPrecio.created_by], references: [usuario.id] }),
 }));
 
 export const metodoPagoCatalogoRelations = relations(metodoPagoCatalogo, ({ one }) => ({

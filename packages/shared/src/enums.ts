@@ -23,6 +23,26 @@ export const PlanTenant = {
 } as const;
 export type PlanTenant = (typeof PlanTenant)[keyof typeof PlanTenant];
 
+// Inventario — Tasas de precio (C004)
+export const NivelTasaPrecio = {
+  POR_REPUESTO: "POR_REPUESTO",
+  POR_TIPO: "POR_TIPO",
+  POR_COMPONENTE: "POR_COMPONENTE",
+} as const;
+export type NivelTasaPrecio = (typeof NivelTasaPrecio)[keyof typeof NivelTasaPrecio];
+
+export const TipoRegistroTasa = {
+  PRODUCTO: "PRODUCTO",
+  SERVICIO: "SERVICIO",
+} as const;
+export type TipoRegistroTasa = (typeof TipoRegistroTasa)[keyof typeof TipoRegistroTasa];
+
+export const TasaTipo = {
+  PORCENTAJE: "PORCENTAJE",
+  FIJO: "FIJO",
+} as const;
+export type TasaTipo = (typeof TasaTipo)[keyof typeof TasaTipo];
+
 // Inventario
 export const TipoProducto = {
   PRODUCTO: "PRODUCTO",

@@ -3,8 +3,7 @@ import type { ITasaPrecioRepository } from "../ports/tasa-precio.repository.js";
 
 export async function listTasasPrecio(
   repo: ITasaPrecioRepository,
-  tenantId: string,
-  activo?: boolean
+  tenantId: string
 ): Promise<TasaPrecio[]> {
-  return repo.list(tenantId, activo);
+  return repo.list(tenantId);
 }

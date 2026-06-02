@@ -14,9 +14,8 @@ export async function updateTasaPrecio(
   input: UpdateTasaPrecioInput
 ): Promise<TasaPrecio | null> {
   const data: UpdateTasaPrecioData = {
-    ...(input.nombre !== undefined ? { nombre: input.nombre } : {}),
-    ...(input.porcentaje !== undefined ? { porcentaje: input.porcentaje } : {}),
-    ...(input.activo !== undefined ? { activo: input.activo } : {}),
+    ...(input.tasa_tipo !== undefined ? { tasa_tipo: input.tasa_tipo } : {}),
+    ...(input.tasa_valor !== undefined ? { tasa_valor: input.tasa_valor } : {}),
   };
   return repo.update(tenantId, id, data);
 }

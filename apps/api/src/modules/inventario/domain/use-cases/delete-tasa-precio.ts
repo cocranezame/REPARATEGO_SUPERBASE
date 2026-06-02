@@ -5,5 +5,5 @@ export async function deleteTasaPrecio(
   tenantId: string,
   id: string
 ): Promise<boolean> {
-  return repo.softDelete(tenantId, id);
+  return repo.hardDelete(tenantId, id);
 }

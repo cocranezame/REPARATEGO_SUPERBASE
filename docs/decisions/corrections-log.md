@@ -466,3 +466,49 @@ ALTER TYPE rol_usuario ADD VALUE IF NOT EXISTS 'ASISTENTE';
   - Agregar campo correlativo en tabla lote para SKUs del mismo día con diferente proveedor
   - Agregar endpoint de mensaje WhatsApp en cotización
   - Agregar dashboard de inventario
+
+---
+
+## [C005] 2026-06-02 — Implementar módulo CRM completo con agente IA Nico, pipeline configurable y WhatsApp
+- **Afecta:** crm, clientes, servicios, inventario, seguridad
+- **Antes:**
+  - Schema CRM tenía 15 tablas definidas pero sin datos iniciales de etapas ni etiquetas
+  - No existían tools de Nico, context builder, webhook HMAC, bots determinísticos
+  - Campos UTM documentados en C001 pero no implementados
+  - No existían endpoints de métricas CRM documentados en C001
+- **Ahora:**
+  - Pipeline de 15 etapas configurables desde panel admin (nombre, operador, objetivo editables)
+  - Operador por etapa: IA (Nico responde), HUMANO (vendedor responde), BOT (flujo determinístico configurable), SISTEMA (etapa final automática)
+  - 19 etiquetas en 4 grupos como seed data inicial, editables desde admin
+  - 8 tools de Nico: guardarDato, moverEtapa, buscarCliente, crearCliente, crearServicio, derivarVendedor, enviarLink, consultarRepuesto
+  - Tools operan directo sobre schemas existentes vía SQL, NO vía endpoints HTTP internos
+  - Context builder: comprime etiquetas + últimos N mensajes + datos del lead para Haiku
+  - Webhook Meta con validación HMAC timing-safe + idempotencia por wa_message_id
+  - 3 bots determinísticos: cotización repuesto, servicio en proceso, recordatorio (config JSONB)
+  - Modo conversación NICO/VENDEDOR con pausa automática de Nico al derivar y devolución explícita
+  - Campos UTM (C001): utm_source, utm_campaign, utm_medium en crm_lead
+  - Endpoints métricas (C001): /crm/health, /crm/leads, /crm/clients/metrics, /crm/sales, /crm/audiences
+  - Mensajería interna separada de WhatsApp
+  - Portal CRM dentro de apps/web, no app separada
+- **Razón:** se recibió informe funcional completo del módulo CRM + Agente IA
+- **Migración:** se ejecutará en E13.1
+- **Pendientes resueltos:**
+  - P1: 15 etapas definidas como seed data configurable (PRIMER_CONTACTO, IDENTIFICACION, CAPTURA_EQUIPO, CAPTURA_FALLA, CAPTURA_UBICACION, COTIZACION_INFORMAL, DECISION_CLIENTE, REGISTRO_CLIENTE, REGISTRO_SERVICIO, DERIVACION_VENDEDOR, SEGUIMIENTO_SERVICIO, COTIZACION_REPUESTO, ESPERANDO_RESPUESTA, CONVERTIDO, SIN_RESPUESTA)
+  - P2: 19 etiquetas en 4 grupos como seed data configurable
+  - P3: Prompt base de Nico diferido a implementación. Se crea docs/crm/nico-prompt.md para iterar
+  - P4: Pasos de bots diferidos. Config JSONB permite iterar sin migración
+  - P5: Plantillas HSM diferidas hasta cuenta Meta aprobada
+  - P6: Asignación vendedor: round-robin por sucursal como default, configurable después
+  - P7: Tiempo espera recordatorio: 24h por defecto en todas las etapas, configurable por etapa
+  - P8: Nico requiere confirmación del CLIENTE para crear servicio ("¿Confirmo tu reparación?")
+  - P9: Tech Provider Meta diferido. Token manual hasta aprobación
+  - P10: Nico solo texto y links por ahora, no imágenes
+  - P11: Nico responde 24/7. Si necesita humano fuera de horario, deja nota y avisa horario laboral
+  - P12: No hay conversaciones previas a migrar, sistema nuevo
+- **Seed data inicial:**
+  - 15 etapas del pipeline con operador y objetivo
+  - Transiciones dirigidas entre etapas
+  - 19 etiquetas en 4 grupos
+  - 1 agente (Nico, canal WHATSAPP, modelo claude-haiku)
+  - 3 bots (cotización repuesto, servicio proceso, recordatorio)
+  - Métodos de pago catálogo si no existen

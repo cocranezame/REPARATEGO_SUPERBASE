@@ -262,3 +262,90 @@ export const EstadoVisita = {
   CANCELADA: "CANCELADA",
 } as const;
 export type EstadoVisita = (typeof EstadoVisita)[keyof typeof EstadoVisita];
+
+// CRM (C005)
+export const OperadorEtapa = {
+  IA: "IA",
+  BOT: "BOT",
+  HUMANO: "HUMANO",
+  SISTEMA: "SISTEMA",
+} as const;
+export type OperadorEtapa = (typeof OperadorEtapa)[keyof typeof OperadorEtapa];
+
+export const ModoConversacion = {
+  NICO: "NICO",
+  VENDEDOR: "VENDEDOR",
+} as const;
+export type ModoConversacion = (typeof ModoConversacion)[keyof typeof ModoConversacion];
+
+export const EstadoConversacion = {
+  ACTIVA: "ACTIVA",
+  CERRADA: "CERRADA",
+} as const;
+export type EstadoConversacion = (typeof EstadoConversacion)[keyof typeof EstadoConversacion];
+
+export const DireccionMensaje = {
+  ENTRANTE: "ENTRANTE",
+  SALIENTE: "SALIENTE",
+} as const;
+export type DireccionMensaje = (typeof DireccionMensaje)[keyof typeof DireccionMensaje];
+
+export const OrigenMensaje = {
+  CLIENTE: "CLIENTE",
+  AGENTE: "AGENTE",
+  VENDEDOR: "VENDEDOR",
+  BOT: "BOT",
+  SISTEMA: "SISTEMA",
+} as const;
+export type OrigenMensaje = (typeof OrigenMensaje)[keyof typeof OrigenMensaje];
+
+export const TipoMensaje = {
+  TEXTO: "TEXTO",
+  IMAGEN: "IMAGEN",
+  PLANTILLA: "PLANTILLA",
+  LINK: "LINK",
+} as const;
+export type TipoMensaje = (typeof TipoMensaje)[keyof typeof TipoMensaje];
+
+export const GrupoEtiqueta = {
+  IDENTIFICACION: "IDENTIFICACION",
+  RUTA_ACTIVA: "RUTA_ACTIVA",
+  CAPTURA_DATOS: "CAPTURA_DATOS",
+  ESTADO_OPERATIVO: "ESTADO_OPERATIVO",
+} as const;
+export type GrupoEtiqueta = (typeof GrupoEtiqueta)[keyof typeof GrupoEtiqueta];
+
+export const TipoBot = {
+  COTIZACION_REPUESTO: "COTIZACION_REPUESTO",
+  SERVICIO_PROCESO: "SERVICIO_PROCESO",
+  RECORDATORIO: "RECORDATORIO",
+} as const;
+export type TipoBot = (typeof TipoBot)[keyof typeof TipoBot];
+
+export const EstadoMetaPlantilla = {
+  PENDIENTE: "PENDIENTE",
+  APROBADA: "APROBADA",
+  RECHAZADA: "RECHAZADA",
+} as const;
+export type EstadoMetaPlantilla = (typeof EstadoMetaPlantilla)[keyof typeof EstadoMetaPlantilla];
+
+export const OrigenNota = {
+  NICO: "NICO",
+  VENDEDOR: "VENDEDOR",
+} as const;
+export type OrigenNota = (typeof OrigenNota)[keyof typeof OrigenNota];
+
+export const OrigenEvento = {
+  SISTEMA: "SISTEMA",
+  NICO: "NICO",
+  VENDEDOR: "VENDEDOR",
+  BOT: "BOT",
+} as const;
+export type OrigenEvento = (typeof OrigenEvento)[keyof typeof OrigenEvento];
+
+export const AsignadoPorEtiqueta = {
+  NICO: "NICO",
+  VENDEDOR: "VENDEDOR",
+  SISTEMA: "SISTEMA",
+} as const;
+export type AsignadoPorEtiqueta = (typeof AsignadoPorEtiqueta)[keyof typeof AsignadoPorEtiqueta];

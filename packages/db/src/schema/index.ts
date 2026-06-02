@@ -1,6 +1,7 @@
 export * from "./catalogos.js";
 export * from "./clientes.js";
 export * from "./compras.js";
+export * from "./crm.js";
 export * from "./domicilios.js";
 export * from "./inventario.js";
 export * from "./proveedores.js";

@@ -1,10 +1,12 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { CreateCotizacionCompraInput } from "@kallpasoft/validators";
-import { Eye, Plus, Trash2, X } from "lucide-react";
+import { MessageCircle, Plus, Shield, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useProductos } from "../../inventario/hooks/useInventario";
+import { apiClient } from "../../../shared/lib/api-client";
+import { useProductos, useProveedoresSugeridos } from "../../inventario/hooks/useInventario";
+import type { MensajeWhatsappResponse } from "../../inventario/types/inventario";
 import { useProveedores } from "../../proveedores/hooks/useProveedores";
 import {
   useCotizacion,
@@ -246,6 +248,168 @@ function CrearCotizacionModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ─── Proveedores sugeridos ────────────────────────────────────────────────────
+
+function ProveedoresSugeridosSection({
+  cotizacionId,
+  detalles,
+}: {
+  cotizacionId: string;
+  detalles: CotizacionDetalleDto[];
+}) {
+  const [selectedDetalleId, setSelectedDetalleId] = useState(detalles[0]?.id ?? "");
+  const selectedDetalle = detalles.find((d) => d.id === selectedDetalleId);
+  const productoId = selectedDetalle?.producto_id ?? "";
+
+  const { data, isLoading } = useProveedoresSugeridos(productoId);
+  const proveedores = data?.data;
+
+  async function handleWhatsApp(detalleId: string, telefono: string | null) {
+    try {
+      const res = await apiClient.get<MensajeWhatsappResponse>(
+        `/inventario/cotizaciones/${cotizacionId}/mensaje-whatsapp/${detalleId}`
+      );
+      window.open(res.data.url, "_blank", "noopener,noreferrer");
+    } catch {
+      if (telefono) {
+        window.open(
+          `https://wa.me/${telefono.replace(/\D/g, "")}`,
+          "_blank",
+          "noopener,noreferrer"
+        );
+      }
+    }
+  }
+
+  if (detalles.length === 0) {
+    return <p className="text-sm text-neutral-400">Sin productos en esta cotización.</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Selector de producto */}
+      <div className="flex flex-col gap-1">
+        <label htmlFor="ps-producto" className="text-xs font-medium text-neutral-600">
+          Producto
+        </label>
+        <select
+          id="ps-producto"
+          value={selectedDetalleId}
+          onChange={(e) => setSelectedDetalleId(e.target.value)}
+          className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
+        >
+          {detalles.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.producto_nombre ?? d.producto_id}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {isLoading && (
+        <div className="flex justify-center py-4">
+          <div className="h-5 w-5 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
+        </div>
+      )}
+
+      {!isLoading && proveedores && (
+        <div className="space-y-2">
+          {/* SEGUROS */}
+          {proveedores.seguros.length > 0 && (
+            <div>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                Seguros
+              </p>
+              <div className="space-y-2">
+                {proveedores.seguros.map((p) => (
+                  <div
+                    key={p.proveedor_id}
+                    className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-3 py-2"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-3.5 w-3.5 text-green-600" />
+                        <span className="text-sm font-medium text-neutral-900">
+                          {p.razon_social}
+                        </span>
+                        <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                          Seguro
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-neutral-500">
+                        {p.ruc}
+                        {p.telefono !== null ? ` · ${p.telefono}` : ""}
+                      </p>
+                    </div>
+                    {p.telefono !== null && (
+                      <button
+                        type="button"
+                        onClick={() => void handleWhatsApp(selectedDetalleId, p.telefono)}
+                        className="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        WhatsApp
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* POSIBLES */}
+          {proveedores.posibles.length > 0 && (
+            <div>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                Posibles
+              </p>
+              <div className="space-y-2">
+                {proveedores.posibles.map((p) => (
+                  <div
+                    key={p.proveedor_id}
+                    className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-3 py-2"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-neutral-900">
+                          {p.razon_social}
+                        </span>
+                        <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
+                          Posible
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-neutral-500">
+                        {p.ruc}
+                        {p.telefono !== null ? ` · ${p.telefono}` : ""}
+                      </p>
+                    </div>
+                    {p.telefono !== null && (
+                      <button
+                        type="button"
+                        onClick={() => void handleWhatsApp(selectedDetalleId, p.telefono)}
+                        className="flex items-center gap-1.5 rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        WhatsApp
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {proveedores.seguros.length === 0 && proveedores.posibles.length === 0 && (
+            <p className="py-4 text-center text-sm text-neutral-400">
+              No hay proveedores sugeridos para este producto.
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Modal Detalle + Cotizar ──────────────────────────────────────────────────
 
 function DetalleModal({ cotizacionId, onClose }: { cotizacionId: string; onClose: () => void }) {
@@ -256,6 +420,7 @@ function DetalleModal({ cotizacionId, onClose }: { cotizacionId: string; onClose
   const [precios, setPrecios] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [showCotizar, setShowCotizar] = useState(false);
+  const [tab, setTab] = useState<"detalle" | "proveedores">("detalle");
 
   function handlePrecioChange(detalleId: string, value: string) {
     setPrecios((prev) => ({ ...prev, [detalleId]: value }));
@@ -301,14 +466,40 @@ function DetalleModal({ cotizacionId, onClose }: { cotizacionId: string; onClose
           </button>
         </div>
 
-        <div className="max-h-[65vh] overflow-y-auto px-6 py-4">
+        {/* Tabs */}
+        <div className="flex gap-1 border-b border-neutral-200 px-6">
+          <button
+            type="button"
+            onClick={() => setTab("detalle")}
+            className={`px-3 py-2 text-sm font-medium transition-colors ${
+              tab === "detalle"
+                ? "border-b-2 border-primary-600 text-primary-600"
+                : "text-neutral-500 hover:text-neutral-700"
+            }`}
+          >
+            Detalle
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("proveedores")}
+            className={`px-3 py-2 text-sm font-medium transition-colors ${
+              tab === "proveedores"
+                ? "border-b-2 border-primary-600 text-primary-600"
+                : "text-neutral-500 hover:text-neutral-700"
+            }`}
+          >
+            Proveedores sugeridos
+          </button>
+        </div>
+
+        <div className="max-h-[55vh] overflow-y-auto px-6 py-4">
           {isLoading && (
             <div className="flex justify-center py-8">
               <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
             </div>
           )}
 
-          {cotizacion && (
+          {cotizacion && tab === "detalle" && (
             <div className="space-y-4">
               {/* Info */}
               <div className="grid grid-cols-2 gap-3 rounded-lg bg-neutral-50 p-3 text-sm">
@@ -395,6 +586,13 @@ function DetalleModal({ cotizacionId, onClose }: { cotizacionId: string; onClose
                 </div>
               )}
             </div>
+          )}
+
+          {cotizacion && tab === "proveedores" && (
+            <ProveedoresSugeridosSection
+              cotizacionId={cotizacionId}
+              detalles={cotizacion.detalles ?? []}
+            />
           )}
         </div>
 

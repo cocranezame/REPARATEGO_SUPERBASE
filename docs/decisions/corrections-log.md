@@ -401,3 +401,48 @@ ALTER TYPE rol_usuario ADD VALUE IF NOT EXISTS 'ASISTENTE';
 ```
 
 **Regla:** Una vez ejecutada la migración, actualizar `PATCH /ventas/:id/anular` en `apps/api/src/modules/ventas/http/routes.ts` para incluir `authorize("ADMIN", "ASISTENTE")`.
+
+---
+
+## [C004] 2026-06-01 — Adaptar módulo inventario con lógica de lotes dual, jerarquía de tasas y clasificación de proveedores
+- **Afecta:** inventario, compras, ventas, servicios
+- **Antes:**
+  - Cada ingreso de inventario creaba un lote nuevo siempre
+  - Tasa de precio 1:1 con producto, sin jerarquía
+  - Proveedores en cotización se listaban sin clasificación
+  - No existía generación de mensaje WhatsApp para proveedores en cotización
+  - No existía dashboard de inventario
+  - No existía campo stock_minimo en producto
+  - No existía lógica FIFO para consumo de lotes
+  - Merma y reajuste sin control de permisos específico
+- **Ahora:**
+  - Lógica dual de lotes:
+    - Ingreso manual: mismo producto + mismo día + mismo proveedor = editar lote existente sumando cantidad. Diferente proveedor mismo día = nuevo lote con correlativo al final del SKU
+    - Ingreso por OC (automático): SIEMPRE crea lote nuevo, nunca edita existente. Todo en transacción atómica con rollback
+  - Jerarquía de tasas de precio: POR_REPUESTO > POR_TIPO > POR_COMPONENTE. Se toma la más específica disponible. Requiere refactorizar tabla tasa_precio para soportar los 3 niveles
+  - Proveedores en cotización se clasifican automáticamente: SEGURO (verde, coinciden categoría + componente) y POSIBLE (solo categoría)
+  - Generación de URL WhatsApp (wa.me/{numero}?text={mensaje}) con mensaje predefinido para contactar proveedores desde cotización
+  - Dashboard de inventario con indicadores: total productos, stock bajo mínimo, cotizaciones pendientes
+  - Campo stock_minimo INTEGER DEFAULT 0 en tabla producto para alertas de reabastecimiento
+  - Consumo de lotes: FIFO por defecto. En venta libre FIFO automático, en servicio el técnico escanea SKU específico
+  - Merma y reajuste requieren rol ADMINISTRADOR o ALMACEN
+  - SKU de lote: código producto + DDMMAA sin separador. Correlativo numérico al final si hay más de un proveedor del mismo producto en el mismo día
+  - Múltiples ingresos permitidos desde la misma cotización con diferentes proveedores (no hay proveedor ganador)
+  - Último costo se obtiene de la cotización usada en el último movimiento de ingreso
+  - Precio de venta se recalcula automáticamente al cambiar tasa o al registrar nuevo ingreso
+- **Razón:** se recibió el informe funcional del módulo inventario que amplía la lógica de lotes, introduce jerarquía de tasas, clasificación de proveedores y alertas de stock mínimo
+- **Migración:** pendiente (actualización en módulos E4-E9)
+- **Pendientes resueltos:**
+  - P1: Descripción de servicio opcional
+  - P2: Stock mínimo por producto, campo stock_minimo INTEGER DEFAULT 0
+  - P3: Reporte comparación costos históricos diferido a E14 (dashboard/reportes)
+  - P4: FIFO por defecto para consumo de lotes. Venta libre = FIFO automático, servicio = técnico escanea SKU específico
+  - P5: Merma y reajuste requieren ADMINISTRADOR o ALMACEN
+  - P6: Permisos: ADMINISTRADOR todo, ALMACEN stock/lotes/movimientos, VENDEDOR solo lectura stock/precios
+  - P7: Catálogos ya resuelto en E2 como módulo independiente
+- **Impacto en schema:**
+  - Agregar campo stock_minimo en tabla producto
+  - Refactorizar tasa_precio para soportar jerarquía de 3 niveles (producto, tipo, componente)
+  - Agregar campo correlativo en tabla lote para SKUs del mismo día con diferente proveedor
+  - Agregar endpoint de mensaje WhatsApp en cotización
+  - Agregar dashboard de inventario

@@ -130,7 +130,7 @@ export const asignarEtiquetasSchema = z.object({
 export type AsignarEtiquetasInput = z.infer<typeof asignarEtiquetasSchema>;
 
 export const asignarVendedorLeadSchema = z.object({
-  vendedor_id: uuidSchema,
+  vendedor_id: z.union([uuidSchema, z.literal("round-robin")]),
 });
 export type AsignarVendedorLeadInput = z.infer<typeof asignarVendedorLeadSchema>;
 
@@ -171,7 +171,7 @@ export type AsignarVendedorConvInput = z.infer<typeof asignarVendedorConvSchema>
 export const enviarMensajeSchema = z.object({
   contenido: z.string().min(1).max(4096),
   tipo: z.enum(["TEXTO", "LINK"]).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 export type EnviarMensajeInput = z.infer<typeof enviarMensajeSchema>;
 
@@ -192,7 +192,7 @@ export type UpdatePlantillaInput = z.infer<typeof updatePlantillaSchema>;
 
 export const updateBotSchema = z.object({
   activo: z.boolean().optional(),
-  config: z.record(z.unknown()).optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
   nombre: z.string().min(1).max(100).optional(),
 });
 export type UpdateBotInput = z.infer<typeof updateBotSchema>;
@@ -245,3 +245,12 @@ export const metricasQuerySchema = z
     path: ["from"],
   });
 export type MetricasQuery = z.infer<typeof metricasQuerySchema>;
+
+// ─── Mensajes (conversación) ──────────────────────────────────────────────────
+
+export const listMensajesQuerySchema = z.object({
+  antes_de: z.string().datetime({ offset: true }).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+});
+export type ListMensajesQuery = z.infer<typeof listMensajesQuerySchema>;

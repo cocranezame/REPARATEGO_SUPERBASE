@@ -182,4 +182,148 @@ export interface ICrmRepository {
     vendedorId: string
   ): Promise<CrmConversacion | null>;
   getUltimoMensajeEntrante(tenantId: string, conversacionId: string): Promise<Date | null>;
+
+  // Webhook
+  findWaCuentaByVerifyToken(verifyToken: string): Promise<WaCuenta | null>;
+  findWaCuentaByPhoneNumberId(phoneNumberId: string): Promise<WaCuenta | null>;
+  existsMensajeByWaId(tenantId: string, waMessageId: string): Promise<boolean>;
+  findConversacionActivaByCelular(
+    tenantId: string,
+    waCuentaId: string,
+    celular: string
+  ): Promise<CrmConversacion | null>;
+  crearConversacionConLead(tenantId: string, data: CrearConversacionData): Promise<CrmConversacion>;
+
+  // Agent
+  findLeadForAgent(tenantId: string, leadId: string): Promise<LeadForAgent | null>;
+  findAgenteActivo(tenantId: string, canal: string): Promise<AgenteActivo | null>;
+  listMensajesParaContexto(
+    tenantId: string,
+    conversacionId: string,
+    limit: number
+  ): Promise<MensajeContexto[]>;
+  logAccionAgente(tenantId: string, data: LogAccionData): Promise<void>;
+
+  // Tools
+  guardarDatoLead(tenantId: string, leadId: string, campo: string, valor: string): Promise<void>;
+  asignarEtiquetaNico(tenantId: string, leadId: string, codigoEtiqueta: string): Promise<void>;
+  findEtapaByCodigo(
+    tenantId: string,
+    codigo: string
+  ): Promise<{ id: string; nombre: string; codigo: string } | null>;
+  buscarClientePorDocOrCelular(
+    tenantId: string,
+    numeroDoc?: string | undefined,
+    celular?: string | undefined
+  ): Promise<ClienteResult | null>;
+  crearClienteNico(tenantId: string, data: CrearClienteData): Promise<ClienteResult>;
+  crearServicioNico(tenantId: string, data: CrearServicioData): Promise<OrdenServicioResult>;
+  derivarVendedorNico(
+    tenantId: string,
+    leadId: string,
+    conversacionId: string,
+    motivo: string
+  ): Promise<{ vendedor_id: string | null; vendedor_nombre: string | null }>;
+  findSucursalById(
+    tenantId: string,
+    sucursalId: string
+  ): Promise<{ id: string; nombre: string; direccion: string | null } | null>;
+  consultarRepuestos(
+    tenantId: string,
+    busqueda: string,
+    categoriaId?: string | undefined
+  ): Promise<RepuestoResult[]>;
 }
+
+// ─── Nuevos tipos para webhook + agent ─────────────────────────────────────────
+
+export type CrearConversacionData = {
+  waCuentaId: string;
+  celular: string;
+  nombre?: string | undefined;
+};
+
+export type LeadForAgent = {
+  id: string;
+  celular: string;
+  nombre: string | null;
+  equipo_descripcion: string | null;
+  falla_descripcion: string | null;
+  ubicacion: string | null;
+  etapa_id: string;
+  etapa_codigo: string;
+  etapa_nombre: string;
+  etapa_objetivo: string | null;
+  vendedor_id: string | null;
+  cliente_id: string | null;
+  sucursal_id: string | null;
+};
+
+export type AgenteActivo = {
+  id: string;
+  nombre: string;
+  modelo_ia: string;
+  tono: string | null;
+  prompt_base: string | null;
+  max_mensajes_contexto: number;
+};
+
+export type MensajeContexto = {
+  id: string;
+  direccion: string;
+  origen: string;
+  contenido: string | null;
+  created_at: Date;
+};
+
+export type LogAccionData = {
+  agente_id: string;
+  conversacion_id: string;
+  lead_id: string;
+  tool_name: string;
+  tool_input: unknown;
+  tool_output: unknown;
+  exitoso: boolean;
+  duracion_ms: number;
+  error?: string | undefined;
+};
+
+export type ClienteResult = {
+  id: string;
+  nombres: string | null;
+  apellidos: string | null;
+  razon_social: string | null;
+  numero_documento: string;
+  tipo_documento: string;
+  telefono: string | null;
+};
+
+export type CrearClienteData = {
+  nombre: string;
+  numero_doc: string;
+  celular: string;
+  tipo_documento?: string | undefined;
+  leadId?: string | undefined;
+};
+
+export type CrearServicioData = {
+  leadId: string;
+  clienteId: string;
+  falla_ingreso: string;
+  categoria_id?: string | undefined;
+  canal?: string | undefined;
+};
+
+export type OrdenServicioResult = {
+  id: string;
+  codigo: string;
+  estado: string;
+};
+
+export type RepuestoResult = {
+  id: string;
+  nombre: string;
+  codigo: string;
+  stock_disponible: number;
+  precio_venta: string;
+};

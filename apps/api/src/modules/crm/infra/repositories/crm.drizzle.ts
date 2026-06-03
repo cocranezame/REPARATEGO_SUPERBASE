@@ -1,5 +1,9 @@
 import type { DbClient } from "@kallpasoft/db";
 import {
+  cliente as clienteTable,
+  costoRevision as costoRevisionTable,
+  crmAccionAgente as crmAccionAgenteTable,
+  crmAgente as crmAgenteTable,
   crmConversacion as crmConversacionTable,
   crmEtapa as crmEtapaTable,
   crmEtapaTransicion as crmEtapaTransicionTable,
@@ -9,10 +13,15 @@ import {
   crmLead as crmLeadTable,
   crmMensaje as crmMensajeTable,
   crmNota as crmNotaTable,
+  instancia as instanciaTable,
+  lote as loteTable,
+  ordenServicio as osTable,
+  producto as productoTable,
+  sucursal as sucursalTable,
   usuario as usuarioTable,
   waCuenta as waCuentaTable,
 } from "@kallpasoft/db";
-import { and, asc, count, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, inArray, lte, or, sql, sum } from "drizzle-orm";
 import type {
   CrmConversacion,
   CrmEtapa,
@@ -24,14 +33,24 @@ import type {
   WaCuenta,
 } from "../../domain/entities/crm.js";
 import type {
+  AgenteActivo,
+  ClienteResult,
+  CrearClienteData,
+  CrearConversacionData,
+  CrearServicioData,
   CreateEtapaData,
   CreateEtiquetaData,
   CreateWaCuentaData,
   GuardarMensajeData,
   ICrmRepository,
+  LeadForAgent,
   ListConversacionesParams,
   ListLeadsParams,
   ListMensajesParams,
+  LogAccionData,
+  MensajeContexto,
+  OrdenServicioResult,
+  RepuestoResult,
   UpdateEtapaData,
   UpdateEtiquetaData,
   UpdateWaCuentaData,
@@ -401,10 +420,11 @@ export class CrmDrizzleRepository implements ICrmRepository {
     if (params.hasta) conds.push(lte(crmLeadTable.created_at, new Date(params.hasta)));
     if (params.search) {
       conds.push(
+        // biome-ignore lint/style/noNonNullAssertion: or() with two defined args cannot be undefined
         or(
           ilike(crmLeadTable.nombre, `%${params.search}%`),
           ilike(crmLeadTable.celular, `%${params.search}%`)
-        )
+        )!
       );
     }
 
@@ -992,5 +1012,663 @@ export class CrmDrizzleRepository implements ICrmRepository {
     const val = (rows[0] as Record<string, unknown>)?.ultimo;
     if (!val) return null;
     return new Date(val as string);
+  }
+
+  // ─── Webhook ───────────────────────────────────────────────────────────────
+
+  async findWaCuentaByVerifyToken(verifyToken: string): Promise<WaCuenta | null> {
+    const rows = await this.db.execute(sql`
+      SELECT id, tenant_id, negocio_nombre, phone_number_id, waba_id,
+             webhook_verify_token, nombre, activo, created_at, updated_at
+      FROM wa_cuenta
+      WHERE webhook_verify_token = ${verifyToken} AND activo = true
+      LIMIT 1
+    `);
+    if (!rows[0]) return null;
+    return rows[0] as unknown as WaCuenta;
+  }
+
+  async findWaCuentaByPhoneNumberId(phoneNumberId: string): Promise<WaCuenta | null> {
+    const rows = await this.db.execute(sql`
+      SELECT id, tenant_id, negocio_nombre, phone_number_id, waba_id,
+             webhook_verify_token, nombre, activo, created_at, updated_at
+      FROM wa_cuenta
+      WHERE phone_number_id = ${phoneNumberId} AND activo = true
+      LIMIT 1
+    `);
+    if (!rows[0]) return null;
+    return rows[0] as unknown as WaCuenta;
+  }
+
+  async existsMensajeByWaId(tenantId: string, waMessageId: string): Promise<boolean> {
+    const rows = await this.db
+      .select({ id: crmMensajeTable.id })
+      .from(crmMensajeTable)
+      .where(
+        and(eq(crmMensajeTable.wa_message_id, waMessageId), eq(crmMensajeTable.tenant_id, tenantId))
+      )
+      .limit(1);
+    return rows.length > 0;
+  }
+
+  async findConversacionActivaByCelular(
+    tenantId: string,
+    waCuentaId: string,
+    celular: string
+  ): Promise<CrmConversacion | null> {
+    const rows = await this.db.execute(sql`
+      SELECT c.id, c.tenant_id, c.wa_cuenta_id, c.lead_id, c.celular, c.modo, c.estado,
+             c.ultimo_mensaje_at, c.mensajes_sin_leer, c.created_at, c.updated_at,
+             l.nombre AS lead_nombre, l.celular AS lead_celular, l.etapa_id AS lead_etapa_id,
+             e.nombre AS lead_etapa_nombre,
+             (
+               SELECT json_build_object(
+                 'id', m.id, 'contenido', m.contenido, 'origen', m.origen,
+                 'direccion', m.direccion, 'tipo', m.tipo, 'created_at', m.created_at
+               )
+               FROM crm_mensaje m WHERE m.conversacion_id = c.id
+               ORDER BY m.created_at DESC LIMIT 1
+             ) AS ultimo_mensaje
+      FROM crm_conversacion c
+      JOIN crm_lead l ON c.lead_id = l.id
+      LEFT JOIN crm_etapa e ON l.etapa_id = e.id
+      WHERE c.tenant_id = ${tenantId}::uuid
+        AND c.wa_cuenta_id = ${waCuentaId}::uuid
+        AND c.celular = ${celular}
+        AND c.estado = 'ACTIVA'
+      ORDER BY c.created_at DESC
+      LIMIT 1
+    `);
+    if (!rows[0]) return null;
+    return this.buildConversacionFromRow(rows[0] as Record<string, unknown>);
+  }
+
+  async crearConversacionConLead(
+    tenantId: string,
+    data: CrearConversacionData
+  ): Promise<CrmConversacion> {
+    return this.db.transaction(async (tx) => {
+      await setTenantLocal(tx, tenantId);
+
+      // 1. Buscar etapa PRIMER_CONTACTO
+      const etapaRows = await tx
+        .select({ id: crmEtapaTable.id })
+        .from(crmEtapaTable)
+        .where(
+          and(
+            eq(crmEtapaTable.tenant_id, tenantId),
+            eq(crmEtapaTable.codigo, "PRIMER_CONTACTO"),
+            eq(crmEtapaTable.activo, true)
+          )
+        )
+        .limit(1);
+
+      const etapaId = etapaRows[0]?.id;
+      if (!etapaId) throw new Error("Etapa PRIMER_CONTACTO no encontrada");
+
+      // 2. INSERT crm_lead
+      const leadRows = await tx
+        .insert(crmLeadTable)
+        .values({
+          tenant_id: tenantId,
+          wa_cuenta_id: data.waCuentaId,
+          celular: data.celular,
+          ...(data.nombre !== undefined ? { nombre: data.nombre } : {}),
+          etapa_id: etapaId,
+        })
+        .returning({ id: crmLeadTable.id });
+
+      const leadId = leadRows[0]?.id;
+      if (!leadId) throw new Error("Error al crear lead");
+
+      // 3. INSERT crm_conversacion
+      const convRows = await tx
+        .insert(crmConversacionTable)
+        .values({
+          tenant_id: tenantId,
+          wa_cuenta_id: data.waCuentaId,
+          lead_id: leadId,
+          celular: data.celular,
+        })
+        .returning({ id: crmConversacionTable.id });
+
+      const convId = convRows[0]?.id;
+      if (!convId) throw new Error("Error al crear conversación");
+
+      // 4. Registrar evento LEAD_CREADO
+      await tx.insert(crmEventoTable).values({
+        tenant_id: tenantId,
+        tipo: "LEAD_CREADO",
+        origen: "SISTEMA",
+        lead_id: leadId,
+        conversacion_id: convId,
+        datos: { celular: data.celular, nombre: data.nombre ?? null },
+      });
+
+      // 5. Retornar conversación completa
+      const result = await this.findConversacionById(tenantId, convId);
+      if (!result) throw new Error("Error al obtener conversación creada");
+      return result;
+    });
+  }
+
+  // ─── Agent ─────────────────────────────────────────────────────────────────
+
+  async findLeadForAgent(tenantId: string, leadId: string): Promise<LeadForAgent | null> {
+    const rows = await this.db.execute(sql`
+      SELECT l.id, l.celular, l.nombre, l.equipo_descripcion, l.falla_descripcion, l.ubicacion,
+             l.etapa_id, l.vendedor_id, l.cliente_id, l.sucursal_id,
+             e.codigo AS etapa_codigo, e.nombre AS etapa_nombre, e.objetivo AS etapa_objetivo
+      FROM crm_lead l
+      JOIN crm_etapa e ON l.etapa_id = e.id
+      WHERE l.id = ${leadId}::uuid AND l.tenant_id = ${tenantId}::uuid
+    `);
+    if (!rows[0]) return null;
+    const r = rows[0] as Record<string, unknown>;
+    return {
+      id: r.id as string,
+      celular: r.celular as string,
+      nombre: (r.nombre as string | null) ?? null,
+      equipo_descripcion: (r.equipo_descripcion as string | null) ?? null,
+      falla_descripcion: (r.falla_descripcion as string | null) ?? null,
+      ubicacion: (r.ubicacion as string | null) ?? null,
+      etapa_id: r.etapa_id as string,
+      etapa_codigo: r.etapa_codigo as string,
+      etapa_nombre: r.etapa_nombre as string,
+      etapa_objetivo: (r.etapa_objetivo as string | null) ?? null,
+      vendedor_id: (r.vendedor_id as string | null) ?? null,
+      cliente_id: (r.cliente_id as string | null) ?? null,
+      sucursal_id: (r.sucursal_id as string | null) ?? null,
+    };
+  }
+
+  async findAgenteActivo(tenantId: string, canal: string): Promise<AgenteActivo | null> {
+    const rows = await this.db
+      .select({
+        id: crmAgenteTable.id,
+        nombre: crmAgenteTable.nombre,
+        modelo_ia: crmAgenteTable.modelo_ia,
+        tono: crmAgenteTable.tono,
+        prompt_base: crmAgenteTable.prompt_base,
+        max_mensajes_contexto: crmAgenteTable.max_mensajes_contexto,
+      })
+      .from(crmAgenteTable)
+      .where(
+        and(
+          eq(crmAgenteTable.tenant_id, tenantId),
+          eq(crmAgenteTable.canal, canal),
+          eq(crmAgenteTable.activo, true)
+        )
+      )
+      .limit(1);
+
+    if (!rows[0]) return null;
+    const r = rows[0];
+    return {
+      id: r.id,
+      nombre: r.nombre,
+      modelo_ia: r.modelo_ia,
+      tono: r.tono ?? null,
+      prompt_base: r.prompt_base ?? null,
+      max_mensajes_contexto: r.max_mensajes_contexto,
+    };
+  }
+
+  async listMensajesParaContexto(
+    tenantId: string,
+    conversacionId: string,
+    limit: number
+  ): Promise<MensajeContexto[]> {
+    const rows = await this.db
+      .select({
+        id: crmMensajeTable.id,
+        direccion: crmMensajeTable.direccion,
+        origen: crmMensajeTable.origen,
+        contenido: crmMensajeTable.contenido,
+        created_at: crmMensajeTable.created_at,
+      })
+      .from(crmMensajeTable)
+      .where(
+        and(
+          eq(crmMensajeTable.conversacion_id, conversacionId),
+          eq(crmMensajeTable.tenant_id, tenantId)
+        )
+      )
+      .orderBy(desc(crmMensajeTable.created_at))
+      .limit(limit);
+
+    // Retornar en orden ASCENDENTE para historial de conversación
+    return rows.reverse().map((r) => ({
+      id: r.id,
+      direccion: r.direccion,
+      origen: r.origen,
+      contenido: r.contenido ?? null,
+      created_at: r.created_at,
+    }));
+  }
+
+  async logAccionAgente(tenantId: string, data: LogAccionData): Promise<void> {
+    await this.db.insert(crmAccionAgenteTable).values({
+      tenant_id: tenantId,
+      agente_id: data.agente_id,
+      conversacion_id: data.conversacion_id,
+      lead_id: data.lead_id,
+      tool_name: data.tool_name,
+      tool_input: data.tool_input as Record<string, unknown>,
+      tool_output: data.tool_output as Record<string, unknown>,
+      exitoso: data.exitoso,
+      duracion_ms: data.duracion_ms,
+      ...(data.error !== undefined ? { error: data.error } : {}),
+    });
+  }
+
+  // ─── Tools ─────────────────────────────────────────────────────────────────
+
+  async guardarDatoLead(
+    tenantId: string,
+    leadId: string,
+    campo: string,
+    valor: string
+  ): Promise<void> {
+    const camposPermitidos = ["nombre", "equipo_descripcion", "falla_descripcion", "ubicacion"];
+    if (!camposPermitidos.includes(campo)) {
+      throw new Error(`Campo no permitido: ${campo}`);
+    }
+    const updateData: Record<string, unknown> = { updated_at: new Date() };
+    updateData[campo] = valor;
+    await this.db
+      .update(crmLeadTable)
+      .set(updateData)
+      .where(and(eq(crmLeadTable.id, leadId), eq(crmLeadTable.tenant_id, tenantId)));
+  }
+
+  async asignarEtiquetaNico(
+    tenantId: string,
+    leadId: string,
+    codigoEtiqueta: string
+  ): Promise<void> {
+    const etiquetaRows = await this.db
+      .select({ id: crmEtiquetaTable.id })
+      .from(crmEtiquetaTable)
+      .where(
+        and(eq(crmEtiquetaTable.tenant_id, tenantId), eq(crmEtiquetaTable.codigo, codigoEtiqueta))
+      )
+      .limit(1);
+
+    const etiqueta = etiquetaRows[0];
+    if (!etiqueta) return;
+
+    await this.db
+      .insert(crmLeadEtiquetaTable)
+      .values({
+        tenant_id: tenantId,
+        lead_id: leadId,
+        etiqueta_id: etiqueta.id,
+        asignado_por: "NICO",
+      })
+      .onConflictDoNothing();
+  }
+
+  async findEtapaByCodigo(
+    tenantId: string,
+    codigo: string
+  ): Promise<{ id: string; nombre: string; codigo: string } | null> {
+    const rows = await this.db
+      .select({ id: crmEtapaTable.id, nombre: crmEtapaTable.nombre, codigo: crmEtapaTable.codigo })
+      .from(crmEtapaTable)
+      .where(and(eq(crmEtapaTable.tenant_id, tenantId), eq(crmEtapaTable.codigo, codigo)))
+      .limit(1);
+    return rows[0] ?? null;
+  }
+
+  async buscarClientePorDocOrCelular(
+    tenantId: string,
+    numeroDoc?: string | undefined,
+    celular?: string | undefined
+  ): Promise<ClienteResult | null> {
+    if (!numeroDoc && !celular) return null;
+
+    const conds = [eq(clienteTable.tenant_id, tenantId)];
+    const orConds = [];
+    if (numeroDoc) orConds.push(eq(clienteTable.numero_documento, numeroDoc));
+    if (celular) orConds.push(eq(clienteTable.telefono, celular));
+    if (orConds.length > 0) conds.push(or(...orConds)!);
+
+    const rows = await this.db
+      .select({
+        id: clienteTable.id,
+        nombres: clienteTable.nombres,
+        apellidos: clienteTable.apellidos,
+        razon_social: clienteTable.razon_social,
+        numero_documento: clienteTable.numero_documento,
+        tipo_documento: clienteTable.tipo_documento,
+        telefono: clienteTable.telefono,
+      })
+      .from(clienteTable)
+      .where(and(...conds))
+      .limit(1);
+
+    if (!rows[0]) return null;
+    const r = rows[0];
+    return {
+      id: r.id,
+      nombres: r.nombres ?? null,
+      apellidos: r.apellidos ?? null,
+      razon_social: r.razon_social ?? null,
+      numero_documento: r.numero_documento,
+      tipo_documento: r.tipo_documento,
+      telefono: r.telefono ?? null,
+    };
+  }
+
+  async crearClienteNico(tenantId: string, data: CrearClienteData): Promise<ClienteResult> {
+    // TipoDocumento enum: DNI | RUC | CE — PASAPORTE no existe en el schema
+    const rawTipo = data.tipo_documento ?? "DNI";
+    const tipoDoc = (["DNI", "RUC", "CE"].includes(rawTipo) ? rawTipo : "DNI") as
+      | "DNI"
+      | "RUC"
+      | "CE";
+
+    const [inserted] = await this.db
+      .insert(clienteTable)
+      .values({
+        tenant_id: tenantId,
+        tipo_documento: tipoDoc,
+        numero_documento: data.numero_doc,
+        tipo_persona: "NATURAL",
+        nombres: data.nombre,
+        telefono: data.celular,
+      })
+      .returning({
+        id: clienteTable.id,
+        nombres: clienteTable.nombres,
+        apellidos: clienteTable.apellidos,
+        razon_social: clienteTable.razon_social,
+        numero_documento: clienteTable.numero_documento,
+        tipo_documento: clienteTable.tipo_documento,
+        telefono: clienteTable.telefono,
+      });
+
+    if (!inserted) throw new Error("Error al crear cliente");
+
+    // Vincular al lead si se proporcionó leadId
+    if (data.leadId) {
+      await this.db
+        .update(crmLeadTable)
+        .set({ cliente_id: inserted.id, updated_at: new Date() })
+        .where(and(eq(crmLeadTable.id, data.leadId), eq(crmLeadTable.tenant_id, tenantId)));
+    }
+
+    return {
+      id: inserted.id,
+      nombres: inserted.nombres ?? null,
+      apellidos: inserted.apellidos ?? null,
+      razon_social: inserted.razon_social ?? null,
+      numero_documento: inserted.numero_documento,
+      tipo_documento: inserted.tipo_documento,
+      telefono: inserted.telefono ?? null,
+    };
+  }
+
+  async crearServicioNico(tenantId: string, data: CrearServicioData): Promise<OrdenServicioResult> {
+    return this.db.transaction(async (tx) => {
+      await setTenantLocal(tx, tenantId);
+
+      // 1. Verificar que lead tiene cliente_id
+      const leadRows = await tx
+        .select({ cliente_id: crmLeadTable.cliente_id, sucursal_id: crmLeadTable.sucursal_id })
+        .from(crmLeadTable)
+        .where(and(eq(crmLeadTable.id, data.leadId), eq(crmLeadTable.tenant_id, tenantId)));
+
+      const lead = leadRows[0];
+      if (!lead?.cliente_id) throw new Error("El lead no tiene cliente asociado");
+
+      const clienteId = lead.cliente_id;
+
+      // 2. Buscar primera instancia del cliente
+      const instanciaRows = await tx
+        .select({ id: instanciaTable.id })
+        .from(instanciaTable)
+        .where(
+          and(
+            eq(instanciaTable.tenant_id, tenantId),
+            eq(instanciaTable.cliente_id, clienteId),
+            eq(instanciaTable.activo, true)
+          )
+        )
+        .limit(1);
+
+      let instanciaId = instanciaRows[0]?.id;
+
+      if (!instanciaId) {
+        // 3. Buscar producto para crear instancia placeholder
+        let productoId: string | null = null;
+
+        if (data.categoria_id) {
+          const prodRows = await tx
+            .select({ id: productoTable.id })
+            .from(productoTable)
+            .where(
+              and(
+                eq(productoTable.tenant_id, tenantId),
+                eq(productoTable.categoria_id, data.categoria_id),
+                eq(productoTable.activo, true)
+              )
+            )
+            .limit(1);
+          productoId = prodRows[0]?.id ?? null;
+        }
+
+        if (!productoId) {
+          const prodRows = await tx
+            .select({ id: productoTable.id })
+            .from(productoTable)
+            .where(and(eq(productoTable.tenant_id, tenantId), eq(productoTable.activo, true)))
+            .limit(1);
+          productoId = prodRows[0]?.id ?? null;
+        }
+
+        if (!productoId) throw new Error("No se encontró un producto para crear la instancia");
+
+        // 4. Crear instancia
+        const newInstancia = await tx
+          .insert(instanciaTable)
+          .values({
+            tenant_id: tenantId,
+            cliente_id: clienteId,
+            producto_id: productoId,
+          })
+          .returning({ id: instanciaTable.id });
+
+        instanciaId = newInstancia[0]?.id;
+        if (!instanciaId) throw new Error("Error al crear instancia");
+      }
+
+      // 5. Generar código OS
+      const countRows = await tx.execute(
+        sql`SELECT COUNT(*)::int AS n FROM orden_servicio WHERE tenant_id = ${tenantId}::uuid`
+      );
+      const n = Number((countRows[0] as Record<string, unknown>)?.n ?? 0);
+      const codigo = `OS-${String(n + 1).padStart(5, "0")}`;
+
+      // 6. Obtener costo_revision
+      let costoRevisionMonto = "0.00";
+      if (data.categoria_id) {
+        const costoRows = await tx
+          .select({ monto: costoRevisionTable.monto })
+          .from(costoRevisionTable)
+          .where(
+            and(
+              eq(costoRevisionTable.tenant_id, tenantId),
+              eq(costoRevisionTable.categoria_id, data.categoria_id),
+              eq(costoRevisionTable.activo, true)
+            )
+          )
+          .limit(1);
+        if (costoRows[0]) costoRevisionMonto = costoRows[0].monto;
+      }
+
+      // 7. INSERT orden_servicio
+      // canal_servicio enum solo tiene TIENDA | DOMICILIO — WHATSAPP no está disponible en DB aún
+      const rawCanal = data.canal ?? "TIENDA";
+      const canal = (["TIENDA", "DOMICILIO"].includes(rawCanal) ? rawCanal : "TIENDA") as
+        | "TIENDA"
+        | "DOMICILIO";
+      const osRows = await tx
+        .insert(osTable)
+        .values({
+          tenant_id: tenantId,
+          codigo,
+          instancia_id: instanciaId,
+          canal,
+          falla_ingreso: data.falla_ingreso,
+          costo_revision: costoRevisionMonto,
+          estado: "VALIDACION",
+          ...(lead.sucursal_id ? { sucursal_id: lead.sucursal_id } : {}),
+          lead_id: data.leadId,
+        })
+        .returning({ id: osTable.id, codigo: osTable.codigo, estado: osTable.estado });
+
+      const os = osRows[0];
+      if (!os) throw new Error("Error al crear orden de servicio");
+
+      // 8. Mover lead a etapa CONVERTIDO
+      const etapaConvertido = await this.findEtapaByCodigo(tenantId, "CONVERTIDO");
+      if (etapaConvertido) {
+        await tx
+          .update(crmLeadTable)
+          .set({ etapa_id: etapaConvertido.id, updated_at: new Date() })
+          .where(and(eq(crmLeadTable.id, data.leadId), eq(crmLeadTable.tenant_id, tenantId)));
+      }
+
+      return { id: os.id, codigo: os.codigo, estado: os.estado };
+    });
+  }
+
+  async derivarVendedorNico(
+    tenantId: string,
+    leadId: string,
+    conversacionId: string,
+    motivo: string
+  ): Promise<{ vendedor_id: string | null; vendedor_nombre: string | null }> {
+    // 1. UPDATE crm_conversacion modo = VENDEDOR
+    await this.db
+      .update(crmConversacionTable)
+      .set({ modo: "VENDEDOR", updated_at: new Date() })
+      .where(
+        and(
+          eq(crmConversacionTable.id, conversacionId),
+          eq(crmConversacionTable.tenant_id, tenantId)
+        )
+      );
+
+    // 2. Buscar vendedor via roundRobin
+    const vendedorId = await this.roundRobinVendedor(tenantId);
+    let vendedorNombre: string | null = null;
+
+    if (vendedorId) {
+      // 3. UPDATE crm_lead vendedor_id
+      await this.db
+        .update(crmLeadTable)
+        .set({ vendedor_id: vendedorId, updated_at: new Date() })
+        .where(and(eq(crmLeadTable.id, leadId), eq(crmLeadTable.tenant_id, tenantId)));
+
+      const uRows = await this.db
+        .select({ nombres: usuarioTable.nombres, apellidos: usuarioTable.apellidos })
+        .from(usuarioTable)
+        .where(eq(usuarioTable.id, vendedorId))
+        .limit(1);
+      if (uRows[0]) {
+        vendedorNombre = `${uRows[0].nombres} ${uRows[0].apellidos}`.trim();
+      }
+    }
+
+    // 4. INSERT crm_evento DERIVACION
+    await this.db.insert(crmEventoTable).values({
+      tenant_id: tenantId,
+      tipo: "DERIVACION",
+      origen: "NICO",
+      lead_id: leadId,
+      conversacion_id: conversacionId,
+      datos: { motivo, vendedor_id: vendedorId, vendedor_nombre: vendedorNombre },
+    });
+
+    // 5. INSERT crm_nota
+    await this.db.insert(crmNotaTable).values({
+      tenant_id: tenantId,
+      lead_id: leadId,
+      contenido: `Derivación por: ${motivo}`,
+      origen: "NICO",
+    });
+
+    return { vendedor_id: vendedorId, vendedor_nombre: vendedorNombre };
+  }
+
+  async findSucursalById(
+    tenantId: string,
+    sucursalId: string
+  ): Promise<{ id: string; nombre: string; direccion: string | null } | null> {
+    const rows = await this.db
+      .select({
+        id: sucursalTable.id,
+        nombre: sucursalTable.nombre,
+        direccion: sucursalTable.direccion,
+      })
+      .from(sucursalTable)
+      .where(and(eq(sucursalTable.id, sucursalId), eq(sucursalTable.tenant_id, tenantId)))
+      .limit(1);
+    if (!rows[0]) return null;
+    return {
+      id: rows[0].id,
+      nombre: rows[0].nombre,
+      direccion: rows[0].direccion ?? null,
+    };
+  }
+
+  async consultarRepuestos(
+    tenantId: string,
+    busqueda: string,
+    categoriaId?: string | undefined
+  ): Promise<RepuestoResult[]> {
+    const conds = [
+      eq(productoTable.tenant_id, tenantId),
+      eq(productoTable.activo, true),
+      ilike(productoTable.nombre, `%${busqueda}%`),
+    ];
+    if (categoriaId) conds.push(eq(productoTable.categoria_id, categoriaId));
+
+    const productos = await this.db
+      .select({
+        id: productoTable.id,
+        nombre: productoTable.nombre,
+        codigo: productoTable.codigo,
+        precio_venta: productoTable.precio_venta,
+      })
+      .from(productoTable)
+      .where(and(...conds))
+      .limit(5);
+
+    const results: RepuestoResult[] = [];
+    for (const p of productos) {
+      const stockRows = await this.db
+        .select({ total: sum(loteTable.cantidad_actual) })
+        .from(loteTable)
+        .where(
+          and(
+            eq(loteTable.producto_id, p.id),
+            eq(loteTable.activo, true),
+            eq(loteTable.tenant_id, tenantId)
+          )
+        );
+      const stockDisponible = Number(stockRows[0]?.total ?? 0);
+      results.push({
+        id: p.id,
+        nombre: p.nombre,
+        codigo: p.codigo,
+        stock_disponible: stockDisponible,
+        precio_venta: p.precio_venta,
+      });
+    }
+    return results;
   }
 }

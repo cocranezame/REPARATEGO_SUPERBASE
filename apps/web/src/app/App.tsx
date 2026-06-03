@@ -9,6 +9,9 @@ import { OrdenDetallePage } from "../modules/compras/pages/OrdenDetallePage";
 import { OrdenesPage } from "../modules/compras/pages/OrdenesPage";
 import { PagosPage } from "../modules/compras/pages/PagosPage";
 import { SolicitudesPage } from "../modules/compras/pages/SolicitudesPage";
+import { InboxPage } from "../modules/crm/pages/InboxPage";
+import { LeadDetallePage } from "../modules/crm/pages/LeadDetallePage";
+import { LeadsKanbanPage } from "../modules/crm/pages/LeadsKanbanPage";
 import { DashboardPage } from "../modules/dashboard/pages/DashboardPage";
 import { CalendarioPage } from "../modules/domicilios/pages/CalendarioPage";
 import { DomiciliosPage } from "../modules/domicilios/pages/DomiciliosPage";
@@ -111,6 +114,10 @@ export function App() {
             <Route path="/domicilios/nueva" element={<NuevaVisitaPage />} />
             <Route path="/domicilios/calendario" element={<CalendarioPage />} />
             <Route path="/domicilios/tarifas" element={<TarifasPage />} />
+            <Route path="/crm/inbox" element={<InboxPage />} />
+            <Route path="/crm/inbox/:id" element={<InboxPage />} />
+            <Route path="/crm/leads" element={<LeadsKanbanPage />} />
+            <Route path="/crm/leads/:id" element={<LeadDetallePage />} />
           </Route>
         </Route>
       </Routes>

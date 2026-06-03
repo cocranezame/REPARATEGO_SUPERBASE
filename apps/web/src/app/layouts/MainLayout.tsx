@@ -10,6 +10,7 @@ import {
   CreditCard,
   Flag,
   Home,
+  Inbox,
   Kanban,
   Layers,
   LogOut,
@@ -212,6 +213,17 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Tarifas", to: "/domicilios/tarifas", icon: <Tag className="h-5 w-5" /> },
     ],
   },
+  {
+    id: "crm",
+    label: "CRM",
+    icon: <Inbox className="h-5 w-5" />,
+    primaryTo: "/crm/inbox",
+    activePrefix: "/crm",
+    items: [
+      { label: "Inbox", to: "/crm/inbox", icon: <Inbox className="h-5 w-5" />, end: true },
+      { label: "Kanban Leads", to: "/crm/leads", icon: <Kanban className="h-5 w-5" /> },
+    ],
+  },
 ];
 
 const SEGMENT_LABELS: Record<string, string> = {
@@ -248,6 +260,11 @@ const SEGMENT_LABELS: Record<string, string> = {
   domicilios: "Domicilios",
   calendario: "Calendario",
   tarifas: "Tarifas",
+  crm: "CRM",
+  inbox: "Inbox",
+  leads: "Leads",
+  mensajeria: "Mensajería",
+  config: "Configuración",
 };
 
 function breadcrumbsFromPath(pathname: string): string[] {

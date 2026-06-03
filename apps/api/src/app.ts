@@ -11,6 +11,7 @@ import { clienteRoutes } from "./modules/clientes/http/routes.js";
 import { componenteRoutes } from "./modules/componentes/http/routes.js";
 import { cotizacionCompraRoutes } from "./modules/cotizaciones-compra/http/routes.js";
 import { cotizacionVentaRoutes } from "./modules/cotizaciones-venta/http/routes.js";
+import { crmRoutes } from "./modules/crm/http/routes.js";
 import { domicilioRoutes } from "./modules/domicilios/http/routes.js";
 import { featureFlagRoutes } from "./modules/feature-flags/http/routes.js";
 import { healthRoutes } from "./modules/health/routes.js";
@@ -59,5 +60,6 @@ app.route("/api/v1", ventaRoutes);
 app.route("/api/v1", cotizacionVentaRoutes);
 app.route("/api/v1", domicilioRoutes);
 app.route("/api/v1", portalRoutes);
+app.route("/api/v1", crmRoutes);
 
 export type AppType = typeof app;

@@ -27,6 +27,9 @@ VITE_SUPABASE_ANON_KEY=<generado por supabase local>
 # Sentry (opcional en local)
 SENTRY_DSN=
 VITE_SENTRY_DSN=
+
+# CRM (C005) — pgcrypto para access_token de cuentas WhatsApp
+CRM_ENCRYPTION_KEY=dev-crm-key-change-me-in-production  # min 16 chars en producción
 ```
 
 ## Producción (se configura en fase deploy)

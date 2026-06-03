@@ -30,6 +30,15 @@ VITE_SENTRY_DSN=
 
 # CRM (C005) — pgcrypto para access_token de cuentas WhatsApp
 CRM_ENCRYPTION_KEY=dev-crm-key-change-me-in-production  # min 16 chars en producción
+
+# Meta WhatsApp Business API
+META_APP_SECRET=<app_secret_de_meta>
+
+# Anthropic (Nico — motor de agentes)
+ANTHROPIC_API_KEY=<api_key_anthropic>
+
+# Portal URL (para links de seguimiento de OS)
+PORTAL_URL=https://portal.reparatego.com
 ```
 
 ## Producción (se configura en fase deploy)

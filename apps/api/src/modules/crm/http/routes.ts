@@ -25,15 +25,20 @@ import { validateBody, validateQuery } from "../../../middlewares/validate.js";
 import type { HonoVariables } from "../../../types/context.js";
 import { CrmDrizzleRepository } from "../infra/repositories/crm.drizzle.js";
 import { MetaSenderService } from "../infra/services/meta-sender.js";
+import { AgentEngine } from "../services/agent-engine.js";
 import { ConversacionesHandler } from "./handlers/conversaciones.handler.js";
 import { EtapasHandler } from "./handlers/etapas.handler.js";
 import { EtiquetasHandler } from "./handlers/etiquetas.handler.js";
 import { LeadsHandler } from "./handlers/leads.handler.js";
 import { WaCuentasHandler } from "./handlers/wa-cuentas.handler.js";
+import { WebhookHandler } from "./handlers/webhook.handler.js";
 
 const db = getDb();
 const repo = new CrmDrizzleRepository(db);
 const metaSender = new MetaSenderService(db);
+
+const agentEngine = new AgentEngine(repo, metaSender);
+const webhookH = new WebhookHandler(repo, agentEngine);
 
 const waCuentasH = new WaCuentasHandler(repo);
 const etapasH = new EtapasHandler(repo);
@@ -44,6 +49,10 @@ const conversacionesH = new ConversacionesHandler(repo, metaSender);
 export const crmRoutes = new Hono<{ Variables: HonoVariables }>();
 
 crmRoutes.get("/crm/health", (c) => c.json({ status: "ok" }));
+
+// Webhook Meta — NO requiere authMiddleware (verificación HMAC propia)
+crmRoutes.get("/crm/webhook", webhookH.verify);
+crmRoutes.post("/crm/webhook", webhookH.handle);
 
 crmRoutes.use("/crm/*", authMiddleware);
 

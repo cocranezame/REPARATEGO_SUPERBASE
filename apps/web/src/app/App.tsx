@@ -9,9 +9,17 @@ import { OrdenDetallePage } from "../modules/compras/pages/OrdenDetallePage";
 import { OrdenesPage } from "../modules/compras/pages/OrdenesPage";
 import { PagosPage } from "../modules/compras/pages/PagosPage";
 import { SolicitudesPage } from "../modules/compras/pages/SolicitudesPage";
+import { ConfigAgentesPage } from "../modules/crm/pages/ConfigAgentesPage";
+import { ConfigBotsPage } from "../modules/crm/pages/ConfigBotsPage";
+import { ConfigEtapasPage } from "../modules/crm/pages/ConfigEtapasPage";
+import { ConfigEtiquetasPage } from "../modules/crm/pages/ConfigEtiquetasPage";
+import { ConfigPlantillasPage } from "../modules/crm/pages/ConfigPlantillasPage";
+import { ConfigWaCuentasPage } from "../modules/crm/pages/ConfigWaCuentasPage";
+import { DashboardCrmPage } from "../modules/crm/pages/DashboardCrmPage";
 import { InboxPage } from "../modules/crm/pages/InboxPage";
 import { LeadDetallePage } from "../modules/crm/pages/LeadDetallePage";
 import { LeadsKanbanPage } from "../modules/crm/pages/LeadsKanbanPage";
+import { MensajeriaPage } from "../modules/crm/pages/MensajeriaPage";
 import { DashboardPage } from "../modules/dashboard/pages/DashboardPage";
 import { CalendarioPage } from "../modules/domicilios/pages/CalendarioPage";
 import { DomiciliosPage } from "../modules/domicilios/pages/DomiciliosPage";
@@ -118,6 +126,15 @@ export function App() {
             <Route path="/crm/inbox/:id" element={<InboxPage />} />
             <Route path="/crm/leads" element={<LeadsKanbanPage />} />
             <Route path="/crm/leads/:id" element={<LeadDetallePage />} />
+            <Route path="/crm/dashboard" element={<DashboardCrmPage />} />
+            <Route path="/crm/mensajeria" element={<MensajeriaPage />} />
+            <Route path="/crm/mensajeria/:usuarioId" element={<MensajeriaPage />} />
+            <Route path="/crm/config/agentes" element={<ConfigAgentesPage />} />
+            <Route path="/crm/config/wa-cuentas" element={<ConfigWaCuentasPage />} />
+            <Route path="/crm/config/etapas" element={<ConfigEtapasPage />} />
+            <Route path="/crm/config/etiquetas" element={<ConfigEtiquetasPage />} />
+            <Route path="/crm/config/plantillas" element={<ConfigPlantillasPage />} />
+            <Route path="/crm/config/bots" element={<ConfigBotsPage />} />
           </Route>
         </Route>
       </Routes>

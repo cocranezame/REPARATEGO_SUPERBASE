@@ -1128,52 +1128,178 @@ async function main() {
   console.log("  [ok] visitas domicilio");
 
   // ── CRM: Bots (antes de etapas — etapas referencian bot_id) ─────────────────
+  const botCotRepConfig = {
+    nodos: [
+      {
+        id: "nodo_1",
+        tipo: "MENSAJE",
+        mensaje:
+          "¡Hola! Soy el asistente de cotizaciones. ¿Qué categoría de equipo te interesa?\nA. Celular  B. Laptop  C. Tablet",
+        tipo_respuesta: "LETRA",
+        opciones: [
+          { id: "opt_a", letra: "A", label: "Celular", destino_nodo_id: "nodo_2" },
+          { id: "opt_b", letra: "B", label: "Laptop", destino_nodo_id: "nodo_3" },
+          { id: "opt_c", letra: "C", label: "Tablet", destino_nodo_id: "nodo_4" },
+        ],
+      },
+      {
+        id: "nodo_2",
+        tipo: "MENSAJE",
+        mensaje: "¿Qué componente necesitas para celular?\nA. Pantalla  B. Batería  C. Placa",
+        tipo_respuesta: "LETRA",
+        opciones: [
+          { id: "opt_a", letra: "A", label: "Pantalla", destino_nodo_id: "nodo_5" },
+          { id: "opt_b", letra: "B", label: "Batería", destino_nodo_id: "nodo_5" },
+          { id: "opt_c", letra: "C", label: "Placa", destino_nodo_id: "nodo_5" },
+        ],
+      },
+      {
+        id: "nodo_3",
+        tipo: "MENSAJE",
+        mensaje: "¿Qué componente necesitas para laptop?\nA. Pantalla  B. Batería  C. RAM/SSD",
+        tipo_respuesta: "LETRA",
+        opciones: [
+          { id: "opt_a", letra: "A", label: "Pantalla", destino_nodo_id: "nodo_5" },
+          { id: "opt_b", letra: "B", label: "Batería", destino_nodo_id: "nodo_5" },
+          { id: "opt_c", letra: "C", label: "RAM/SSD", destino_nodo_id: "nodo_5" },
+        ],
+      },
+      {
+        id: "nodo_4",
+        tipo: "MENSAJE",
+        mensaje: "¿Qué componente necesitas para tablet?\nA. Pantalla  B. Batería  C. Conector",
+        tipo_respuesta: "LETRA",
+        opciones: [
+          { id: "opt_a", letra: "A", label: "Pantalla", destino_nodo_id: "nodo_5" },
+          { id: "opt_b", letra: "B", label: "Batería", destino_nodo_id: "nodo_5" },
+          { id: "opt_c", letra: "C", label: "Conector", destino_nodo_id: "nodo_5" },
+        ],
+      },
+      {
+        id: "nodo_5",
+        tipo: "CONSULTA_INVENTARIO",
+        mensaje: "Buscando repuestos disponibles...",
+        tipo_respuesta: "NINGUNA",
+        destino_nodo_id: "nodo_resultado",
+      },
+      {
+        id: "nodo_resultado",
+        tipo: "RESULTADO",
+        mensaje_template:
+          "Encontré las siguientes opciones:\n{items}\n\n¿Te interesa cotizar?\n1. Sí, quiero cotizar  2. Ver otra categoría  3. No, gracias",
+        tipo_respuesta: "BOTONES",
+        opciones: [
+          {
+            id: "opt_si",
+            label: "Sí, quiero cotizar",
+            destino_nodo_id: null,
+            accion: "DERIVAR_VENDEDOR",
+          },
+          { id: "opt_otro", label: "Ver otra categoría", destino_nodo_id: "nodo_1" },
+          { id: "opt_no", label: "No, gracias", destino_nodo_id: null, accion: "FINALIZAR" },
+        ],
+      },
+    ],
+    nodo_inicial_id: "nodo_1",
+    timeout_minutos: 30,
+  };
+
+  const botSrvProcConfig = {
+    nodos: [
+      {
+        id: "nodo_1",
+        tipo: "MENSAJE",
+        mensaje:
+          "Hola. Para consultar el estado de tu servicio, escribe tu número de documento (DNI o RUC):",
+        tipo_respuesta: "TEXTO_LIBRE",
+        opciones: [{ id: "opt_doc", label: "documento", destino_nodo_id: "nodo_2" }],
+      },
+      {
+        id: "nodo_2",
+        tipo: "CONSULTA_SERVICIO",
+        mensaje: "Buscando tus servicios activos...",
+        tipo_respuesta: "NINGUNA",
+        destino_nodo_id: "nodo_resultado",
+      },
+      {
+        id: "nodo_resultado",
+        tipo: "RESULTADO",
+        mensaje_template:
+          "Tus servicios activos:\n{items}\n\n¿Necesitas ayuda adicional?\n1. Hablar con asesor  2. Listo, gracias",
+        tipo_respuesta: "BOTONES",
+        opciones: [
+          {
+            id: "opt_vendedor",
+            label: "Hablar con asesor",
+            destino_nodo_id: null,
+            accion: "DERIVAR_VENDEDOR",
+          },
+          {
+            id: "opt_fin",
+            label: "Listo, gracias",
+            destino_nodo_id: null,
+            accion: "FINALIZAR",
+          },
+        ],
+      },
+    ],
+    nodo_inicial_id: "nodo_1",
+    timeout_minutos: 60,
+  };
+
+  const botRecordatorioConfig = {
+    mensaje_recordatorio:
+      "Hola, ¿pudiste revisar nuestra respuesta anterior? Estamos aquí para ayudarte 😊",
+    max_intentos: 3,
+    intervalo_horas: 24,
+  };
+
   await db
     .insert(crmBot)
-    .values([
-      {
-        id: BOT_COT_REP,
-        tenant_id: TENANT_ID,
-        nombre: "Bot Cotización Repuesto",
-        codigo: "COTIZACION_REPUESTO",
-        tipo: "COTIZACION_REPUESTO",
-        config: {
-          pasos: [
-            "seleccionar_categoria",
-            "seleccionar_componente",
-            "buscar_precio",
-            "mostrar_resultado",
-          ],
-        },
-        activo: true,
-      },
-      {
-        id: BOT_SRV_PROC,
-        tenant_id: TENANT_ID,
-        nombre: "Bot Servicio en Proceso",
-        codigo: "SERVICIO_PROCESO",
-        tipo: "SERVICIO_PROCESO",
-        config: {
-          pasos: ["pedir_documento", "buscar_servicios", "mostrar_estado"],
-        },
-        activo: true,
-      },
-      {
-        id: BOT_RECORDATORIO,
-        tenant_id: TENANT_ID,
-        nombre: "Bot Recordatorio",
-        codigo: "RECORDATORIO",
-        tipo: "RECORDATORIO",
-        config: {
-          mensaje: "Hola, ¿pudiste revisar nuestra respuesta anterior?",
-          intervalo_horas: 24,
-          max_intentos: 3,
-        },
-        activo: true,
-      },
-    ])
-    .onConflictDoNothing();
-  console.log("  [ok] crm_bot (3)");
+    .values({
+      id: BOT_COT_REP,
+      tenant_id: TENANT_ID,
+      nombre: "Bot Cotización Repuesto",
+      codigo: "COTIZACION_REPUESTO",
+      tipo: "COTIZACION_REPUESTO",
+      config: botCotRepConfig,
+      activo: true,
+    })
+    .onConflictDoUpdate({
+      target: crmBot.id,
+      set: { config: botCotRepConfig, nombre: "Bot Cotización Repuesto" },
+    });
+  await db
+    .insert(crmBot)
+    .values({
+      id: BOT_SRV_PROC,
+      tenant_id: TENANT_ID,
+      nombre: "Bot Servicio en Proceso",
+      codigo: "SERVICIO_PROCESO",
+      tipo: "SERVICIO_PROCESO",
+      config: botSrvProcConfig,
+      activo: true,
+    })
+    .onConflictDoUpdate({
+      target: crmBot.id,
+      set: { config: botSrvProcConfig, nombre: "Bot Servicio en Proceso" },
+    });
+  await db
+    .insert(crmBot)
+    .values({
+      id: BOT_RECORDATORIO,
+      tenant_id: TENANT_ID,
+      nombre: "Bot Recordatorio",
+      codigo: "RECORDATORIO",
+      tipo: "RECORDATORIO",
+      config: botRecordatorioConfig,
+      activo: true,
+    })
+    .onConflictDoUpdate({
+      target: crmBot.id,
+      set: { config: botRecordatorioConfig, nombre: "Bot Recordatorio" },
+    });
+  console.log("  [ok] crm_bot (3) — config actualizada");
 
   // ── CRM: Etapas del pipeline (15) ─────────────────────────────────────────────
   await db

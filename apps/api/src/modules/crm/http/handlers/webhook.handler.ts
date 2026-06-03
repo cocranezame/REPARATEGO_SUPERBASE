@@ -3,6 +3,7 @@ import type { Context } from "hono";
 import type { HonoVariables } from "../../../../types/context.js";
 import type { ICrmRepository } from "../../domain/ports/crm.repository.js";
 import type { AgentEngine } from "../../services/agent-engine.js";
+import type { BotEngine } from "../../services/bot-engine.js";
 
 // biome-ignore lint/suspicious/noExplicitAny: Hono Context Input generic
 type HonoCtx = Context<{ Variables: HonoVariables }, string, any>;
@@ -53,7 +54,8 @@ function verifyHmac(rawBody: string, signature: string | undefined, secret: stri
 export class WebhookHandler {
   constructor(
     private readonly repo: ICrmRepository,
-    private readonly agentEngine: AgentEngine
+    private readonly agentEngine: AgentEngine,
+    private readonly botEngine: BotEngine
   ) {}
 
   verify = async (c: HonoCtx) => {
@@ -156,14 +158,32 @@ export class WebhookHandler {
     // N7: si modo VENDEDOR, no invocar agente
     if (conv.modo === "VENDEDOR") return;
 
-    // Modo NICO → invocar motor de agentes
-    await this.agentEngine.run({
-      tenantId: p.tenantId,
-      conversacionId: conv.id,
-      leadId: conv.lead_id,
-      waCuentaId: p.waCuentaId,
-      celular: p.celular,
-      mensajeEntrante: p.contenido,
-    });
+    // N18: rutear según operador de la etapa actual del lead
+    const lead = await this.repo.findLeadForAgent(p.tenantId, conv.lead_id);
+    if (!lead) return;
+
+    const operador = lead.etapa_operador;
+
+    if (operador === "BOT" && lead.etapa_bot_id) {
+      await this.botEngine.run({
+        tenantId: p.tenantId,
+        conversacionId: conv.id,
+        leadId: conv.lead_id,
+        waCuentaId: p.waCuentaId,
+        celular: p.celular,
+        mensajeEntrante: p.contenido,
+        botId: lead.etapa_bot_id,
+      });
+    } else if (operador === "IA") {
+      await this.agentEngine.run({
+        tenantId: p.tenantId,
+        conversacionId: conv.id,
+        leadId: conv.lead_id,
+        waCuentaId: p.waCuentaId,
+        celular: p.celular,
+        mensajeEntrante: p.contenido,
+      });
+    }
+    // HUMANO y SISTEMA: no invocar nada
   }
 }

@@ -4,6 +4,7 @@ import {
   costoRevision as costoRevisionTable,
   crmAccionAgente as crmAccionAgenteTable,
   crmAgente as crmAgenteTable,
+  crmBot as crmBotTable,
   crmConversacion as crmConversacionTable,
   crmEtapa as crmEtapaTable,
   crmEtapaTransicion as crmEtapaTransicionTable,
@@ -11,8 +12,10 @@ import {
   crmEvento as crmEventoTable,
   crmLeadEtiqueta as crmLeadEtiquetaTable,
   crmLead as crmLeadTable,
+  crmMensajeInterno as crmMensajeInternoTable,
   crmMensaje as crmMensajeTable,
   crmNota as crmNotaTable,
+  crmPlantilla as crmPlantillaTable,
   instancia as instanciaTable,
   lote as loteTable,
   ordenServicio as osTable,
@@ -23,13 +26,25 @@ import {
 } from "@kallpasoft/db";
 import { and, asc, count, desc, eq, gte, ilike, inArray, lte, or, sql, sum } from "drizzle-orm";
 import type {
+  Audiencia,
+  CrmAccionAgenteItem,
+  CrmAgente,
+  CrmBot,
   CrmConversacion,
+  CrmConversacionInterna,
   CrmEtapa,
   CrmEtapaTransicion,
   CrmEtiqueta,
   CrmLead,
   CrmMensaje,
+  CrmMensajeInterno,
   CrmNota,
+  CrmPlantilla,
+  MetricaLead,
+  MetricasClientes,
+  MetricasDashboard,
+  MetricasNico,
+  MetricasVentas,
   WaCuenta,
 } from "../../domain/entities/crm.js";
 import type {
@@ -40,19 +55,28 @@ import type {
   CrearServicioData,
   CreateEtapaData,
   CreateEtiquetaData,
+  CreateMensajeInternoData,
+  CreatePlantillaData,
   CreateWaCuentaData,
   GuardarMensajeData,
   ICrmRepository,
+  LastBotMessage,
   LeadForAgent,
+  ListAccionesAgenteParams,
   ListConversacionesParams,
+  ListEventosParams,
   ListLeadsParams,
   ListMensajesParams,
   LogAccionData,
   MensajeContexto,
   OrdenServicioResult,
   RepuestoResult,
+  ServicioClienteResult,
+  UpdateAgenteData,
+  UpdateBotData,
   UpdateEtapaData,
   UpdateEtiquetaData,
+  UpdatePlantillaData,
   UpdateWaCuentaData,
 } from "../../domain/ports/crm.repository.js";
 
@@ -1158,7 +1182,8 @@ export class CrmDrizzleRepository implements ICrmRepository {
     const rows = await this.db.execute(sql`
       SELECT l.id, l.celular, l.nombre, l.equipo_descripcion, l.falla_descripcion, l.ubicacion,
              l.etapa_id, l.vendedor_id, l.cliente_id, l.sucursal_id,
-             e.codigo AS etapa_codigo, e.nombre AS etapa_nombre, e.objetivo AS etapa_objetivo
+             e.codigo AS etapa_codigo, e.nombre AS etapa_nombre, e.objetivo AS etapa_objetivo,
+             e.operador AS etapa_operador, e.bot_id AS etapa_bot_id
       FROM crm_lead l
       JOIN crm_etapa e ON l.etapa_id = e.id
       WHERE l.id = ${leadId}::uuid AND l.tenant_id = ${tenantId}::uuid
@@ -1176,6 +1201,8 @@ export class CrmDrizzleRepository implements ICrmRepository {
       etapa_codigo: r.etapa_codigo as string,
       etapa_nombre: r.etapa_nombre as string,
       etapa_objetivo: (r.etapa_objetivo as string | null) ?? null,
+      etapa_operador: (r.etapa_operador as string) ?? "HUMANO",
+      etapa_bot_id: (r.etapa_bot_id as string | null) ?? null,
       vendedor_id: (r.vendedor_id as string | null) ?? null,
       cliente_id: (r.cliente_id as string | null) ?? null,
       sucursal_id: (r.sucursal_id as string | null) ?? null,
@@ -1669,5 +1696,832 @@ export class CrmDrizzleRepository implements ICrmRepository {
       });
     }
     return results;
+  }
+
+  // ─── Plantillas ────────────────────────────────────────────────────────────
+
+  async listPlantillas(tenantId: string): Promise<CrmPlantilla[]> {
+    const rows = await this.db
+      .select()
+      .from(crmPlantillaTable)
+      .where(eq(crmPlantillaTable.tenant_id, tenantId))
+      .orderBy(asc(crmPlantillaTable.created_at));
+    return rows.map((r) => ({
+      id: r.id,
+      tenant_id: r.tenant_id,
+      nombre: r.nombre,
+      contenido: r.contenido,
+      variables: (r.variables as string[] | null) ?? null,
+      meta_template_name: r.meta_template_name ?? null,
+      estado_meta: r.estado_meta,
+      created_by: r.created_by ?? null,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    }));
+  }
+
+  async findPlantillaById(tenantId: string, id: string): Promise<CrmPlantilla | null> {
+    const rows = await this.db
+      .select()
+      .from(crmPlantillaTable)
+      .where(and(eq(crmPlantillaTable.id, id), eq(crmPlantillaTable.tenant_id, tenantId)))
+      .limit(1);
+    if (!rows[0]) return null;
+    const r = rows[0];
+    return {
+      id: r.id,
+      tenant_id: r.tenant_id,
+      nombre: r.nombre,
+      contenido: r.contenido,
+      variables: (r.variables as string[] | null) ?? null,
+      meta_template_name: r.meta_template_name ?? null,
+      estado_meta: r.estado_meta,
+      created_by: r.created_by ?? null,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    };
+  }
+
+  async createPlantilla(
+    tenantId: string,
+    data: CreatePlantillaData,
+    userId: string
+  ): Promise<CrmPlantilla> {
+    const [row] = await this.db
+      .insert(crmPlantillaTable)
+      .values({
+        tenant_id: tenantId,
+        nombre: data.nombre,
+        contenido: data.contenido,
+        ...(data.variables !== undefined ? { variables: data.variables } : {}),
+        ...(data.meta_template_name !== undefined
+          ? { meta_template_name: data.meta_template_name }
+          : {}),
+        created_by: userId,
+      })
+      .returning();
+    if (!row) throw new Error("Error al crear plantilla");
+    return {
+      id: row.id,
+      tenant_id: row.tenant_id,
+      nombre: row.nombre,
+      contenido: row.contenido,
+      variables: (row.variables as string[] | null) ?? null,
+      meta_template_name: row.meta_template_name ?? null,
+      estado_meta: row.estado_meta,
+      created_by: row.created_by ?? null,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+    };
+  }
+
+  async updatePlantilla(
+    tenantId: string,
+    id: string,
+    data: UpdatePlantillaData
+  ): Promise<CrmPlantilla | null> {
+    const upd: Record<string, unknown> = { updated_at: new Date() };
+    if (data.nombre !== undefined) upd.nombre = data.nombre;
+    if (data.contenido !== undefined) upd.contenido = data.contenido;
+    if (data.variables !== undefined) upd.variables = data.variables;
+    if (data.meta_template_name !== undefined) upd.meta_template_name = data.meta_template_name;
+    if (data.estado_meta !== undefined) upd.estado_meta = data.estado_meta;
+
+    const rows = await this.db
+      .update(crmPlantillaTable)
+      .set(upd)
+      .where(and(eq(crmPlantillaTable.id, id), eq(crmPlantillaTable.tenant_id, tenantId)))
+      .returning({ id: crmPlantillaTable.id });
+    if (rows.length === 0) return null;
+    return this.findPlantillaById(tenantId, id);
+  }
+
+  // ─── Bots ──────────────────────────────────────────────────────────────────
+
+  async listBots(tenantId: string): Promise<CrmBot[]> {
+    const rows = await this.db
+      .select()
+      .from(crmBotTable)
+      .where(eq(crmBotTable.tenant_id, tenantId))
+      .orderBy(asc(crmBotTable.created_at));
+    return rows.map((r) => ({
+      id: r.id,
+      tenant_id: r.tenant_id,
+      nombre: r.nombre,
+      codigo: r.codigo,
+      tipo: r.tipo,
+      config: r.config,
+      activo: r.activo,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    }));
+  }
+
+  async findBotById(tenantId: string, id: string): Promise<CrmBot | null> {
+    const rows = await this.db
+      .select()
+      .from(crmBotTable)
+      .where(and(eq(crmBotTable.id, id), eq(crmBotTable.tenant_id, tenantId)))
+      .limit(1);
+    if (!rows[0]) return null;
+    const r = rows[0];
+    return {
+      id: r.id,
+      tenant_id: r.tenant_id,
+      nombre: r.nombre,
+      codigo: r.codigo,
+      tipo: r.tipo,
+      config: r.config,
+      activo: r.activo,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    };
+  }
+
+  async updateBot(tenantId: string, id: string, data: UpdateBotData): Promise<CrmBot | null> {
+    const upd: Record<string, unknown> = { updated_at: new Date() };
+    if (data.activo !== undefined) upd.activo = data.activo;
+    if (data.config !== undefined) upd.config = data.config;
+    if (data.nombre !== undefined) upd.nombre = data.nombre;
+
+    const rows = await this.db
+      .update(crmBotTable)
+      .set(upd)
+      .where(and(eq(crmBotTable.id, id), eq(crmBotTable.tenant_id, tenantId)))
+      .returning({ id: crmBotTable.id });
+    if (rows.length === 0) return null;
+    return this.findBotById(tenantId, id);
+  }
+
+  // ─── Agentes ───────────────────────────────────────────────────────────────
+
+  async listAgentes(tenantId: string): Promise<CrmAgente[]> {
+    const rows = await this.db
+      .select()
+      .from(crmAgenteTable)
+      .where(eq(crmAgenteTable.tenant_id, tenantId))
+      .orderBy(asc(crmAgenteTable.created_at));
+    return rows.map((r) => ({
+      id: r.id,
+      tenant_id: r.tenant_id,
+      nombre: r.nombre,
+      canal: r.canal,
+      modelo_ia: r.modelo_ia,
+      tono: r.tono ?? null,
+      prompt_base: r.prompt_base ?? null,
+      max_mensajes_contexto: r.max_mensajes_contexto,
+      activo: r.activo,
+      created_at: r.created_at,
+      updated_at: r.updated_at,
+    }));
+  }
+
+  async updateAgente(
+    tenantId: string,
+    id: string,
+    data: UpdateAgenteData
+  ): Promise<CrmAgente | null> {
+    const upd: Record<string, unknown> = { updated_at: new Date() };
+    if (data.tono !== undefined) upd.tono = data.tono;
+    if (data.prompt_base !== undefined) upd.prompt_base = data.prompt_base;
+    if (data.max_mensajes_contexto !== undefined)
+      upd.max_mensajes_contexto = data.max_mensajes_contexto;
+    if (data.activo !== undefined) upd.activo = data.activo;
+
+    const rows = await this.db
+      .update(crmAgenteTable)
+      .set(upd)
+      .where(and(eq(crmAgenteTable.id, id), eq(crmAgenteTable.tenant_id, tenantId)))
+      .returning({ id: crmAgenteTable.id });
+    if (rows.length === 0) return null;
+
+    const agentes = await this.listAgentes(tenantId);
+    return agentes.find((a) => a.id === id) ?? null;
+  }
+
+  async listAccionesAgente(
+    tenantId: string,
+    agenteId: string,
+    params: ListAccionesAgenteParams
+  ): Promise<{ items: CrmAccionAgenteItem[]; total: number }> {
+    const conds = [
+      eq(crmAccionAgenteTable.tenant_id, tenantId),
+      eq(crmAccionAgenteTable.agente_id, agenteId),
+    ];
+    if (params.fecha_desde)
+      conds.push(gte(crmAccionAgenteTable.created_at, new Date(params.fecha_desde)));
+    if (params.fecha_hasta)
+      conds.push(lte(crmAccionAgenteTable.created_at, new Date(params.fecha_hasta)));
+    if (params.tool_name) conds.push(eq(crmAccionAgenteTable.tool_name, params.tool_name));
+    if (params.exitoso !== undefined) conds.push(eq(crmAccionAgenteTable.exitoso, params.exitoso));
+
+    const offset = (params.page - 1) * params.pageSize;
+
+    const items = await this.db
+      .select()
+      .from(crmAccionAgenteTable)
+      .where(and(...conds))
+      .orderBy(desc(crmAccionAgenteTable.created_at))
+      .limit(params.pageSize)
+      .offset(offset);
+
+    const countRows = await this.db
+      .select({ n: count() })
+      .from(crmAccionAgenteTable)
+      .where(and(...conds));
+
+    const total = Number(countRows[0]?.n ?? 0);
+    return {
+      items: items.map((r) => ({
+        id: r.id,
+        agente_id: r.agente_id,
+        conversacion_id: r.conversacion_id,
+        lead_id: r.lead_id,
+        tool_name: r.tool_name,
+        tool_input: r.tool_input,
+        tool_output: r.tool_output,
+        exitoso: r.exitoso,
+        duracion_ms: r.duracion_ms ?? null,
+        error: r.error ?? null,
+        created_at: r.created_at,
+      })),
+      total,
+    };
+  }
+
+  // ─── Eventos ───────────────────────────────────────────────────────────────
+
+  async listEventos(
+    tenantId: string,
+    params: ListEventosParams
+  ): Promise<{ items: import("../../domain/entities/crm.js").CrmEvento[]; total: number }> {
+    const conds = [eq(crmEventoTable.tenant_id, tenantId)];
+    if (params.tipo) conds.push(eq(crmEventoTable.tipo, params.tipo));
+    if (params.origen)
+      conds.push(
+        eq(crmEventoTable.origen, params.origen as "SISTEMA" | "NICO" | "VENDEDOR" | "BOT")
+      );
+    if (params.lead_id) conds.push(eq(crmEventoTable.lead_id, params.lead_id));
+    if (params.fecha_desde)
+      conds.push(gte(crmEventoTable.created_at, new Date(params.fecha_desde)));
+    if (params.fecha_hasta)
+      conds.push(lte(crmEventoTable.created_at, new Date(params.fecha_hasta)));
+
+    const offset = (params.page - 1) * params.pageSize;
+
+    const items = await this.db
+      .select()
+      .from(crmEventoTable)
+      .where(and(...conds))
+      .orderBy(desc(crmEventoTable.created_at))
+      .limit(params.pageSize)
+      .offset(offset);
+
+    const countRows = await this.db
+      .select({ n: count() })
+      .from(crmEventoTable)
+      .where(and(...conds));
+
+    const total = Number(countRows[0]?.n ?? 0);
+    return { items: items as unknown as import("../../domain/entities/crm.js").CrmEvento[], total };
+  }
+
+  // ─── Mensajería interna ────────────────────────────────────────────────────
+
+  async listMensajeriaConversaciones(
+    tenantId: string,
+    userId: string,
+    params: { page: number; pageSize: number }
+  ): Promise<{ items: CrmConversacionInterna[]; total: number }> {
+    const offset = (params.page - 1) * params.pageSize;
+
+    // Obtener los IDs de usuarios con los que hay conversación
+    const rows = await this.db.execute(sql`
+      SELECT DISTINCT
+        CASE WHEN m.remitente_id = ${userId}::uuid THEN m.destinatario_id ELSE m.remitente_id END AS usuario_id,
+        u.nombres || ' ' || u.apellidos AS usuario_nombre,
+        (SELECT mi2.contenido FROM crm_mensaje_interno mi2
+         WHERE (mi2.remitente_id = ${userId}::uuid AND mi2.destinatario_id = CASE WHEN m.remitente_id = ${userId}::uuid THEN m.destinatario_id ELSE m.remitente_id END)
+            OR (mi2.destinatario_id = ${userId}::uuid AND mi2.remitente_id = CASE WHEN m.remitente_id = ${userId}::uuid THEN m.destinatario_id ELSE m.remitente_id END)
+         ORDER BY mi2.created_at DESC LIMIT 1) AS ultimo_mensaje,
+        (SELECT mi3.created_at FROM crm_mensaje_interno mi3
+         WHERE (mi3.remitente_id = ${userId}::uuid AND mi3.destinatario_id = CASE WHEN m.remitente_id = ${userId}::uuid THEN m.destinatario_id ELSE m.remitente_id END)
+            OR (mi3.destinatario_id = ${userId}::uuid AND mi3.remitente_id = CASE WHEN m.remitente_id = ${userId}::uuid THEN m.destinatario_id ELSE m.remitente_id END)
+         ORDER BY mi3.created_at DESC LIMIT 1) AS ultimo_at,
+        COUNT(*) FILTER (WHERE m.destinatario_id = ${userId}::uuid AND m.leido = false) AS no_leidos
+      FROM crm_mensaje_interno m
+      JOIN usuario u ON u.id = CASE WHEN m.remitente_id = ${userId}::uuid THEN m.destinatario_id ELSE m.remitente_id END
+      WHERE m.tenant_id = ${tenantId}::uuid
+        AND (m.remitente_id = ${userId}::uuid OR m.destinatario_id = ${userId}::uuid)
+      GROUP BY
+        CASE WHEN m.remitente_id = ${userId}::uuid THEN m.destinatario_id ELSE m.remitente_id END,
+        u.nombres, u.apellidos
+      ORDER BY ultimo_at DESC NULLS LAST
+      LIMIT ${params.pageSize} OFFSET ${offset}
+    `);
+
+    const countRows = await this.db.execute(sql`
+      SELECT COUNT(DISTINCT CASE WHEN m.remitente_id = ${userId}::uuid THEN m.destinatario_id ELSE m.remitente_id END) AS total
+      FROM crm_mensaje_interno m
+      WHERE m.tenant_id = ${tenantId}::uuid
+        AND (m.remitente_id = ${userId}::uuid OR m.destinatario_id = ${userId}::uuid)
+    `);
+    const total = Number((countRows[0] as Record<string, unknown>)?.total ?? 0);
+
+    const items = (rows as unknown as Record<string, unknown>[]).map((r) => ({
+      usuario_id: r.usuario_id as string,
+      usuario_nombre: (r.usuario_nombre as string | null) ?? null,
+      ultimo_mensaje: (r.ultimo_mensaje as string | null) ?? null,
+      ultimo_at: r.ultimo_at ? new Date(r.ultimo_at as string) : null,
+      no_leidos: Number(r.no_leidos ?? 0),
+    }));
+
+    return { items, total };
+  }
+
+  async listMensajesInternos(
+    tenantId: string,
+    userId: string,
+    otroUsuarioId: string,
+    params: { page: number; pageSize: number }
+  ): Promise<{ items: CrmMensajeInterno[]; total: number }> {
+    const offset = (params.page - 1) * params.pageSize;
+
+    const rows = await this.db.execute(sql`
+      SELECT m.id, m.tenant_id, m.remitente_id, m.destinatario_id, m.contenido, m.leido, m.created_at,
+             ru.nombres || ' ' || ru.apellidos AS remitente_nombre,
+             du.nombres || ' ' || du.apellidos AS destinatario_nombre
+      FROM crm_mensaje_interno m
+      JOIN usuario ru ON ru.id = m.remitente_id
+      JOIN usuario du ON du.id = m.destinatario_id
+      WHERE m.tenant_id = ${tenantId}::uuid
+        AND (
+          (m.remitente_id = ${userId}::uuid AND m.destinatario_id = ${otroUsuarioId}::uuid)
+          OR
+          (m.remitente_id = ${otroUsuarioId}::uuid AND m.destinatario_id = ${userId}::uuid)
+        )
+      ORDER BY m.created_at DESC
+      LIMIT ${params.pageSize} OFFSET ${offset}
+    `);
+
+    const countRows = await this.db.execute(sql`
+      SELECT COUNT(*)::int AS total
+      FROM crm_mensaje_interno m
+      WHERE m.tenant_id = ${tenantId}::uuid
+        AND (
+          (m.remitente_id = ${userId}::uuid AND m.destinatario_id = ${otroUsuarioId}::uuid)
+          OR
+          (m.remitente_id = ${otroUsuarioId}::uuid AND m.destinatario_id = ${userId}::uuid)
+        )
+    `);
+    const total = Number((countRows[0] as Record<string, unknown>)?.total ?? 0);
+
+    const items = (rows as unknown as Record<string, unknown>[]).map((r) => ({
+      id: r.id as string,
+      tenant_id: r.tenant_id as string,
+      remitente_id: r.remitente_id as string,
+      destinatario_id: r.destinatario_id as string,
+      contenido: r.contenido as string,
+      leido: r.leido as boolean,
+      remitente_nombre: (r.remitente_nombre as string | null) ?? null,
+      destinatario_nombre: (r.destinatario_nombre as string | null) ?? null,
+      created_at: new Date(r.created_at as string),
+    }));
+
+    return { items, total };
+  }
+
+  async createMensajeInterno(
+    tenantId: string,
+    remitenteId: string,
+    data: CreateMensajeInternoData
+  ): Promise<CrmMensajeInterno> {
+    const [row] = await this.db
+      .insert(crmMensajeInternoTable)
+      .values({
+        tenant_id: tenantId,
+        remitente_id: remitenteId,
+        destinatario_id: data.destinatario_id,
+        contenido: data.contenido,
+      })
+      .returning();
+    if (!row) throw new Error("Error al crear mensaje interno");
+
+    const full = await this.listMensajesInternos(tenantId, remitenteId, data.destinatario_id, {
+      page: 1,
+      pageSize: 1,
+    });
+    return (
+      full.items[0] ?? {
+        id: row.id,
+        tenant_id: row.tenant_id,
+        remitente_id: row.remitente_id,
+        destinatario_id: row.destinatario_id,
+        contenido: row.contenido,
+        leido: row.leido,
+        remitente_nombre: null,
+        destinatario_nombre: null,
+        created_at: row.created_at,
+      }
+    );
+  }
+
+  async marcarMensajeLeidoInterno(
+    tenantId: string,
+    mensajeId: string,
+    destinatarioId: string
+  ): Promise<boolean> {
+    const rows = await this.db
+      .update(crmMensajeInternoTable)
+      .set({ leido: true })
+      .where(
+        and(
+          eq(crmMensajeInternoTable.id, mensajeId),
+          eq(crmMensajeInternoTable.tenant_id, tenantId),
+          eq(crmMensajeInternoTable.destinatario_id, destinatarioId)
+        )
+      )
+      .returning({ id: crmMensajeInternoTable.id });
+    return rows.length > 0;
+  }
+
+  // ─── Métricas ──────────────────────────────────────────────────────────────
+
+  async metricasDashboard(tenantId: string, from: string, to: string): Promise<MetricasDashboard> {
+    const leadsActivosRows = await this.db.execute(sql`
+      SELECT COUNT(*)::int AS total FROM crm_lead WHERE tenant_id = ${tenantId}::uuid AND activo = true
+    `);
+    const leads_activos = Number((leadsActivosRows[0] as Record<string, unknown>)?.total ?? 0);
+
+    const porEtapaRows = await this.db.execute(sql`
+      SELECT l.etapa_id, e.nombre AS etapa_nombre, COUNT(*)::int AS total
+      FROM crm_lead l
+      JOIN crm_etapa e ON l.etapa_id = e.id
+      WHERE l.tenant_id = ${tenantId}::uuid AND l.activo = true
+      GROUP BY l.etapa_id, e.nombre
+    `);
+    const leads_por_etapa = (porEtapaRows as unknown as Record<string, unknown>[]).map((r) => ({
+      etapa_id: r.etapa_id as string,
+      etapa_nombre: r.etapa_nombre as string,
+      total: Number(r.total),
+    }));
+
+    const periodoRows = await this.db.execute(sql`
+      SELECT COUNT(*)::int AS total FROM crm_lead
+      WHERE tenant_id = ${tenantId}::uuid
+        AND created_at >= ${from}::timestamptz AND created_at <= ${to}::timestamptz
+    `);
+    const total_leads_periodo = Number((periodoRows[0] as Record<string, unknown>)?.total ?? 0);
+
+    const convertidosRows = await this.db.execute(sql`
+      SELECT COUNT(*)::int AS total FROM crm_lead l
+      JOIN crm_etapa e ON l.etapa_id = e.id
+      WHERE l.tenant_id = ${tenantId}::uuid AND e.codigo = 'CONVERTIDO'
+        AND l.created_at >= ${from}::timestamptz AND l.created_at <= ${to}::timestamptz
+    `);
+    const convertidos = Number((convertidosRows[0] as Record<string, unknown>)?.total ?? 0);
+    const tasa_conversion = total_leads_periodo > 0 ? convertidos / total_leads_periodo : 0;
+
+    const tiempoRows = await this.db.execute(sql`
+      SELECT COALESCE(AVG(EXTRACT(EPOCH FROM (m2.created_at - m1.created_at)) / 60), 0) AS avg_min
+      FROM crm_mensaje m1
+      JOIN crm_mensaje m2 ON m2.conversacion_id = m1.conversacion_id
+        AND m2.direccion = 'SALIENTE' AND m2.created_at > m1.created_at
+      JOIN crm_conversacion c ON c.id = m1.conversacion_id
+      WHERE c.tenant_id = ${tenantId}::uuid
+        AND m1.direccion = 'ENTRANTE'
+        AND m1.created_at >= ${from}::timestamptz AND m1.created_at <= ${to}::timestamptz
+    `);
+    const tiempo_promedio_respuesta_minutos = Number(
+      (tiempoRows[0] as Record<string, unknown>)?.avg_min ?? 0
+    );
+
+    const utmRows = await this.db.execute(sql`
+      SELECT COALESCE(utm_source, 'organic') AS canal, COUNT(*)::int AS total
+      FROM crm_lead
+      WHERE tenant_id = ${tenantId}::uuid
+        AND created_at >= ${from}::timestamptz AND created_at <= ${to}::timestamptz
+      GROUP BY utm_source
+    `);
+    const leads_por_canal_utm = (utmRows as unknown as Record<string, unknown>[]).map((r) => ({
+      canal: r.canal as string,
+      total: Number(r.total),
+    }));
+
+    return {
+      leads_activos,
+      leads_por_etapa,
+      tasa_conversion,
+      tiempo_promedio_respuesta_minutos,
+      total_leads_periodo,
+      leads_por_canal_utm,
+    };
+  }
+
+  async metricasNico(tenantId: string, from: string, to: string): Promise<MetricasNico> {
+    const totalRows = await this.db.execute(sql`
+      SELECT COUNT(*)::int AS total FROM crm_accion_agente
+      WHERE tenant_id = ${tenantId}::uuid
+        AND created_at >= ${from}::timestamptz AND created_at <= ${to}::timestamptz
+    `);
+    const mensajes_procesados = Number((totalRows[0] as Record<string, unknown>)?.total ?? 0);
+
+    const toolsRows = await this.db.execute(sql`
+      SELECT tool_name AS tool, COUNT(*)::int AS total
+      FROM crm_accion_agente
+      WHERE tenant_id = ${tenantId}::uuid
+        AND created_at >= ${from}::timestamptz AND created_at <= ${to}::timestamptz
+      GROUP BY tool_name ORDER BY total DESC
+    `);
+    const tools_usadas = (toolsRows as unknown as Record<string, unknown>[]).map((r) => ({
+      tool: r.tool as string,
+      total: Number(r.total),
+    }));
+
+    const exitosaRows = await this.db.execute(sql`
+      SELECT COUNT(*)::int AS total FROM crm_accion_agente
+      WHERE tenant_id = ${tenantId}::uuid AND exitoso = true
+        AND created_at >= ${from}::timestamptz AND created_at <= ${to}::timestamptz
+    `);
+    const exitosas = Number((exitosaRows[0] as Record<string, unknown>)?.total ?? 0);
+    const tasa_exito = mensajes_procesados > 0 ? exitosas / mensajes_procesados : 0;
+
+    const tiempoRows = await this.db.execute(sql`
+      SELECT COALESCE(AVG(duracion_ms), 0)::int AS avg_ms FROM crm_accion_agente
+      WHERE tenant_id = ${tenantId}::uuid
+        AND created_at >= ${from}::timestamptz AND created_at <= ${to}::timestamptz
+    `);
+    const tiempo_promedio_respuesta_ms = Number(
+      (tiempoRows[0] as Record<string, unknown>)?.avg_ms ?? 0
+    );
+
+    const erroresRows = await this.db.execute(sql`
+      SELECT COALESCE(error, 'Error desconocido') AS error, COUNT(*)::int AS total
+      FROM crm_accion_agente
+      WHERE tenant_id = ${tenantId}::uuid AND exitoso = false
+        AND created_at >= ${from}::timestamptz AND created_at <= ${to}::timestamptz
+      GROUP BY error ORDER BY total DESC LIMIT 10
+    `);
+    const errores = (erroresRows as unknown as Record<string, unknown>[]).map((r) => ({
+      error: r.error as string,
+      total: Number(r.total),
+    }));
+
+    return { mensajes_procesados, tools_usadas, tasa_exito, tiempo_promedio_respuesta_ms, errores };
+  }
+
+  async metricasLeads(tenantId: string, from: string, to: string): Promise<MetricaLead[]> {
+    const rows = await this.db.execute(sql`
+      SELECT l.id, l.created_at AS fecha, e.codigo AS estado,
+             (e.codigo = 'CONVERTIDO') AS convertido,
+             CASE WHEN e.codigo = 'CONVERTIDO'
+               THEN EXTRACT(DAY FROM (l.updated_at - l.created_at))::int
+               ELSE NULL
+             END AS dias_para_convertir,
+             l.utm_source, l.utm_campaign, l.utm_medium
+      FROM crm_lead l
+      JOIN crm_etapa e ON l.etapa_id = e.id
+      WHERE l.tenant_id = ${tenantId}::uuid
+        AND l.created_at >= ${from}::timestamptz AND l.created_at <= ${to}::timestamptz
+      ORDER BY l.created_at DESC
+    `);
+    return (rows as unknown as Record<string, unknown>[]).map((r) => ({
+      id: r.id as string,
+      fecha: new Date(r.fecha as string),
+      estado: r.estado as string,
+      convertido: Boolean(r.convertido),
+      dias_para_convertir: r.dias_para_convertir !== null ? Number(r.dias_para_convertir) : null,
+      utm_source: (r.utm_source as string | null) ?? null,
+      utm_campaign: (r.utm_campaign as string | null) ?? null,
+      utm_medium: (r.utm_medium as string | null) ?? null,
+    }));
+  }
+
+  async metricasClientes(tenantId: string, from: string, to: string): Promise<MetricasClientes> {
+    const ticketRows = await this.db.execute(sql`
+      SELECT COALESCE(AVG(v.total::numeric), 0) AS ticket_promedio,
+             COALESCE(COUNT(v.id)::numeric / NULLIF(COUNT(DISTINCT v.cliente_id), 0), 0) AS frecuencia_compra,
+             MAX(v.created_at) AS ultima_compra
+      FROM venta v
+      WHERE v.tenant_id = ${tenantId}::uuid
+        AND v.estado_pago = 'COMPLETADA'
+        AND v.created_at >= ${from}::timestamptz AND v.created_at <= ${to}::timestamptz
+    `);
+    const r = (ticketRows[0] as Record<string, unknown>) ?? {};
+
+    const riesgoRows = await this.db.execute(sql`
+      SELECT COUNT(DISTINCT cliente_id)::int AS riesgo
+      FROM venta
+      WHERE tenant_id = ${tenantId}::uuid AND estado_pago = 'COMPLETADA'
+        AND cliente_id IS NOT NULL
+        AND created_at < NOW() - INTERVAL '60 days'
+        AND cliente_id NOT IN (
+          SELECT DISTINCT cliente_id FROM venta
+          WHERE tenant_id = ${tenantId}::uuid AND estado_pago = 'COMPLETADA'
+            AND created_at >= NOW() - INTERVAL '60 days'
+        )
+    `);
+    const riesgo_abandono = Number((riesgoRows[0] as Record<string, unknown>)?.riesgo ?? 0);
+
+    return {
+      ticket_promedio: Number(r.ticket_promedio ?? 0),
+      frecuencia_compra: Number(r.frecuencia_compra ?? 0),
+      ultima_compra: r.ultima_compra ? new Date(r.ultima_compra as string) : null,
+      riesgo_abandono,
+    };
+  }
+
+  async metricasVentas(tenantId: string, from: string, to: string): Promise<MetricasVentas> {
+    const generalRows = await this.db.execute(sql`
+      SELECT COALESCE(SUM(v.total::numeric), 0) AS ingresos_brutos,
+             COUNT(*)::int AS total_transacciones
+      FROM venta v
+      WHERE v.tenant_id = ${tenantId}::uuid
+        AND v.estado_pago = 'COMPLETADA'
+        AND v.created_at >= ${from}::timestamptz AND v.created_at <= ${to}::timestamptz
+    `);
+    const g = (generalRows[0] as Record<string, unknown>) ?? {};
+
+    const topRows = await this.db.execute(sql`
+      SELECT p.nombre, SUM(vi.cantidad)::int AS cantidad, SUM(vi.precio_unitario * vi.cantidad)::numeric AS ingresos
+      FROM venta_item vi
+      JOIN venta v ON v.id = vi.venta_id
+      LEFT JOIN producto p ON p.id = vi.producto_id
+      WHERE v.tenant_id = ${tenantId}::uuid
+        AND v.estado_pago = 'COMPLETADA'
+        AND v.created_at >= ${from}::timestamptz AND v.created_at <= ${to}::timestamptz
+        AND vi.tipo = 'PRODUCTO'
+      GROUP BY p.nombre ORDER BY ingresos DESC LIMIT 10
+    `);
+    const top_productos = (topRows as unknown as Record<string, unknown>[]).map((r) => ({
+      nombre: (r.nombre as string | null) ?? "Sin nombre",
+      cantidad: Number(r.cantidad ?? 0),
+      ingresos: Number(r.ingresos ?? 0),
+    }));
+
+    const canalRows = await this.db.execute(sql`
+      SELECT COALESCE(os.canal::text, 'TIENDA') AS canal,
+             SUM(v.total::numeric)::numeric AS ingresos
+      FROM venta v
+      LEFT JOIN orden_servicio os ON os.id = v.orden_servicio_id
+      WHERE v.tenant_id = ${tenantId}::uuid
+        AND v.estado_pago = 'COMPLETADA'
+        AND v.created_at >= ${from}::timestamptz AND v.created_at <= ${to}::timestamptz
+      GROUP BY os.canal
+    `);
+    const ingresos_por_canal = (canalRows as unknown as Record<string, unknown>[]).map((r) => ({
+      canal: r.canal as string,
+      ingresos: Number(r.ingresos ?? 0),
+    }));
+
+    return {
+      ingresos_brutos: Number(g.ingresos_brutos ?? 0),
+      total_transacciones: Number(g.total_transacciones ?? 0),
+      top_productos,
+      ingresos_por_canal,
+    };
+  }
+
+  async listAudiencias(tenantId: string): Promise<Audiencia[]> {
+    // Audiencias dinámicas predefinidas basadas en estado del lead
+    const rows = await this.db.execute(sql`
+      SELECT e.codigo AS id, e.nombre, e.objetivo AS criterio, COUNT(l.id)::int AS total_contactos
+      FROM crm_etapa e
+      LEFT JOIN crm_lead l ON l.etapa_id = e.id AND l.tenant_id = e.tenant_id AND l.activo = true
+      WHERE e.tenant_id = ${tenantId}::uuid AND e.activo = true
+      GROUP BY e.id, e.nombre, e.objetivo
+      ORDER BY e.orden
+    `);
+    return (rows as unknown as Record<string, unknown>[]).map((r) => ({
+      id: r.id as string,
+      nombre: r.nombre as string,
+      criterio: (r.criterio as string | null) ?? "",
+      total_contactos: Number(r.total_contactos ?? 0),
+    }));
+  }
+
+  // ─── Bot engine helpers ────────────────────────────────────────────────────
+
+  async getLastBotMessage(
+    tenantId: string,
+    conversacionId: string
+  ): Promise<LastBotMessage | null> {
+    const rows = await this.db
+      .select({
+        id: crmMensajeTable.id,
+        metadata: crmMensajeTable.metadata,
+        created_at: crmMensajeTable.created_at,
+      })
+      .from(crmMensajeTable)
+      .where(
+        and(
+          eq(crmMensajeTable.conversacion_id, conversacionId),
+          eq(crmMensajeTable.tenant_id, tenantId),
+          eq(crmMensajeTable.origen, "BOT")
+        )
+      )
+      .orderBy(desc(crmMensajeTable.created_at))
+      .limit(1);
+
+    if (!rows[0]) return null;
+    return {
+      id: rows[0].id,
+      metadata: rows[0].metadata,
+      created_at: rows[0].created_at,
+    };
+  }
+
+  async consultarServiciosCliente(
+    tenantId: string,
+    clienteId: string
+  ): Promise<ServicioClienteResult[]> {
+    const rows = await this.db.execute(sql`
+      SELECT os.codigo, os.estado, os.falla_ingreso, os.created_at
+      FROM orden_servicio os
+      JOIN instancia i ON i.id = os.instancia_id
+      WHERE os.tenant_id = ${tenantId}::uuid
+        AND i.cliente_id = ${clienteId}::uuid
+        AND os.estado NOT IN ('ENTREGADO', 'CANCELADO')
+      ORDER BY os.created_at DESC
+      LIMIT 5
+    `);
+    return (rows as unknown as Record<string, unknown>[]).map((r) => ({
+      codigo: r.codigo as string,
+      estado: r.estado as string,
+      falla_ingreso: r.falla_ingreso as string,
+      created_at: new Date(r.created_at as string),
+    }));
+  }
+
+  async moverEtapaDesdeBot(tenantId: string, leadId: string, etapaCodigo: string): Promise<void> {
+    const etapa = await this.findEtapaByCodigo(tenantId, etapaCodigo);
+    if (!etapa) return;
+    await this.db
+      .update(crmLeadTable)
+      .set({ etapa_id: etapa.id, updated_at: new Date() })
+      .where(and(eq(crmLeadTable.id, leadId), eq(crmLeadTable.tenant_id, tenantId)));
+  }
+
+  async getBotesRecordatorio(tenantId: string): Promise<
+    Array<{
+      lead_id: string;
+      conversacion_id: string;
+      tiempo_espera_horas: number;
+      max_intentos: number;
+      wa_cuenta_id: string;
+      celular: string;
+    }>
+  > {
+    const rows = await this.db.execute(sql`
+      SELECT l.id AS lead_id, c.id AS conversacion_id,
+             e.tiempo_espera_horas, e.max_intentos_recordatorio AS max_intentos,
+             c.wa_cuenta_id, c.celular
+      FROM crm_lead l
+      JOIN crm_etapa e ON l.etapa_id = e.id
+      JOIN crm_bot b ON e.bot_id = b.id
+      JOIN crm_conversacion c ON c.lead_id = l.id AND c.estado = 'ACTIVA'
+      WHERE l.tenant_id = ${tenantId}::uuid
+        AND l.activo = true
+        AND b.tipo = 'RECORDATORIO'
+        AND b.activo = true
+    `);
+    return (rows as unknown as Record<string, unknown>[]).map((r) => ({
+      lead_id: r.lead_id as string,
+      conversacion_id: r.conversacion_id as string,
+      tiempo_espera_horas: Number(r.tiempo_espera_horas ?? 24),
+      max_intentos: Number(r.max_intentos ?? 3),
+      wa_cuenta_id: r.wa_cuenta_id as string,
+      celular: r.celular as string,
+    }));
+  }
+
+  async countEventosBotLead(tenantId: string, leadId: string): Promise<number> {
+    const rows = await this.db
+      .select({ n: count() })
+      .from(crmEventoTable)
+      .where(
+        and(
+          eq(crmEventoTable.tenant_id, tenantId),
+          eq(crmEventoTable.lead_id, leadId),
+          eq(crmEventoTable.tipo, "BOT_EJECUTADO")
+        )
+      );
+    return Number(rows[0]?.n ?? 0);
+  }
+
+  async registrarEventoBot(
+    tenantId: string,
+    leadId: string,
+    conversacionId: string,
+    datos: unknown
+  ): Promise<void> {
+    await this.db.insert(crmEventoTable).values({
+      tenant_id: tenantId,
+      tipo: "BOT_EJECUTADO",
+      origen: "BOT",
+      lead_id: leadId,
+      conversacion_id: conversacionId,
+      datos: datos as Record<string, unknown>,
+    });
   }
 }

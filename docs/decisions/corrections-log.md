@@ -512,3 +512,16 @@ ALTER TYPE rol_usuario ADD VALUE IF NOT EXISTS 'ASISTENTE';
   - 1 agente (Nico, canal WHATSAPP, modelo claude-haiku)
   - 3 bots (cotización repuesto, servicio proceso, recordatorio)
   - Métodos de pago catálogo si no existen
+
+---
+
+## [C006] 2026-06-02 — Agregar WHATSAPP al enum canal_servicio
+- **Afecta:** servicios, crm
+- **Antes:** canal_servicio solo tenía TIENDA y DOMICILIO
+- **Ahora:** canal_servicio tiene TIENDA, DOMICILIO, WHATSAPP
+- **Razón:** crearServicio tool de Nico necesita registrar órdenes de servicio con canal WHATSAPP. Sin este valor en el enum, crearServicioNico usaba TIENDA como fallback incorrecto.
+- **Migración DB necesaria:**
+  ```sql
+  ALTER TYPE canal_servicio ADD VALUE IF NOT EXISTS 'WHATSAPP';
+  ```
+- **Impacto:** Al ejecutar la migración, los servicios creados vía WhatsApp pueden registrarse con canal=WHATSAPP correctamente. El código ya fue actualizado para usar este valor.

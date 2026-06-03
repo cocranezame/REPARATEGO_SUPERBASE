@@ -89,6 +89,7 @@ export type TipoServicio = (typeof TipoServicio)[keyof typeof TipoServicio];
 export const CanalServicio = {
   TIENDA: "TIENDA",
   DOMICILIO: "DOMICILIO",
+  WHATSAPP: "WHATSAPP",
 } as const;
 export type CanalServicio = (typeof CanalServicio)[keyof typeof CanalServicio];
 

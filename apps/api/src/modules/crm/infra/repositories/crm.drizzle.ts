@@ -1509,11 +1509,10 @@ export class CrmDrizzleRepository implements ICrmRepository {
       }
 
       // 7. INSERT orden_servicio
-      // canal_servicio enum solo tiene TIENDA | DOMICILIO — WHATSAPP no está disponible en DB aún
-      const rawCanal = data.canal ?? "TIENDA";
-      const canal = (["TIENDA", "DOMICILIO"].includes(rawCanal) ? rawCanal : "TIENDA") as
-        | "TIENDA"
-        | "DOMICILIO";
+      const rawCanal = data.canal ?? "WHATSAPP";
+      const canal = (
+        ["TIENDA", "DOMICILIO", "WHATSAPP"].includes(rawCanal) ? rawCanal : "WHATSAPP"
+      ) as "TIENDA" | "DOMICILIO" | "WHATSAPP";
       const osRows = await tx
         .insert(osTable)
         .values({

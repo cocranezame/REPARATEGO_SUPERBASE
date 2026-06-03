@@ -1,11 +1,23 @@
 import type {
+  Audiencia,
+  CrmAccionAgenteItem,
+  CrmAgente,
+  CrmBot,
   CrmConversacion,
+  CrmConversacionInterna,
   CrmEtapa,
   CrmEtapaTransicion,
   CrmEtiqueta,
   CrmLead,
   CrmMensaje,
+  CrmMensajeInterno,
   CrmNota,
+  CrmPlantilla,
+  MetricaLead,
+  MetricasClientes,
+  MetricasDashboard,
+  MetricasNico,
+  MetricasVentas,
   WaCuenta,
 } from "../entities/crm.js";
 
@@ -233,6 +245,93 @@ export interface ICrmRepository {
     busqueda: string,
     categoriaId?: string | undefined
   ): Promise<RepuestoResult[]>;
+
+  // Plantillas
+  listPlantillas(tenantId: string): Promise<CrmPlantilla[]>;
+  findPlantillaById(tenantId: string, id: string): Promise<CrmPlantilla | null>;
+  createPlantilla(
+    tenantId: string,
+    data: CreatePlantillaData,
+    userId: string
+  ): Promise<CrmPlantilla>;
+  updatePlantilla(
+    tenantId: string,
+    id: string,
+    data: UpdatePlantillaData
+  ): Promise<CrmPlantilla | null>;
+
+  // Bots
+  listBots(tenantId: string): Promise<CrmBot[]>;
+  findBotById(tenantId: string, id: string): Promise<CrmBot | null>;
+  updateBot(tenantId: string, id: string, data: UpdateBotData): Promise<CrmBot | null>;
+
+  // Agentes
+  listAgentes(tenantId: string): Promise<CrmAgente[]>;
+  updateAgente(tenantId: string, id: string, data: UpdateAgenteData): Promise<CrmAgente | null>;
+  listAccionesAgente(
+    tenantId: string,
+    agenteId: string,
+    params: ListAccionesAgenteParams
+  ): Promise<{ items: CrmAccionAgenteItem[]; total: number }>;
+
+  // Eventos
+  listEventos(
+    tenantId: string,
+    params: ListEventosParams
+  ): Promise<{ items: import("../entities/crm.js").CrmEvento[]; total: number }>;
+
+  // Mensajería interna
+  listMensajeriaConversaciones(
+    tenantId: string,
+    userId: string,
+    params: { page: number; pageSize: number }
+  ): Promise<{ items: CrmConversacionInterna[]; total: number }>;
+  listMensajesInternos(
+    tenantId: string,
+    userId: string,
+    otroUsuarioId: string,
+    params: { page: number; pageSize: number }
+  ): Promise<{ items: CrmMensajeInterno[]; total: number }>;
+  createMensajeInterno(
+    tenantId: string,
+    remitenteId: string,
+    data: CreateMensajeInternoData
+  ): Promise<CrmMensajeInterno>;
+  marcarMensajeLeidoInterno(
+    tenantId: string,
+    mensajeId: string,
+    destinatarioId: string
+  ): Promise<boolean>;
+
+  // Métricas
+  metricasDashboard(tenantId: string, from: string, to: string): Promise<MetricasDashboard>;
+  metricasNico(tenantId: string, from: string, to: string): Promise<MetricasNico>;
+  metricasLeads(tenantId: string, from: string, to: string): Promise<MetricaLead[]>;
+  metricasClientes(tenantId: string, from: string, to: string): Promise<MetricasClientes>;
+  metricasVentas(tenantId: string, from: string, to: string): Promise<MetricasVentas>;
+  listAudiencias(tenantId: string): Promise<Audiencia[]>;
+
+  // Bot engine helpers
+  getLastBotMessage(tenantId: string, conversacionId: string): Promise<LastBotMessage | null>;
+  consultarServiciosCliente(tenantId: string, clienteId: string): Promise<ServicioClienteResult[]>;
+  moverEtapaDesdeBot(tenantId: string, leadId: string, etapaCodigo: string): Promise<void>;
+  getBotesRecordatorio(tenantId: string): Promise<
+    Array<{
+      lead_id: string;
+      conversacion_id: string;
+      tiempo_espera_horas: number;
+      max_intentos: number;
+      wa_cuenta_id: string;
+      celular: string;
+    }>
+  >;
+  countEventosBotLead(tenantId: string, leadId: string): Promise<number>;
+  registrarEventoBot(
+    tenantId: string,
+    leadId: string,
+    conversacionId: string,
+    datos: unknown
+  ): Promise<void>;
 }
 
 // ─── Nuevos tipos para webhook + agent ─────────────────────────────────────────
@@ -254,6 +353,8 @@ export type LeadForAgent = {
   etapa_codigo: string;
   etapa_nombre: string;
   etapa_objetivo: string | null;
+  etapa_operador: string;
+  etapa_bot_id: string | null;
   vendedor_id: string | null;
   cliente_id: string | null;
   sucursal_id: string | null;
@@ -326,4 +427,71 @@ export type RepuestoResult = {
   codigo: string;
   stock_disponible: number;
   precio_venta: string;
+};
+
+// ─── Nuevos tipos para grupos 1-8 ─────────────────────────────────────────────
+
+export type CreatePlantillaData = {
+  nombre: string;
+  contenido: string;
+  variables?: string[] | undefined;
+  meta_template_name?: string | undefined;
+};
+
+export type UpdatePlantillaData = {
+  nombre?: string | undefined;
+  contenido?: string | undefined;
+  variables?: string[] | undefined;
+  meta_template_name?: string | undefined;
+  estado_meta?: string | undefined;
+};
+
+export type UpdateBotData = {
+  activo?: boolean | undefined;
+  config?: unknown | undefined;
+  nombre?: string | undefined;
+};
+
+export type UpdateAgenteData = {
+  tono?: string | undefined;
+  prompt_base?: string | undefined;
+  max_mensajes_contexto?: number | undefined;
+  activo?: boolean | undefined;
+};
+
+export type ListAccionesAgenteParams = {
+  fecha_desde?: string | undefined;
+  fecha_hasta?: string | undefined;
+  tool_name?: string | undefined;
+  exitoso?: boolean | undefined;
+  page: number;
+  pageSize: number;
+};
+
+export type ListEventosParams = {
+  tipo?: string | undefined;
+  origen?: string | undefined;
+  lead_id?: string | undefined;
+  fecha_desde?: string | undefined;
+  fecha_hasta?: string | undefined;
+  page: number;
+  pageSize: number;
+};
+
+export type CreateMensajeInternoData = {
+  destinatario_id: string;
+  contenido: string;
+};
+
+export type ServicioClienteResult = {
+  codigo: string;
+  estado: string;
+  falla_ingreso: string;
+  created_at: Date;
+};
+
+export type LastBotMessage = {
+  id: string;
+  metadata: unknown;
+  created_at: Date;
 };

@@ -131,6 +131,128 @@ export type CrmMensaje = {
   created_at: Date;
 };
 
+export type CrmPlantilla = {
+  id: string;
+  tenant_id: string;
+  nombre: string;
+  contenido: string;
+  variables: string[] | null;
+  meta_template_name: string | null;
+  estado_meta: string;
+  created_by: string | null;
+  created_at: Date;
+  updated_at: Date;
+};
+
+export type CrmBot = {
+  id: string;
+  tenant_id: string;
+  nombre: string;
+  codigo: string;
+  tipo: string;
+  config: unknown;
+  activo: boolean;
+  created_at: Date;
+  updated_at: Date;
+};
+
+export type CrmAgente = {
+  id: string;
+  tenant_id: string;
+  nombre: string;
+  canal: string;
+  modelo_ia: string;
+  tono: string | null;
+  prompt_base: string | null;
+  max_mensajes_contexto: number;
+  activo: boolean;
+  created_at: Date;
+  updated_at: Date;
+};
+
+export type CrmAccionAgenteItem = {
+  id: string;
+  agente_id: string;
+  conversacion_id: string;
+  lead_id: string;
+  tool_name: string;
+  tool_input: unknown;
+  tool_output: unknown;
+  exitoso: boolean;
+  duracion_ms: number | null;
+  error: string | null;
+  created_at: Date;
+};
+
+export type CrmMensajeInterno = {
+  id: string;
+  tenant_id: string;
+  remitente_id: string;
+  destinatario_id: string;
+  contenido: string;
+  leido: boolean;
+  remitente_nombre: string | null;
+  destinatario_nombre: string | null;
+  created_at: Date;
+};
+
+export type CrmConversacionInterna = {
+  usuario_id: string;
+  usuario_nombre: string | null;
+  ultimo_mensaje: string | null;
+  ultimo_at: Date | null;
+  no_leidos: number;
+};
+
+export type MetricasDashboard = {
+  leads_activos: number;
+  leads_por_etapa: Array<{ etapa_id: string; etapa_nombre: string; total: number }>;
+  tasa_conversion: number;
+  tiempo_promedio_respuesta_minutos: number;
+  total_leads_periodo: number;
+  leads_por_canal_utm: Array<{ canal: string; total: number }>;
+};
+
+export type MetricasNico = {
+  mensajes_procesados: number;
+  tools_usadas: Array<{ tool: string; total: number }>;
+  tasa_exito: number;
+  tiempo_promedio_respuesta_ms: number;
+  errores: Array<{ error: string; total: number }>;
+};
+
+export type MetricaLead = {
+  id: string;
+  fecha: Date;
+  estado: string;
+  convertido: boolean;
+  dias_para_convertir: number | null;
+  utm_source: string | null;
+  utm_campaign: string | null;
+  utm_medium: string | null;
+};
+
+export type MetricasClientes = {
+  ticket_promedio: number;
+  frecuencia_compra: number;
+  ultima_compra: Date | null;
+  riesgo_abandono: number;
+};
+
+export type MetricasVentas = {
+  ingresos_brutos: number;
+  total_transacciones: number;
+  top_productos: Array<{ nombre: string; cantidad: number; ingresos: number }>;
+  ingresos_por_canal: Array<{ canal: string; ingresos: number }>;
+};
+
+export type Audiencia = {
+  id: string;
+  nombre: string;
+  criterio: string;
+  total_contactos: number;
+};
+
 export type CrmConversacion = {
   id: string;
   tenant_id: string;

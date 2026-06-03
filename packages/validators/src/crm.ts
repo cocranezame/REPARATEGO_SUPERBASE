@@ -254,3 +254,36 @@ export const listMensajesQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(50),
 });
 export type ListMensajesQuery = z.infer<typeof listMensajesQuerySchema>;
+
+// ─── Plantilla: enviar HSM ────────────────────────────────────────────────────
+
+export const enviarPlantillaSchema = z.object({
+  conversacion_id: uuidSchema,
+  variables_valores: z.record(z.string(), z.string()).default({}),
+});
+export type EnviarPlantillaInput = z.infer<typeof enviarPlantillaSchema>;
+
+// ─── Eventos ──────────────────────────────────────────────────────────────────
+
+export const listEventosQuerySchema = z.object({
+  tipo: z.string().max(50).optional(),
+  origen: z.enum(["SISTEMA", "NICO", "VENDEDOR", "BOT"]).optional(),
+  lead_id: uuidSchema.optional(),
+  fecha_desde: z.string().datetime({ offset: true }).optional(),
+  fecha_hasta: z.string().datetime({ offset: true }).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+});
+export type ListEventosQuery = z.infer<typeof listEventosQuerySchema>;
+
+// ─── Acciones de agente ───────────────────────────────────────────────────────
+
+export const listAccionesAgenteQuerySchema = z.object({
+  fecha_desde: z.string().datetime({ offset: true }).optional(),
+  fecha_hasta: z.string().datetime({ offset: true }).optional(),
+  tool_name: z.string().max(100).optional(),
+  exitoso: z.coerce.boolean().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(50),
+});
+export type ListAccionesAgenteQuery = z.infer<typeof listAccionesAgenteQuerySchema>;

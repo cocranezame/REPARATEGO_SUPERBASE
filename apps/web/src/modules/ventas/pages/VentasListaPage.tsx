@@ -211,13 +211,7 @@ export function VentasListaPage() {
                       S/ {Number(v.total).toFixed(2)}
                     </td>
                     <td className="px-4 py-3 text-right text-neutral-600">
-                      {Number(v.saldo_pendiente) > 0 ? (
-                        <span className="font-medium text-amber-700">
-                          S/ {Number(v.saldo_pendiente).toFixed(2)}
-                        </span>
-                      ) : (
-                        <span className="text-neutral-400">—</span>
-                      )}
+                      <span className="text-neutral-400">—</span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span

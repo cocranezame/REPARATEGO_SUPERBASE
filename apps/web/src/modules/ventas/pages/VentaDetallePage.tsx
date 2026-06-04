@@ -279,7 +279,7 @@ export function VentaDetallePage() {
   const porcentajePagado = venta.porcentaje_pagado ?? 0;
 
   function printVoucher() {
-    imprimirVoucherDetalle(venta);
+    if (venta) imprimirVoucherDetalle(venta);
   }
 
   return (

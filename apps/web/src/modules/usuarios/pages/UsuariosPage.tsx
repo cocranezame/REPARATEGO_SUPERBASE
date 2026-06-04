@@ -53,6 +53,8 @@ const ROL_COLORS: Record<RolUsuario, string> = {
   TECNICO: "bg-amber-100 text-amber-700",
   VENDEDOR: "bg-violet-100 text-violet-700",
   CAJERO: "bg-emerald-100 text-emerald-700",
+  ASISTENTE: "bg-cyan-100 text-cyan-700",
+  ALMACEN: "bg-orange-100 text-orange-700",
 };
 
 const INPUT =

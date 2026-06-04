@@ -3,13 +3,11 @@ import { useUpdateEnvioEstado, useVentasEnvios } from "../hooks/useVentas";
 
 const ESTADO_BADGE: Record<string, string> = {
   PENDIENTE: "bg-amber-100 text-amber-700",
-  EN_CAMINO: "bg-blue-100 text-blue-700",
-  ENTREGADO: "bg-green-100 text-green-700",
+  DESPACHADO: "bg-green-100 text-green-700",
 };
 
-const SIGUIENTE_ESTADO: Record<string, "PENDIENTE" | "EN_CAMINO" | "ENTREGADO"> = {
-  PENDIENTE: "EN_CAMINO",
-  EN_CAMINO: "ENTREGADO",
+const SIGUIENTE_ESTADO: Record<string, "DESPACHADO"> = {
+  PENDIENTE: "DESPACHADO",
 };
 
 export function EnviosPage() {
@@ -83,10 +81,10 @@ function EnvioRow({
   envio: {
     id: string;
     venta_id: string;
-    direccion_texto: string;
+    direccion_texto: string | null;
     estado: string;
     costo_envio: string;
-    fecha_envio: string | null;
+    fecha_programada: string | null;
   };
 }) {
   const { mutate: cambiarEstado, isPending } = useUpdateEnvioEstado();
@@ -97,7 +95,9 @@ function EnvioRow({
       <td className="px-4 py-3 font-mono text-xs text-neutral-900">
         {envio.venta_id.slice(0, 8)}…
       </td>
-      <td className="max-w-[200px] truncate px-4 py-3 text-neutral-600">{envio.direccion_texto}</td>
+      <td className="max-w-[200px] truncate px-4 py-3 text-neutral-600">
+        {envio.direccion_texto ?? "—"}
+      </td>
       <td className="px-4 py-3 text-center">
         <span
           className={`rounded-full px-2 py-0.5 text-xs font-medium ${ESTADO_BADGE[envio.estado] ?? "bg-neutral-100 text-neutral-700"}`}
@@ -107,7 +107,9 @@ function EnvioRow({
       </td>
       <td className="px-4 py-3 text-right text-neutral-600">S/ {envio.costo_envio}</td>
       <td className="px-4 py-3 text-neutral-600">
-        {envio.fecha_envio ? new Date(envio.fecha_envio).toLocaleDateString("es-PE") : "—"}
+        {envio.fecha_programada
+          ? new Date(envio.fecha_programada).toLocaleDateString("es-PE")
+          : "—"}
       </td>
       <td className="px-4 py-3 text-right">
         {siguiente && (

@@ -20,6 +20,7 @@ import type {
   ResumenCajaResponse,
   VentaDetalleResponse,
   VentaResponse,
+  VentasEnviosListResponse,
   VentasListResponse,
   VentasParams,
 } from "../types/ventas";
@@ -83,6 +84,17 @@ export function useVentas(params: VentasParams = {}) {
   return useQuery<VentasListResponse>({
     queryKey: ["ventas", params],
     queryFn: () => apiClient.get<VentasListResponse>(`/ventas${buildVentasQS(params)}`),
+  });
+}
+
+export function useVentasEnvios(params: { page?: number; pageSize?: number } = {}) {
+  const q = new URLSearchParams({
+    page: String(params.page ?? 1),
+    pageSize: String(params.pageSize ?? 20),
+  });
+  return useQuery<VentasEnviosListResponse>({
+    queryKey: ["ventas-envios", params],
+    queryFn: () => apiClient.get<VentasEnviosListResponse>(`/ventas/envios?${q.toString()}`),
   });
 }
 
@@ -164,6 +176,25 @@ export function useDespachar() {
       ),
     onSuccess: (_data, ventaId) => {
       void qc.invalidateQueries({ queryKey: ["ventas", ventaId] });
+      void qc.invalidateQueries({ queryKey: ["ventas"] });
+    },
+  });
+}
+
+export function useUpdateEnvioEstado() {
+  const qc = useQueryClient();
+  return useMutation<
+    { success: boolean; data: unknown },
+    Error,
+    { ventaId: string; estado: "PENDIENTE" | "DESPACHADO" }
+  >({
+    mutationFn: ({ ventaId }) =>
+      apiClient.patch<{ success: boolean; data: unknown }>(
+        `/ventas/${ventaId}/envio/despachar`,
+        {}
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["ventas-envios"] });
       void qc.invalidateQueries({ queryKey: ["ventas"] });
     },
   });

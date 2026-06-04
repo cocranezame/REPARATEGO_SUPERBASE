@@ -38,7 +38,7 @@ export function createVentaHandlers(repo: IVentaRepository) {
           ? { visita_domicilio_id: body.visita_domicilio_id }
           : {}),
         items: body.items.map((it) => ({
-          tipo_item: it.tipo_item as "PRODUTO" | "SERVICIO" | "ENVIO" | "MANUAL",
+          tipo_item: it.tipo_item as "PRODUCTO" | "SERVICIO" | "ENVIO" | "MANUAL",
           ...(it.produto_id !== undefined ? { produto_id: it.produto_id } : {}),
           ...(it.lote_id !== undefined ? { lote_id: it.lote_id } : {}),
           ...(it.sku !== undefined ? { sku: it.sku } : {}),
@@ -214,6 +214,21 @@ export function createVentaHandlers(repo: IVentaRepository) {
     return c.json({ success: true, data: envio });
   }
 
+  async function listVentasEnvios(c: HonoCtx) {
+    const tenantId = c.get("tenantId");
+    const page = Number(c.req.query("page") ?? 1);
+    const pageSize = Number(c.req.query("pageSize") ?? 20);
+
+    const result = await repo.listVentasEnvios(tenantId, { page, pageSize });
+    const totalPages = Math.ceil(result.total / pageSize);
+
+    return c.json({
+      success: true,
+      data: result.items,
+      meta: { total: result.total, page, pageSize, totalPages },
+    });
+  }
+
   async function listEnviosCalendario(c: HonoCtx) {
     const q = c.req.valid("query") as ListEnviosCalendarioQuery;
     const tenantId = c.get("tenantId");
@@ -234,6 +249,7 @@ export function createVentaHandlers(repo: IVentaRepository) {
     anular,
     actualizarEnvio,
     despacharEnvio,
+    listVentasEnvios,
     listEnviosCalendario,
   };
 }

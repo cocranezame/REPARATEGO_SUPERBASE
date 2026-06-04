@@ -29,6 +29,8 @@ import type {
   CreateVentaItemData,
   IVentaRepository,
   ListEnviosCalendarioParams,
+  ListVentasEnviosParams,
+  ListVentasEnviosResult,
   ListVentasParams,
   ListVentasResult,
 } from "../../domain/ports/venta.repository.js";
@@ -106,11 +108,11 @@ export class VentaDrizzleRepository implements IVentaRepository {
         }
       }
 
-      // Validate PRODUTO items: check stock in lotes (V5)
-      const productItems = data.items.filter((it) => it.tipo_item === "PRODUTO");
+      // Validate PRODUCTO items: check stock in lotes (V5)
+      const productItems = data.items.filter((it) => it.tipo_item === "PRODUCTO");
       for (const item of productItems) {
-        if (!item.lote_id) throw new Error(`Item PRODUTO requiere lote_id: ${item.descripcion}`);
-        if (!item.sku) throw new Error(`Item PRODUTO requiere SKU: ${item.descripcion}`);
+        if (!item.lote_id) throw new Error(`Item PRODUCTO requiere lote_id: ${item.descripcion}`);
+        if (!item.sku) throw new Error(`Item PRODUCTO requiere SKU: ${item.descripcion}`);
 
         const loteRows = await tx
           .select({ cantidad_actual: loteTable.cantidad_actual })
@@ -196,10 +198,10 @@ export class VentaDrizzleRepository implements IVentaRepository {
         await tx.insert(ventaItemTable).values(itemValues);
       }
 
-      // Deduct stock and create movements for PRODUTO items (V4)
+      // Deduct stock and create movements for PRODUCTO items (V4)
       for (const item of productItems) {
         const loteRows = await tx
-          .select({ produto_id: loteTable.produto_id, sucursal_id: loteTable.sucursal_id })
+          .select({ producto_id: loteTable.producto_id, sucursal_id: loteTable.sucursal_id })
           .from(loteTable)
           .where(eq(loteTable.id, item.lote_id as string))
           .limit(1);
@@ -212,7 +214,7 @@ export class VentaDrizzleRepository implements IVentaRepository {
 
           await tx.insert(movimientoTable).values({
             tenant_id: tenantId,
-            produto_id: loteRows[0].produto_id,
+            producto_id: loteRows[0].producto_id,
             lote_id: item.lote_id as string,
             sucursal_id: loteRows[0].sucursal_id,
             tipo: "VENTA",
@@ -505,17 +507,17 @@ export class VentaDrizzleRepository implements IVentaRepository {
       const montoPagado = Number(sumRows[0]?.total ?? 0);
       const notaCreditoMonto = montoPagado > 0 ? montoPagado.toFixed(2) : null;
 
-      // Revert stock for PRODUTO items (V22)
+      // Revert stock for PRODUCTO items (V22)
       const items = await tx
         .select()
         .from(ventaItemTable)
         .where(and(eq(ventaItemTable.venta_id, id), eq(ventaItemTable.tenant_id, tenantId)));
 
       for (const item of items as VentaItem[]) {
-        if (item.tipo_item !== "PRODUTO" || !item.lote_id) continue;
+        if (item.tipo_item !== "PRODUCTO" || !item.lote_id) continue;
 
         const loteRows = await tx
-          .select({ produto_id: loteTable.produto_id, sucursal_id: loteTable.sucursal_id })
+          .select({ producto_id: loteTable.producto_id, sucursal_id: loteTable.sucursal_id })
           .from(loteTable)
           .where(eq(loteTable.id, item.lote_id))
           .limit(1);
@@ -528,7 +530,7 @@ export class VentaDrizzleRepository implements IVentaRepository {
 
           await tx.insert(movimientoTable).values({
             tenant_id: tenantId,
-            produto_id: loteRows[0].produto_id,
+            producto_id: loteRows[0].producto_id,
             lote_id: item.lote_id,
             sucursal_id: loteRows[0].sucursal_id,
             tipo: "REAJUSTE",
@@ -656,6 +658,34 @@ export class VentaDrizzleRepository implements IVentaRepository {
         .where(and(eq(ventaTable.id, ventaId), eq(ventaTable.tenant_id, tenantId)));
 
       return envioRows[0] as VentaEnvio;
+    });
+  }
+
+  async listVentasEnvios(
+    tenantId: string,
+    params: ListVentasEnviosParams
+  ): Promise<ListVentasEnviosResult> {
+    return this.db.transaction(async (tx) => {
+      await setTenantLocal(tx, tenantId);
+
+      const where = eq(ventaEnvioTable.tenant_id, tenantId);
+      const offset = (params.page - 1) * params.pageSize;
+
+      const [countRows, rows] = await Promise.all([
+        tx.select({ total: count() }).from(ventaEnvioTable).where(where),
+        tx
+          .select()
+          .from(ventaEnvioTable)
+          .where(where)
+          .orderBy(asc(ventaEnvioTable.created_at))
+          .limit(params.pageSize)
+          .offset(offset),
+      ]);
+
+      return {
+        items: rows as VentaEnvio[],
+        total: countRows[0]?.total ?? 0,
+      };
     });
   }
 

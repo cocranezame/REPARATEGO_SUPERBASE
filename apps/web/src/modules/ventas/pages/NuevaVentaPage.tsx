@@ -1,7 +1,7 @@
 import { Minus, Plus, ShoppingCart, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAddVentaPago, useCajaActual, useCreateVenta } from "../hooks/useVentas";
+import { useCajaActiva, useCrearVenta } from "../hooks/useVentas";
 
 type ItemCarrito = {
   _key: number;
@@ -23,10 +23,9 @@ type MetodoPago = {
 
 export function NuevaVentaPage() {
   const navigate = useNavigate();
-  const { data: cajaRes } = useCajaActual();
+  const { data: cajaRes } = useCajaActiva();
   const caja = cajaRes?.data ?? null;
-  const { mutateAsync: crearVenta, isPending: creando } = useCreateVenta();
-  const { mutateAsync: addPago } = useAddVentaPago();
+  const { mutateAsync: crearVenta, isPending: creando } = useCrearVenta();
 
   const [items, setItems] = useState<ItemCarrito[]>([]);
   const [descripcion, setDescripcion] = useState("");
@@ -102,24 +101,19 @@ export function NuevaVentaPage() {
     setError(null);
     try {
       const venta = await crearVenta({
-        caja_id: caja.id,
+        tipo: "LIBRE",
         items: items.map((it) => ({
+          tipo_item: "MANUAL" as const,
           descripcion: it.descripcion,
           cantidad: it.cantidad,
           precio_unitario: it.precio_unitario,
-          ...(it.producto_id ? { producto_id: it.producto_id } : {}),
-          ...(it.descuento > 0 ? { descuento: it.descuento } : {}),
+          ...(it.producto_id ? { produto_id: it.producto_id } : {}),
         })),
-      });
-
-      for (const mp of metodosPago) {
-        await addPago({
-          ventaId: venta.data.id,
+        pagos: metodosPago.map((mp) => ({
           metodo_pago_id: mp.metodo_pago_id,
           monto: mp.monto,
-          ...(mp.referencia ? { referencia: mp.referencia } : {}),
-        });
-      }
+        })),
+      });
 
       setVentaCreadaId(venta.data.id);
     } catch (err) {

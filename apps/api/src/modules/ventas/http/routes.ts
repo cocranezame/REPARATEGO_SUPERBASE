@@ -34,6 +34,7 @@ ventaRoutes.get(
   validateQuery(listVentasQuerySchema),
   h.list
 );
+ventaRoutes.get("/ventas/envios", authorize("VENDEDOR", "ADMIN"), h.listVentasEnvios);
 ventaRoutes.get("/ventas/:id", authorize("VENDEDOR", "ADMIN"), h.getById);
 
 // ─── Pagos ────────────────────────────────────────────────────────────────────

@@ -11,7 +11,42 @@ type RequestOptions = {
   method?: HttpMethod | undefined;
 };
 
-async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+// Single in-flight refresh promise to prevent concurrent refresh calls
+let refreshPromise: Promise<boolean> | null = null;
+
+async function attemptRefresh(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    const { refreshToken, setTokens, logout } = useAuthStore.getState();
+    if (!refreshToken) {
+      logout();
+      return false;
+    }
+    try {
+      const res = await fetch(`${BASE_URL}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+      });
+      if (!res.ok) throw new Error("Refresh failed");
+      const data = (await res.json()) as {
+        data: { access_token: string; refresh_token: string };
+      };
+      setTokens(data.data.access_token, data.data.refresh_token);
+      return true;
+    } catch {
+      logout();
+      return false;
+    }
+  })().finally(() => {
+    refreshPromise = null;
+  });
+
+  return refreshPromise;
+}
+
+async function request<T>(path: string, options: RequestOptions = {}, isRetry = false): Promise<T> {
   const { method = "GET", body, headers = {} } = options;
 
   const token = useAuthStore.getState().accessToken;
@@ -28,6 +63,15 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     method,
     ...(body !== undefined && { body: JSON.stringify(body) }),
   });
+
+  // Auto-refresh on 401 (token expired), retry once
+  if (res.status === 401 && !isRetry) {
+    const refreshed = await attemptRefresh();
+    if (refreshed) {
+      return request<T>(path, options, true);
+    }
+    throw new Error("Sesión expirada. Por favor inicia sesión nuevamente.");
+  }
 
   if (!res.ok) {
     let message = `HTTP ${res.status}`;

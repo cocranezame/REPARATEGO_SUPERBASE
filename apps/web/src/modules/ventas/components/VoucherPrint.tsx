@@ -74,7 +74,6 @@ export function imprimirVoucherSimple(venta: VentaDto) {
   <div class="row"><span>Tipo:</span><span>${venta.tipo_venta}</span></div>
   <hr/>
   <div class="row total"><span>TOTAL:</span><span>S/ ${Number(venta.total).toFixed(2)}</span></div>
-  ${Number(venta.saldo_pendiente) > 0 ? `<div class="row" style="color:#b45309"><span>Saldo:</span><span>S/ ${Number(venta.saldo_pendiente).toFixed(2)}</span></div>` : ""}
   <div class="row"><span>Estado:</span><span>${venta.estado_pago}</span></div>
   <hr/>
   <p class="footer">Gracias por su preferencia<br/>ReparaTego — Lima Norte, Perú</p>

@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { CreateCotizacionCompraInput } from "@kallpasoft/validators";
-import { MessageCircle, Plus, Shield, Trash2, X } from "lucide-react";
+import { Eye, MessageCircle, Plus, Shield, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";

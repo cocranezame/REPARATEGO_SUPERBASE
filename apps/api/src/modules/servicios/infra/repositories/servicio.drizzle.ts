@@ -620,7 +620,7 @@ export class ServicioDrizzleRepository implements IServicioRepository {
             producto_id: instanciaTable.producto_id,
             tecnico_nombres: usuarioTable.nombres,
             tecnico_apellidos: usuarioTable.apellidos,
-            venta_estado: ventaTable.estado,
+            venta_estado: ventaTable.estado_pago,
           })
           .from(osTable)
           .leftJoin(instanciaTable, eq(osTable.instancia_id, instanciaTable.id))
@@ -692,7 +692,7 @@ export class ServicioDrizzleRepository implements IServicioRepository {
           numero_serie: instanciaTable.numero_serie,
           tecnico_nombres: usuarioTable.nombres,
           tecnico_apellidos: usuarioTable.apellidos,
-          venta_estado: ventaTable.estado,
+          venta_estado: ventaTable.estado_pago,
         })
         .from(osTable)
         .leftJoin(instanciaTable, eq(osTable.instancia_id, instanciaTable.id))
@@ -1057,11 +1057,11 @@ export class ServicioDrizzleRepository implements IServicioRepository {
           throw new Error("R12: No hay venta asociada a esta orden");
         }
         const ventaRows = await tx
-          .select({ estado: ventaTable.estado })
+          .select({ estado: ventaTable.estado_pago })
           .from(ventaTable)
           .where(eq(ventaTable.id, os.venta_id))
           .limit(1);
-        if (ventaRows[0]?.estado !== "PAGADA") {
+        if (ventaRows[0]?.estado !== "COMPLETADA") {
           throw new Error("R12: La venta debe estar PAGADA antes de entregar el equipo");
         }
       }

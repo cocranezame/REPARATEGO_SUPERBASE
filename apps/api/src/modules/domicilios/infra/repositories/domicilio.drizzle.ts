@@ -403,11 +403,9 @@ export class DomicilioDrizzleRepository implements IDomicilioRepository {
               sucursal_id: data.sucursal_id,
               cliente_id: visita.cliente_id,
               tipo_venta: "REVISION_DOMICILIO",
-              subtotal: String(tarifa),
-              igv: String(igv),
+              visita_domicilio_id: id,
               total: String(total),
-              estado: "PENDIENTE",
-              usuario_id: data.userId,
+              created_by: data.userId,
             })
             .returning({ id: ventaTable.id });
 

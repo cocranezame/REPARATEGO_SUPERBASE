@@ -99,7 +99,7 @@ export function DashboardInventarioPage() {
           icon={<ClipboardList className="h-5 w-5 text-yellow-600" />}
           label="Cotizaciones pendientes"
           value={dash.cotizaciones_pendientes}
-          sub={dash.cotizaciones_pendientes > 0 ? "Ver cotizaciones →" : undefined}
+          {...(dash.cotizaciones_pendientes > 0 ? { sub: "Ver cotizaciones →" } : {})}
           color="bg-yellow-50"
         />
       </div>

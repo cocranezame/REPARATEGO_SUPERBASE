@@ -57,33 +57,41 @@ export function useAuthGuard(): AuthGuardResult {
       return;
     }
 
-    if (!isTokenExpired(accessToken)) {
-      setIsChecking(false);
-      return;
-    }
-
-    if (refreshToken === null) {
-      logout();
-      setIsChecking(false);
-      return;
-    }
-
-    fetch(`${BASE_URL}/auth/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    })
-      .then(async (res) => {
+    async function doRefresh() {
+      const { refreshToken: rt, setTokens: st, logout: lo } = useAuthStore.getState();
+      if (!rt) {
+        lo();
+        return;
+      }
+      try {
+        const res = await fetch(`${BASE_URL}/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: rt }),
+        });
         if (!res.ok) throw new Error("Refresh failed");
         const data = (await res.json()) as RefreshResponse;
-        setTokens(data.data.access_token, data.data.refresh_token);
-      })
-      .catch(() => {
+        st(data.data.access_token, data.data.refresh_token);
+      } catch {
+        lo();
+      }
+    }
+
+    // Refresh now if already expired
+    if (isTokenExpired(accessToken)) {
+      if (refreshToken === null) {
         logout();
-      })
-      .finally(() => {
         setIsChecking(false);
-      });
+        return;
+      }
+      doRefresh().finally(() => setIsChecking(false));
+    } else {
+      setIsChecking(false);
+    }
+
+    // Proactive refresh every 12 minutes so the 15-min token never expires mid-session
+    const interval = setInterval(doRefresh, 12 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []); // runs once on mount — reads from store.getState() to avoid stale closure deps
 
   return { isAuthenticated, isChecking };

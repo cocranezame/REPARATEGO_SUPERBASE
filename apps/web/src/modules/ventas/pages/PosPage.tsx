@@ -744,7 +744,7 @@ function CarritoPanel({
       // Crear nueva venta primero, luego abrir modal pagos
       setError(null);
       const ventaItems = items.map((it) => ({
-        tipo_item: it.tipo as "PRODUCTO" | "SERVICIO",
+        tipo_item: it.tipo as "PRODUCTO" | "SERVICIO" | "ENVIO" | "MANUAL",
         descripcion: it.descripcion,
         cantidad: it.cantidad,
         precio_unitario: it.precio_unitario,

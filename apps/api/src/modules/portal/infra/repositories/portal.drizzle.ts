@@ -299,7 +299,7 @@ export class PortalDrizzleRepository implements IPortalRepository {
     let venta_estado: string | undefined;
     if (os.venta_id) {
       const vRows = await this.db
-        .select({ estado: ventaTable.estado })
+        .select({ estado: ventaTable.estado_pago })
         .from(ventaTable)
         .where(eq(ventaTable.id, os.venta_id))
         .limit(1);

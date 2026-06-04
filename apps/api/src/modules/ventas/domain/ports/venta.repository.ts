@@ -3,7 +3,7 @@ import type { Venta, VentaDetalle, VentaEnvio, VentaPago } from "../entities/ven
 // ─── Crear venta ──────────────────────────────────────────────────────────────
 
 export type CreateVentaItemData = {
-  tipo_item: "PRODUTO" | "SERVICIO" | "ENVIO" | "MANUAL";
+  tipo_item: "PRODUCTO" | "SERVICIO" | "ENVIO" | "MANUAL";
   produto_id?: string | undefined;
   lote_id?: string | undefined;
   sku?: string | undefined;
@@ -90,6 +90,16 @@ export type ListEnviosCalendarioParams = {
   sucursal_id?: string | undefined;
 };
 
+export type ListVentasEnviosParams = {
+  page: number;
+  pageSize: number;
+};
+
+export type ListVentasEnviosResult = {
+  items: VentaEnvio[];
+  total: number;
+};
+
 // ─── Cotizaciones ─────────────────────────────────────────────────────────────
 
 export type CreateCotizacionItemData = {
@@ -120,6 +130,10 @@ export interface IVentaRepository {
     data: ActualizarEnvioData
   ): Promise<VentaEnvio>;
   despacharEnvio(tenantId: string, ventaId: string): Promise<VentaEnvio | null>;
+  listVentasEnvios(
+    tenantId: string,
+    params: ListVentasEnviosParams
+  ): Promise<ListVentasEnviosResult>;
   listEnviosCalendario(tenantId: string, params: ListEnviosCalendarioParams): Promise<VentaEnvio[]>;
 
   // Integración servicios (llamados internamente desde módulo servicios)

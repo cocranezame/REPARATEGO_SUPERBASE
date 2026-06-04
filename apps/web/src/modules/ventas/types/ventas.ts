@@ -118,6 +118,12 @@ export type VentasListResponse = {
   meta: { total: number; page: number; pageSize: number; totalPages: number };
 };
 
+export type VentasEnviosListResponse = {
+  success: boolean;
+  data: VentaEnvioDto[];
+  meta: { total: number; page: number; pageSize: number; totalPages: number };
+};
+
 export type VentaResponse = { success: boolean; data: VentaDto };
 export type VentaDetalleResponse = { success: boolean; data: VentaDetalleDto };
 

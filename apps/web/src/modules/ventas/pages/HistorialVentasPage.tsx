@@ -2,9 +2,8 @@ import { useState } from "react";
 import { useAnularVenta, useVentas } from "../hooks/useVentas";
 
 const ESTADO_BADGE: Record<string, string> = {
-  PENDIENTE: "bg-amber-100 text-amber-700",
-  PAGADA: "bg-green-100 text-green-700",
-  PARCIAL: "bg-blue-100 text-blue-700",
+  PAGO_PENDIENTE: "bg-amber-100 text-amber-700",
+  COMPLETADA: "bg-green-100 text-green-700",
   ANULADA: "bg-red-100 text-red-700",
 };
 
@@ -120,10 +119,10 @@ function VentaRow({
     id: string;
     codigo: string;
     created_at: string;
-    cliente_nombre?: string;
+    cliente_nombre?: string | undefined;
     tipo_venta: string;
     total: string;
-    estado: string;
+    estado_pago: string;
   };
 }) {
   const { mutate: anular, isPending } = useAnularVenta();
@@ -140,18 +139,18 @@ function VentaRow({
       <td className="px-4 py-3 text-right font-medium text-neutral-900">S/ {venta.total}</td>
       <td className="px-4 py-3 text-center">
         <span
-          className={`rounded-full px-2 py-0.5 text-xs font-medium ${ESTADO_BADGE[venta.estado] ?? "bg-neutral-100 text-neutral-700"}`}
+          className={`rounded-full px-2 py-0.5 text-xs font-medium ${ESTADO_BADGE[venta.estado_pago] ?? "bg-neutral-100 text-neutral-700"}`}
         >
-          {venta.estado}
+          {venta.estado_pago}
         </span>
       </td>
       <td className="px-4 py-3 text-right">
-        {venta.estado !== "ANULADA" &&
+        {venta.estado_pago !== "ANULADA" &&
           (confirm ? (
             <div className="flex items-center gap-1">
               <button
                 type="button"
-                onClick={() => anular({ id: venta.id, motivo: "Anulación manual" })}
+                onClick={() => anular({ ventaId: venta.id, motivo: "Anulación manual" })}
                 disabled={isPending}
                 className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700 disabled:opacity-50"
               >

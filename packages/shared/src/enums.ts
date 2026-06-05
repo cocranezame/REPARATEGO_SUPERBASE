@@ -344,6 +344,83 @@ export const OrigenEvento = {
 } as const;
 export type OrigenEvento = (typeof OrigenEvento)[keyof typeof OrigenEvento];
 
+// Asistencia y Planilla (C007)
+export const TipoEventoAsistencia = {
+  ENTRADA: "ENTRADA",
+  SALIDA: "SALIDA",
+  BREAK_INICIO: "BREAK_INICIO",
+  BREAK_FIN: "BREAK_FIN",
+} as const;
+export type TipoEventoAsistencia = (typeof TipoEventoAsistencia)[keyof typeof TipoEventoAsistencia];
+
+export const EstadoEventoAsistencia = {
+  VALIDO: "VALIDO",
+  TARDANZA: "TARDANZA",
+  FUERA_DE_ZONA: "FUERA_DE_ZONA",
+  WIFI_NO_AUTORIZADO: "WIFI_NO_AUTORIZADO",
+  MANUAL: "MANUAL",
+  ANULADO: "ANULADO",
+} as const;
+export type EstadoEventoAsistencia =
+  (typeof EstadoEventoAsistencia)[keyof typeof EstadoEventoAsistencia];
+
+export const TipoContrato = {
+  PLANILLA: "PLANILLA",
+  HONORARIOS: "HONORARIOS",
+  PRACTICANTE: "PRACTICANTE",
+} as const;
+export type TipoContrato = (typeof TipoContrato)[keyof typeof TipoContrato];
+
+export const ModalidadPago = {
+  MENSUAL: "MENSUAL",
+  QUINCENAL: "QUINCENAL",
+  SEMANAL: "SEMANAL",
+} as const;
+export type ModalidadPago = (typeof ModalidadPago)[keyof typeof ModalidadPago];
+
+export const DescuentoTardanza = {
+  POR_MINUTO: "POR_MINUTO",
+  POR_RANGO: "POR_RANGO",
+  SIN_DESCUENTO: "SIN_DESCUENTO",
+} as const;
+export type DescuentoTardanza = (typeof DescuentoTardanza)[keyof typeof DescuentoTardanza];
+
+export const TipoPermiso = {
+  MEDICO: "MEDICO",
+  PERSONAL: "PERSONAL",
+  VACACIONES: "VACACIONES",
+  CAPACITACION: "CAPACITACION",
+  LICENCIA: "LICENCIA",
+  OTRO: "OTRO",
+} as const;
+export type TipoPermiso = (typeof TipoPermiso)[keyof typeof TipoPermiso];
+
+export const EstadoPermiso = {
+  PENDIENTE: "PENDIENTE",
+  APROBADO: "APROBADO",
+  RECHAZADO: "RECHAZADO",
+} as const;
+export type EstadoPermiso = (typeof EstadoPermiso)[keyof typeof EstadoPermiso];
+
+export const EstadoPlanilla = {
+  BORRADOR: "BORRADOR",
+  CALCULADO: "CALCULADO",
+  APROBADO: "APROBADO",
+  PAGADO: "PAGADO",
+} as const;
+export type EstadoPlanilla = (typeof EstadoPlanilla)[keyof typeof EstadoPlanilla];
+
+export const EstadoDia = {
+  PRESENTE: "PRESENTE",
+  FALTA: "FALTA",
+  TARDANZA: "TARDANZA",
+  PERMISO: "PERMISO",
+  VACACIONES: "VACACIONES",
+  FERIADO: "FERIADO",
+  DESCANSO: "DESCANSO",
+} as const;
+export type EstadoDia = (typeof EstadoDia)[keyof typeof EstadoDia];
+
 export const AsignadoPorEtiqueta = {
   NICO: "NICO",
   VENDEDOR: "VENDEDOR",

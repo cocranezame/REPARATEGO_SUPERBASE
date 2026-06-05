@@ -27,19 +27,23 @@
 ## Base de datos
 → docs/db/schema-overview.md (mapa general)
 → docs/db/modules/{modulo}.md (detalle por módulo)
+→ docs/db/modules/asistencia.md
 
 ## API
 → docs/api/api-overview.md
 → docs/api/modules/{modulo}.md
+→ docs/api/modules/asistencia.md
 
 ## Web
 → docs/web/web-overview.md
 → docs/web/design-system.md
 → docs/web/modules/{modulo}.md
+→ docs/web/modules/asistencia.md
 
 ## Roadmap
 → docs/roadmap/epics-overview.md
 → docs/roadmap/epics/E{nn}-{nombre}.md
+→ docs/roadmap/epics/E19-asistencia.md
 
 ## Reglas de negocio
 → docs/business/entities-map.md

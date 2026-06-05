@@ -26,6 +26,7 @@ import {
   modelo,
   movimientoInventario,
   ordenServicio,
+  producto,
   proveedor,
   sucursal,
   tarifaDistrito,

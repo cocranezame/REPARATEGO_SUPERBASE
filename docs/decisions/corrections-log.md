@@ -525,3 +525,23 @@ ALTER TYPE rol_usuario ADD VALUE IF NOT EXISTS 'ASISTENTE';
   ALTER TYPE canal_servicio ADD VALUE IF NOT EXISTS 'WHATSAPP';
   ```
 - **Impacto:** Al ejecutar la migración, los servicios creados vía WhatsApp pueden registrarse con canal=WHATSAPP correctamente. El código ya fue actualizado para usar este valor.
+
+---
+
+## [C007] 2026-06-02 — Nuevo módulo E19 Asistencia y Planilla
+- **Afecta:** nuevo módulo, seguridad (tabla usuario), infraestructura (EventBridge)
+- **Antes:** no existía módulo de asistencia ni planilla en el roadmap
+- **Ahora:**
+  - Nuevo módulo E19 con 12 tickets para control de asistencia del personal
+  - 7 tablas nuevas: turno_trabajo, punto_control_wifi, trabajador_config, evento_asistencia, permiso_asistencia, planilla_mensual, planilla_detalle
+  - Marcado de asistencia con doble validación: WiFi (SSID+BSSID) + GPS (haversine dentro de radio)
+  - Cálculo automático de planilla mensual: tardanzas, faltas, horas extra, descuentos, bonificaciones
+  - Portal PWA para trabajador (mismo patrón auth que portal servicios C002)
+  - Panel admin tiempo real con estado de asistencia del día
+  - Permisos y justificaciones con flujo de aprobación
+  - Reportes exportables Excel/PDF
+  - Integración EventBridge para notificar marcados inválidos
+- **Razón:** requerimiento de negocio post E12 para control de personal del taller
+- **Migración:** pendiente (se ejecutará en E19.1)
+- **Impacto en roadmap:** se agrega E19 al final. No renumera épicas existentes. Total épicas: 19. Total tablas: 63 (56 + 7 nuevas).
+- **Impacto en schema:** nuevo helper haversine en packages/shared/src/geo.ts

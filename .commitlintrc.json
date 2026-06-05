@@ -18,6 +18,7 @@
         "domicilios",
         "pagos",
         "crm",
+        "asistencia",
         "shared",
         "db",
         "api",

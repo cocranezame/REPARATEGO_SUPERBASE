@@ -22,7 +22,8 @@
         "db",
         "api",
         "web",
-        "decisions"
+        "decisions",
+        "roadmap"
       ]
     ],
     "scope-empty": [1, "never"],

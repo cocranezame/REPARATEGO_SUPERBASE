@@ -68,7 +68,7 @@ export type UpdateTrabajadorConfigInput = z.infer<typeof updateTrabajadorConfigS
 // ─── marcado de asistencia (POST /asistencia/marcar) ──────────────────────────
 
 export const marcarAsistenciaSchema = z.object({
-  ssid: z.string().min(1).max(100),
+  ssid: z.string().min(1).max(100).nullable(),
   bssid: z
     .string()
     .regex(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/, "Formato MAC inválido")

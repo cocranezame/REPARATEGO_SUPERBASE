@@ -225,6 +225,11 @@ const portalProtected = new Hono<{ Variables: PortalTrabajadorVariables }>();
 portalProtected.use("/portal/asistencia/*", portalTrabajadorAuthMiddleware);
 
 portalProtected.get("/portal/asistencia/estado", portalH.estado);
+portalProtected.post(
+  "/portal/asistencia/marcar",
+  validateBody(marcarAsistenciaSchema),
+  portalH.marcar
+);
 portalProtected.get(
   "/portal/asistencia/historial",
   validateQuery(portalTrabajadorHistorialQuerySchema),

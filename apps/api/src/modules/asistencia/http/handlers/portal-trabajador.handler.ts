@@ -1,4 +1,5 @@
 import type {
+  MarcarAsistenciaInput,
   PortalTrabajadorHistorialQueryInput,
   PortalTrabajadorLoginInput,
   PortalTrabajadorPlanillaQueryInput,
@@ -45,5 +46,25 @@ export class PortalTrabajadorHandler {
     const query = c.req.valid("query") as PortalTrabajadorPlanillaQueryInput;
     const planilla = await this.repo.getPortalPlanilla(tenantId, usuarioId, query.periodo);
     return c.json({ success: true, data: planilla });
+  };
+
+  marcar = async (c: HonoCtx) => {
+    const tenantId = c.get("portalTenantId");
+    const usuarioId = c.get("portalUsuarioId");
+    const body = c.req.valid("json") as MarcarAsistenciaInput;
+    const userAgent = c.req.header("User-Agent") ?? "unknown";
+    const ip =
+      c.req.header("X-Forwarded-For")?.split(",")[0]?.trim() ??
+      c.req.header("CF-Connecting-IP") ??
+      "unknown";
+    const result = await this.repo.marcar(tenantId, usuarioId, {
+      ssid: body.ssid,
+      bssid: body.bssid,
+      latitud: body.latitud,
+      longitud: body.longitud,
+      tipo_evento: body.tipo_evento,
+      dispositivo_info: { userAgent, ip },
+    });
+    return c.json({ success: true, data: result });
   };
 }

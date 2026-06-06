@@ -89,7 +89,7 @@ export type UpdateTrabajadorData = {
 // ─── Marcado ──────────────────────────────────────────────────────────────────
 
 export type MarcarAsistenciaData = {
-  ssid: string;
+  ssid: string | null;
   bssid?: string | null | undefined;
   latitud: number;
   longitud: number;

@@ -4,6 +4,7 @@ import { logger } from "hono/logger";
 import { requestId } from "hono/request-id";
 import { initSentry } from "./lib/sentry.js";
 import { errorHandler } from "./middlewares/error-handler.js";
+import { asistenciaRoutes, portalAsistenciaRoutes } from "./modules/asistencia/http/routes.js";
 import { authRoutes } from "./modules/auth/http/routes.js";
 import { cajaRoutes } from "./modules/cajas/http/routes.js";
 import { categoriaRoutes } from "./modules/categorias/http/routes.js";
@@ -61,5 +62,7 @@ app.route("/api/v1", cotizacionVentaRoutes);
 app.route("/api/v1", domicilioRoutes);
 app.route("/api/v1", portalRoutes);
 app.route("/api/v1", crmRoutes);
+app.route("/api/v1", asistenciaRoutes);
+app.route("/api/v1", portalAsistenciaRoutes);
 
 export type AppType = typeof app;

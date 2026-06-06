@@ -42,9 +42,9 @@ const turnoSchema = z.object({
   nombre: z.string().min(1, "Requerido").max(100),
   hora_inicio: z.string().regex(/^\d{2}:\d{2}$/, "Formato HH:MM"),
   hora_fin: z.string().regex(/^\d{2}:\d{2}$/, "Formato HH:MM"),
-  tolerancia_minutos: z.coerce.number().int().min(0).max(60).default(15),
+  tolerancia_minutos: z.number().int().min(0).max(60),
   dias_laborales: z.array(z.enum(DIAS)).min(1, "Seleccione al menos un día"),
-  activo: z.boolean().default(true),
+  activo: z.boolean(),
 });
 
 type TurnoForm = z.infer<typeof turnoSchema>;
@@ -58,10 +58,10 @@ const puntoSchema = z.object({
     .regex(/^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/, "Formato MAC (AA:BB:CC:DD:EE:FF)")
     .or(z.literal(""))
     .optional(),
-  latitud: z.coerce.number().min(-90).max(90),
-  longitud: z.coerce.number().min(-180).max(180),
-  radio_metros: z.coerce.number().int().min(1).max(500).default(50),
-  activo: z.boolean().default(true),
+  latitud: z.number().min(-90).max(90),
+  longitud: z.number().min(-180).max(180),
+  radio_metros: z.number().int().min(1).max(500),
+  activo: z.boolean(),
 });
 
 type PuntoForm = z.infer<typeof puntoSchema>;
@@ -177,7 +177,7 @@ function ModalTurno({ item, onClose }: { item: TurnoDto | null; onClose: () => v
             </label>
             <input
               id="t-tolerancia"
-              {...register("tolerancia_minutos")}
+              {...register("tolerancia_minutos", { valueAsNumber: true })}
               type="number"
               min={0}
               max={60}
@@ -385,7 +385,7 @@ function ModalPuntoControl({
                 </label>
                 <input
                   id="p-lat"
-                  {...register("latitud")}
+                  {...register("latitud", { valueAsNumber: true })}
                   type="number"
                   step="0.00000001"
                   className={INPUT}
@@ -399,7 +399,7 @@ function ModalPuntoControl({
                 </label>
                 <input
                   id="p-lng"
-                  {...register("longitud")}
+                  {...register("longitud", { valueAsNumber: true })}
                   type="number"
                   step="0.00000001"
                   className={INPUT}
@@ -415,7 +415,7 @@ function ModalPuntoControl({
               </label>
               <input
                 id="p-radio"
-                {...register("radio_metros")}
+                {...register("radio_metros", { valueAsNumber: true })}
                 type="number"
                 min={1}
                 max={500}

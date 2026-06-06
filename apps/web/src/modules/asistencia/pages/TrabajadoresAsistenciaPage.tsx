@@ -28,13 +28,13 @@ const trabajadorSchema = z
     turno_id: z.string().uuid("Seleccione un turno"),
     sucursal_id: z.string().uuid("Seleccione una sucursal"),
     tipo_contrato: z.enum(["PLANILLA", "HONORARIOS", "PRACTICANTE"]),
-    sueldo_base: z.coerce.number().positive("Ingrese un sueldo válido"),
+    sueldo_base: z.number().positive("Ingrese un sueldo válido"),
     modalidad_pago: z.enum(["MENSUAL", "QUINCENAL", "SEMANAL"]),
     fecha_ingreso: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
-    factor_hora_extra: z.coerce.number().min(1).max(3).default(1.25),
+    factor_hora_extra: z.number().min(1).max(3),
     descuento_x_tardanza: z.enum(["POR_MINUTO", "POR_RANGO", "SIN_DESCUENTO"]),
-    monto_descuento_min: z.coerce.number().min(0).optional(),
-    activo: z.boolean().default(true),
+    monto_descuento_min: z.number().min(0).optional(),
+    activo: z.boolean(),
   })
   .superRefine((data, ctx) => {
     if (data.descuento_x_tardanza === "POR_MINUTO" && !data.monto_descuento_min) {
@@ -226,7 +226,7 @@ function ModalTrabajador({
                 </label>
                 <input
                   id="tr-sueldo"
-                  {...register("sueldo_base")}
+                  {...register("sueldo_base", { valueAsNumber: true })}
                   type="number"
                   step="0.01"
                   min={0}
@@ -261,7 +261,7 @@ function ModalTrabajador({
                 </label>
                 <input
                   id="tr-factor"
-                  {...register("factor_hora_extra")}
+                  {...register("factor_hora_extra", { valueAsNumber: true })}
                   type="number"
                   step="0.05"
                   min={1}
@@ -300,7 +300,7 @@ function ModalTrabajador({
                 </label>
                 <input
                   id="tr-monto"
-                  {...register("monto_descuento_min")}
+                  {...register("monto_descuento_min", { valueAsNumber: true })}
                   type="number"
                   step="0.01"
                   min={0}

@@ -1,4 +1,9 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { ConfiguracionAsistenciaPage } from "../modules/asistencia/pages/ConfiguracionAsistenciaPage";
+import { PanelHoyPage } from "../modules/asistencia/pages/PanelHoyPage";
+import { PermisosAsistenciaPage } from "../modules/asistencia/pages/PermisosAsistenciaPage";
+import { PlanillaPage } from "../modules/asistencia/pages/PlanillaPage";
+import { TrabajadoresAsistenciaPage } from "../modules/asistencia/pages/TrabajadoresAsistenciaPage";
 import { LoginPage } from "../modules/auth/pages/LoginPage";
 import { CatalogosPage } from "../modules/catalogos/pages/CatalogosPage";
 import { ClienteDetallePage } from "../modules/clientes/pages/ClienteDetallePage";
@@ -135,6 +140,11 @@ export function App() {
             <Route path="/crm/config/etiquetas" element={<ConfigEtiquetasPage />} />
             <Route path="/crm/config/plantillas" element={<ConfigPlantillasPage />} />
             <Route path="/crm/config/bots" element={<ConfigBotsPage />} />
+            <Route path="/asistencia/configuracion" element={<ConfiguracionAsistenciaPage />} />
+            <Route path="/asistencia/trabajadores" element={<TrabajadoresAsistenciaPage />} />
+            <Route path="/asistencia/hoy" element={<PanelHoyPage />} />
+            <Route path="/asistencia/planilla" element={<PlanillaPage />} />
+            <Route path="/asistencia/permisos" element={<PermisosAsistenciaPage />} />
           </Route>
         </Route>
       </Routes>

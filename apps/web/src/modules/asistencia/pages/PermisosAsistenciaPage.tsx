@@ -57,7 +57,7 @@ const permisoSchema = z.object({
   fecha_fin: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Requerido"),
   motivo: z.string().min(1, "Requerido").max(1000),
   archivo_url: z.string().url("URL inválida").or(z.literal("")).optional(),
-  afecta_pago: z.boolean().default(false),
+  afecta_pago: z.boolean(),
 });
 
 type PermisoForm = z.infer<typeof permisoSchema>;
@@ -388,10 +388,10 @@ export function PermisosAsistenciaPage() {
   const [filtroHasta, setFiltroHasta] = useState("");
 
   const { data, isLoading } = usePermisos({
-    estado: filtroEstado as PermisoDto["estado"] | undefined,
-    tipo_permiso: filtroTipo || undefined,
-    fecha_desde: filtroDesde || undefined,
-    fecha_hasta: filtroHasta || undefined,
+    ...(filtroEstado ? { estado: filtroEstado as PermisoDto["estado"] } : {}),
+    ...(filtroTipo ? { tipo_permiso: filtroTipo } : {}),
+    ...(filtroDesde ? { fecha_desde: filtroDesde } : {}),
+    ...(filtroHasta ? { fecha_hasta: filtroHasta } : {}),
   });
 
   const permisos = data?.data ?? [];

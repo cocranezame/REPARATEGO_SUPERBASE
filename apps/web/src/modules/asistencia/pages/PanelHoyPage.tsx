@@ -174,8 +174,8 @@ export function PanelHoyPage() {
   const [showModal, setShowModal] = useState(false);
 
   const { data, isLoading, dataUpdatedAt } = useAsistenciaHoy({
-    turno_id: turnoFiltro || undefined,
-    sucursal_id: sucursalFiltro || undefined,
+    ...(turnoFiltro ? { turno_id: turnoFiltro } : {}),
+    ...(sucursalFiltro ? { sucursal_id: sucursalFiltro } : {}),
   });
   const { data: turnosData } = useTurnos();
   const { data: sucursalesData } = useSucursales({ activo: true, pageSize: 100 });

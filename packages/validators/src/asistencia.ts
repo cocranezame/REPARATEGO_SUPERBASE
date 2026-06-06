@@ -151,3 +151,58 @@ export const listPlanillaParamsSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
 export type ListPlanillaParamsInput = z.infer<typeof listPlanillaParamsSchema>;
+
+export const listPermisosQuerySchema = z.object({
+  usuario_id: uuidSchema.optional(),
+  estado: z.enum(["PENDIENTE", "APROBADO", "RECHAZADO"]).optional(),
+  tipo_permiso: z
+    .enum(["MEDICO", "PERSONAL", "VACACIONES", "CAPACITACION", "LICENCIA", "OTRO"])
+    .optional(),
+  fecha_desde: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD")
+    .optional(),
+  fecha_hasta: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD")
+    .optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+export type ListPermisosQueryInput = z.infer<typeof listPermisosQuerySchema>;
+
+export const pagarPlanillaSchema = z.object({
+  fecha_pago: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato YYYY-MM-DD"),
+});
+export type PagarPlanillaInput = z.infer<typeof pagarPlanillaSchema>;
+
+export const rechazarPermisoSchema = z.object({
+  motivo_rechazo: z.string().max(500).optional(),
+});
+export type RechazarPermisoInput = z.infer<typeof rechazarPermisoSchema>;
+
+export const reporteQuerySchema = z.object({
+  periodo: z.string().regex(/^\d{4}-\d{2}$/, "Formato YYYY-MM"),
+  formato: z.enum(["xlsx", "pdf"]),
+});
+export type ReporteQueryInput = z.infer<typeof reporteQuerySchema>;
+
+export const portalTrabajadorLoginSchema = z.object({
+  numero_doc: z.string().min(1),
+  password: z.string().min(1),
+});
+export type PortalTrabajadorLoginInput = z.infer<typeof portalTrabajadorLoginSchema>;
+
+export const portalTrabajadorHistorialQuerySchema = z.object({
+  mes: z.string().regex(/^\d{4}-\d{2}$/, "Formato YYYY-MM"),
+});
+export type PortalTrabajadorHistorialQueryInput = z.infer<
+  typeof portalTrabajadorHistorialQuerySchema
+>;
+
+export const portalTrabajadorPlanillaQuerySchema = z.object({
+  periodo: z.string().regex(/^\d{4}-\d{2}$/, "Formato YYYY-MM"),
+});
+export type PortalTrabajadorPlanillaQueryInput = z.infer<
+  typeof portalTrabajadorPlanillaQuerySchema
+>;

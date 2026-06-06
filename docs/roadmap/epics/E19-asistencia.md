@@ -1,7 +1,7 @@
 # Épica 19 — Asistencia y Planilla
 
 > Referencia: C007 (2026-06-02)
-> Estado: TODO
+> Estado: DONE (2026-06-06)
 > Branch: epic/E19-asistencia
 > 12 tickets
 
@@ -12,18 +12,18 @@ Control de asistencia del personal con validación WiFi + GPS, cálculo automát
 
 | ID | Descripción | Estado |
 |---|---|---|
-| E19.1 | DB: Migración 7 tablas + RLS | TODO |
-| E19.2 | DB: Drizzle schemas + Zod validators + helper haversine | TODO |
-| E19.3 | API: CRUD turno_trabajo + punto_control_wifi | TODO |
-| E19.4 | API: CRUD trabajador_config | TODO |
-| E19.5 | API: Endpoint marcado (WiFi+GPS+haversine) + mi-historial + registro manual | TODO |
-| E19.6 | API: Planilla (calcular, calcular-todos, aprobar, pagar) | TODO |
-| E19.7 | API: Permisos y justificaciones (CRUD + aprobar/rechazar + recalculo planilla) | TODO |
-| E19.8 | Web Admin: Configuración turnos y puntos de control | TODO |
-| E19.9 | Web Admin: Panel tiempo real (hoy) con polling 60s + registro manual | TODO |
-| E19.10 | Web Admin: Planilla mensual (resumen + detalle día a día + aprobar/pagar) | TODO |
-| E19.11 | PWA Trabajador: Portal marcado (login, geolocalización, WiFi fallback) + historial + planilla estimada | TODO |
-| E19.12 | Reportes: Export Excel/PDF (asistencia + planilla) | TODO |
+| E19.1 | DB: Migración 7 tablas + RLS | DONE |
+| E19.2 | DB: Drizzle schemas + Zod validators + helper haversine | DONE |
+| E19.3 | API: CRUD turno_trabajo + punto_control_wifi | DONE |
+| E19.4 | API: CRUD trabajador_config | DONE |
+| E19.5 | API: Endpoint marcado (WiFi+GPS+haversine) + mi-historial + registro manual | DONE |
+| E19.6 | API: Planilla (calcular, calcular-todos, aprobar, pagar) | DONE |
+| E19.7 | API: Permisos y justificaciones (CRUD + aprobar/rechazar + recalculo planilla) | DONE |
+| E19.8 | Web Admin: Configuración turnos y puntos de control | DONE |
+| E19.9 | Web Admin: Panel tiempo real (hoy) con polling 60s + registro manual | DONE |
+| E19.10 | Web Admin: Planilla mensual (resumen + detalle día a día + aprobar/pagar) | DONE |
+| E19.11 | PWA Trabajador: Portal marcado (login, geolocalización, WiFi fallback) + historial + planilla estimada | DONE |
+| E19.12 | Reportes: Export Excel/PDF (asistencia + planilla) | DONE |
 
 ## Detalle de tickets
 

@@ -43,6 +43,11 @@ import { PortalGuard } from "../modules/portal/components/PortalGuard";
 import { MisEquiposPage } from "../modules/portal/pages/MisEquiposPage";
 import { PortalLoginPage } from "../modules/portal/pages/PortalLoginPage";
 import { PortalServicioPage } from "../modules/portal/pages/PortalServicioPage";
+import { PortalAsistenciaGuard } from "../modules/portal-asistencia/components/PortalAsistenciaGuard";
+import { PortalAsistenciaHistorialPage } from "../modules/portal-asistencia/pages/PortalAsistenciaHistorialPage";
+import { PortalAsistenciaHomePage } from "../modules/portal-asistencia/pages/PortalAsistenciaHomePage";
+import { PortalAsistenciaLoginPage } from "../modules/portal-asistencia/pages/PortalAsistenciaLoginPage";
+import { PortalAsistenciaPlanillaPage } from "../modules/portal-asistencia/pages/PortalAsistenciaPlanillaPage";
 import { ProveedorDetallePage } from "../modules/proveedores/pages/ProveedorDetallePage";
 import { ProveedoresPage } from "../modules/proveedores/pages/ProveedoresPage";
 import { KanbanRequerimientosPage } from "../modules/servicios/pages/KanbanRequerimientosPage";
@@ -64,6 +69,7 @@ import { VentasListaPage } from "../modules/ventas/pages/VentasListaPage";
 import { ProtectedRoute } from "../shared/components/ProtectedRoute";
 import { AuthLayout } from "./layouts/AuthLayout";
 import { MainLayout } from "./layouts/MainLayout";
+import { PortalAsistenciaLayout } from "./layouts/PortalAsistenciaLayout";
 import { PortalLayout } from "./layouts/PortalLayout";
 
 export function App() {
@@ -73,6 +79,7 @@ export function App() {
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/portal/login" element={<PortalLoginPage />} />
+          <Route path="/portal/asistencia/login" element={<PortalAsistenciaLoginPage />} />
         </Route>
 
         {/* Portal del cliente — layout sin sidebar */}
@@ -80,6 +87,18 @@ export function App() {
           <Route element={<PortalLayout />}>
             <Route path="/portal/mis-equipos" element={<MisEquiposPage />} />
             <Route path="/portal/servicios/:id" element={<PortalServicioPage />} />
+          </Route>
+        </Route>
+
+        {/* Portal del trabajador — independiente del portal servicios */}
+        <Route element={<PortalAsistenciaGuard />}>
+          <Route element={<PortalAsistenciaLayout />}>
+            <Route path="/portal/asistencia" element={<PortalAsistenciaHomePage />} />
+            <Route
+              path="/portal/asistencia/historial"
+              element={<PortalAsistenciaHistorialPage />}
+            />
+            <Route path="/portal/asistencia/planilla" element={<PortalAsistenciaPlanillaPage />} />
           </Route>
         </Route>
         <Route element={<ProtectedRoute />}>

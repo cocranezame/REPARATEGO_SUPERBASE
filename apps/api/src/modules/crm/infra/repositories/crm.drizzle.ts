@@ -53,6 +53,7 @@ import type {
   CrearClienteData,
   CrearConversacionData,
   CrearServicioData,
+  CreateAgenteData,
   CreateEtapaData,
   CreateEtiquetaData,
   CreateMensajeInternoData,
@@ -1876,12 +1877,32 @@ export class CrmDrizzleRepository implements ICrmRepository {
     }));
   }
 
+  async createAgente(tenantId: string, data: CreateAgenteData): Promise<CrmAgente> {
+    const rows = await this.db
+      .insert(crmAgenteTable)
+      .values({
+        tenant_id: tenantId,
+        nombre: data.nombre,
+        canal: data.canal ?? "WHATSAPP",
+        modelo_ia: data.modelo_ia,
+        tono: data.tono ?? null,
+        prompt_base: data.prompt_base ?? null,
+        max_mensajes_contexto: data.max_mensajes_contexto ?? 20,
+      })
+      .returning({ id: crmAgenteTable.id });
+    const id = rows[0]?.id;
+    if (!id) throw new Error("Error al crear agente");
+    const agentes = await this.listAgentes(tenantId);
+    return agentes.find((a) => a.id === id) as CrmAgente;
+  }
+
   async updateAgente(
     tenantId: string,
     id: string,
     data: UpdateAgenteData
   ): Promise<CrmAgente | null> {
     const upd: Record<string, unknown> = { updated_at: new Date() };
+    if (data.modelo_ia !== undefined) upd.modelo_ia = data.modelo_ia;
     if (data.tono !== undefined) upd.tono = data.tono;
     if (data.prompt_base !== undefined) upd.prompt_base = data.prompt_base;
     if (data.max_mensajes_contexto !== undefined)

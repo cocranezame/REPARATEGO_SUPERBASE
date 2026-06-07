@@ -560,3 +560,18 @@ ALTER TYPE rol_usuario ADD VALUE IF NOT EXISTS 'ASISTENTE';
 **Corrección aplicada:** `apps/api/src/modules/crm/http/handlers/webhook.handler.ts` — si `META_APP_SECRET` no está configurado, retorna inmediatamente `{ error: "webhook_not_configured" }` con status 403. Se eliminó el `console.error` porque un error de configuración de servidor debe manifestarse como respuesta de error, no silenciarse.
 
 **Regla:** El webhook de Meta SIEMPRE debe retornar 403 si no puede validar HMAC, ya sea por firma inválida o por ausencia de `META_APP_SECRET`.
+
+---
+
+## C021 — 2026-06-07
+
+**ID:** C021
+**Afecta:** crm
+**Contexto:** E13 — CRM wa_cuenta delete
+
+**`deleteWaCuenta` hacía hard delete en lugar de soft delete:**
+`CrmDrizzleRepository.deleteWaCuenta()` ejecutaba `.delete(waCuentaTable)` (borrado físico). La documentación del endpoint `DELETE /crm/wa-cuentas/:id` y el patrón del resto del módulo CRM (etapas, etiquetas) usan soft delete via `activo = false`. Además, otras tablas (`crm_lead`, `crm_conversacion`) tienen FK a `wa_cuenta.id`, por lo que un hard delete fallaría con violación de constraint si existen leads o conversaciones asociadas.
+
+**Corrección aplicada:** `apps/api/src/modules/crm/infra/repositories/crm.drizzle.ts` — `.delete()` reemplazado por `.update({ activo: false })` en `deleteWaCuenta`.
+
+**Regla:** Toda entidad con relaciones dependientes (leads, conversaciones) debe usar soft delete. El hard delete solo aplica en tablas hoja sin dependencias.

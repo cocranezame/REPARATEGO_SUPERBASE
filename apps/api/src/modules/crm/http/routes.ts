@@ -3,6 +3,7 @@ import {
   asignarVendedorConvSchema,
   asignarVendedorLeadSchema,
   cambiarModoSchema,
+  createAgenteSchema,
   createEtapaSchema,
   createEtiquetaSchema,
   createMensajeInternoSchema,
@@ -236,6 +237,12 @@ crmRoutes.post("/crm/bots/recordatorio/ejecutar", authorize("ADMIN"), botsH.ejec
 
 // ─── Agentes ──────────────────────────────────────────────────────────────────
 crmRoutes.get("/crm/agentes", authorize("ADMIN"), agentesH.list);
+crmRoutes.post(
+  "/crm/agentes",
+  authorize("ADMIN"),
+  validateBody(createAgenteSchema),
+  agentesH.create
+);
 crmRoutes.put(
   "/crm/agentes/:id",
   authorize("ADMIN"),

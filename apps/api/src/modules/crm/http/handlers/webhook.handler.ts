@@ -73,10 +73,7 @@ export class WebhookHandler {
 
   handle = async (c: HonoCtx) => {
     const secret = process.env.META_APP_SECRET;
-    if (!secret) {
-      console.error("[webhook] META_APP_SECRET no configurado");
-      return c.json({ ok: true });
-    }
+    if (!secret) return c.json({ error: "webhook_not_configured" }, 403);
 
     const rawBody = await c.req.text();
     const signature = c.req.header("x-hub-signature-256");

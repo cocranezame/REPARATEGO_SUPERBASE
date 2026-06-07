@@ -545,3 +545,18 @@ ALTER TYPE rol_usuario ADD VALUE IF NOT EXISTS 'ASISTENTE';
 - **Migración:** pendiente (se ejecutará en E19.1)
 - **Impacto en roadmap:** se agrega E19 al final. No renumera épicas existentes. Total épicas: 19. Total tablas: 63 (56 + 7 nuevas).
 - **Impacto en schema:** nuevo helper haversine en packages/shared/src/geo.ts
+
+---
+
+## C020 — 2026-06-07
+
+**ID:** C020
+**Afecta:** crm
+**Contexto:** E13 — CRM webhook Meta
+
+**`META_APP_SECRET` ausente devolvía 200 OK en vez de 403:**
+`WebhookHandler.handle()` verificaba la presencia de `META_APP_SECRET` pero ante su ausencia ejecutaba `console.error` y retornaba `{ ok: true }` con status 200. Esto permitía que cualquier petición POST al webhook fuese aceptada silenciosamente sin validación HMAC cuando la variable no estaba configurada, violando la regla de C005 ("validación HMAC timing-safe obligatoria. Si falla → 403").
+
+**Corrección aplicada:** `apps/api/src/modules/crm/http/handlers/webhook.handler.ts` — si `META_APP_SECRET` no está configurado, retorna inmediatamente `{ error: "webhook_not_configured" }` con status 403. Se eliminó el `console.error` porque un error de configuración de servidor debe manifestarse como respuesta de error, no silenciarse.
+
+**Regla:** El webhook de Meta SIEMPRE debe retornar 403 si no puede validar HMAC, ya sea por firma inválida o por ausencia de `META_APP_SECRET`.

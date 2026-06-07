@@ -633,3 +633,23 @@ C006 (2026-06-02) documentó que se necesitaba `ALTER TYPE canal_servicio ADD VA
 **Verificación:** `PUT /crm/wa-cuentas/d02e0fef-...` con `{ phone_number_id, waba_id, negocio_nombre, webhook_verify_token }` → 200 OK con datos actualizados.
 
 **Regla:** El campo `webhook_verify_token` es readonly en el UI — solo se puede cambiar generando un nuevo UUID. `phone_number_id` y `waba_id` siempre son editables (tanto en create como en update) porque pueden cambiar al migrar entre cuentas de Meta.
+
+---
+
+## C025 — 2026-06-07
+
+**ID:** C025
+**Afecta:** crm
+
+**Contexto:** E13 — CRM wa_cuenta delete real
+
+**`DELETE /crm/wa-cuentas/:id` hacía soft delete, idéntico al toggle de activar/desactivar:**
+C021 cambió `deleteWaCuenta` de hard delete a soft delete (`activo = false`) por precaución ante FK constraints. Sin embargo, el módulo ya tiene un toggle independiente de activar/desactivar con ese mismo efecto. El botón "Eliminar" del UI no eliminaba nada — solo desactivaba la cuenta que seguía apareciendo en la lista.
+
+**Corrección aplicada:**
+- `apps/api/src/modules/crm/infra/repositories/crm.drizzle.ts` — `deleteWaCuenta` vuelve a hard delete (`.delete()`). Si PostgreSQL retorna error de FK (código `23503`), lanza `Error("WA_CUENTA_HAS_DEPENDENTS")`.
+- `apps/api/src/modules/crm/http/handlers/wa-cuentas.handler.ts` — captura `WA_CUENTA_HAS_DEPENDENTS` y retorna 409 con mensaje claro: "tiene leads o conversaciones asociadas. Desactívala con el toggle."
+
+**Verificación:** `DELETE /crm/wa-cuentas/:id` → 200 y registro eliminado de DB. Cuenta sin dependentes: eliminación exitosa. Cuenta con leads: 409.
+
+**Regla:** El toggle (activo/inactivo) y el botón Eliminar cumplen roles distintos. El toggle pausa la cuenta sin perder datos. El botón Eliminar borra físicamente — solo posible si no hay leads ni conversaciones vinculadas.

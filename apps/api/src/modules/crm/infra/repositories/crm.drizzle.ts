@@ -171,12 +171,18 @@ export class CrmDrizzleRepository implements ICrmRepository {
   }
 
   async deleteWaCuenta(tenantId: string, id: string): Promise<boolean> {
-    const rows = await this.db
-      .update(waCuentaTable)
-      .set({ activo: false })
-      .where(and(eq(waCuentaTable.id, id), eq(waCuentaTable.tenant_id, tenantId)))
-      .returning({ id: waCuentaTable.id });
-    return rows.length > 0;
+    try {
+      const rows = await this.db
+        .delete(waCuentaTable)
+        .where(and(eq(waCuentaTable.id, id), eq(waCuentaTable.tenant_id, tenantId)))
+        .returning({ id: waCuentaTable.id });
+      return rows.length > 0;
+    } catch (e: unknown) {
+      if (e instanceof Error && "code" in e && (e as { code: string }).code === "23503") {
+        throw new Error("WA_CUENTA_HAS_DEPENDENTS");
+      }
+      throw e;
+    }
   }
 
   async getWaCuentaWithToken(

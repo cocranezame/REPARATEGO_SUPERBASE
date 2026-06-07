@@ -42,8 +42,19 @@ export class WaCuentasHandler {
   remove = async (c: HonoCtx) => {
     const tenantId = c.get("tenantId");
     const id = c.req.param("id") as string;
-    const ok = await this.repo.deleteWaCuenta(tenantId, id);
-    if (!ok) throw new ApiError("WA_CUENTA_NOT_FOUND", "Cuenta WA no encontrada", 404);
-    return c.json({ success: true, data: { deleted: true } });
+    try {
+      const ok = await this.repo.deleteWaCuenta(tenantId, id);
+      if (!ok) throw new ApiError("WA_CUENTA_NOT_FOUND", "Cuenta WA no encontrada", 404);
+      return c.json({ success: true, data: { deleted: true } });
+    } catch (e) {
+      if (e instanceof Error && e.message === "WA_CUENTA_HAS_DEPENDENTS") {
+        throw new ApiError(
+          "WA_CUENTA_HAS_DEPENDENTS",
+          "No se puede eliminar: la cuenta tiene leads o conversaciones asociadas. Desactívala con el toggle.",
+          409
+        );
+      }
+      throw e;
+    }
   };
 }

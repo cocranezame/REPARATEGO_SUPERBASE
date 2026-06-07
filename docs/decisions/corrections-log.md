@@ -594,3 +594,20 @@ C006 (2026-06-02) documentó que se necesitaba `ALTER TYPE canal_servicio ADD VA
 **Verificación:** `SELECT enumlabel FROM pg_enum JOIN pg_type ON ... WHERE typname = 'canal_servicio'` devuelve 3 filas.
 
 **Regla:** Cuando C005+ documenta una migración pendiente con `ALTER TYPE`, crear el archivo SQL en `packages/db/drizzle/` y aplicarlo antes de hacer cualquier test de la feature que lo requiere. El número de archivo sigue la secuencia manual (0021, 0022, ...).
+
+---
+
+## C023 — 2026-06-07
+
+**ID:** C023
+**Afecta:** crm
+**Contexto:** E13 — CRM MetaSenderService
+
+**`MetaSenderService` duplicaba la query `pgp_sym_decrypt` que ya existe en el repositorio:**
+`sendTextMessage()` y `sendTemplateMessage()` contenían cada uno un bloque SQL con `pgp_sym_decrypt(access_token_encrypted, key)::text AS access_token`, duplicando exactamente la lógica de `CrmDrizzleRepository.getWaCuentaWithToken()`. Esto significaba que la clave de encriptación (`CRM_ENCRYPTION_KEY`) y la query de desencriptación tenían que mantenerse en dos lugares distintos. Además, `MetaSenderService` tenía dependencia directa sobre `DbClient` y `drizzle-orm/sql`, violando la separación de capas (infra/service → infra/repository).
+
+**Corrección aplicada:**
+- `apps/api/src/modules/crm/infra/services/meta-sender.ts` — constructor cambiado de `DbClient` a `ICrmRepository`. Ambos métodos usan `this.repo.getWaCuentaWithToken(tenantId, id)`. Eliminados imports de `DbClient`, `sql`, y la lógica de `CRM_ENCRYPTION_KEY`.
+- `apps/api/src/modules/crm/http/routes.ts` — instanciación cambiada de `new MetaSenderService(db)` a `new MetaSenderService(repo)`.
+
+**Regla:** Los servicios de infraestructura que necesitan datos persistidos deben usar el repositorio como fuente, no duplicar queries directas sobre el `DbClient`. La lógica de desencriptación de tokens debe vivir únicamente en `getWaCuentaWithToken()`.

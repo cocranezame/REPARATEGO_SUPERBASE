@@ -53,7 +53,7 @@ import { WebhookHandler } from "./handlers/webhook.handler.js";
 
 const db = getDb();
 const repo = new CrmDrizzleRepository(db);
-const metaSender = new MetaSenderService(db);
+const metaSender = new MetaSenderService(repo);
 
 const agentEngine = new AgentEngine(repo, metaSender);
 const botEngine = new BotEngine(repo, metaSender);

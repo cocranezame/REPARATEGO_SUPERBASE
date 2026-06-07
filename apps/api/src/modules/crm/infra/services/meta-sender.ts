@@ -1,5 +1,4 @@
-import type { DbClient } from "@kallpasoft/db";
-import { sql } from "drizzle-orm";
+import type { ICrmRepository } from "../../domain/ports/crm.repository.js";
 
 export type MetaSendOptions = {
   wa_cuenta_id: string;
@@ -20,19 +19,10 @@ export type MetaSendResult = {
 };
 
 export class MetaSenderService {
-  constructor(private readonly db: DbClient) {}
+  constructor(private readonly repo: ICrmRepository) {}
 
   async sendTextMessage(tenantId: string, options: MetaSendOptions): Promise<MetaSendResult> {
-    const key = process.env.CRM_ENCRYPTION_KEY;
-    if (!key) throw new Error("CRM_ENCRYPTION_KEY no configurado");
-
-    const rows = await this.db.execute(sql`
-      SELECT phone_number_id,
-             pgp_sym_decrypt(access_token_encrypted, ${key})::text AS access_token
-      FROM wa_cuenta
-      WHERE id = ${options.wa_cuenta_id}::uuid AND tenant_id = ${tenantId}::uuid AND activo = true
-    `);
-    const cuenta = rows[0] as { phone_number_id: string; access_token: string } | undefined;
+    const cuenta = await this.repo.getWaCuentaWithToken(tenantId, options.wa_cuenta_id);
     if (!cuenta) throw new Error("WA cuenta no encontrada o inactiva");
 
     const url = `https://graph.facebook.com/v18.0/${cuenta.phone_number_id}/messages`;
@@ -72,16 +62,7 @@ export class MetaSenderService {
     tenantId: string,
     options: MetaSendTemplateOptions
   ): Promise<MetaSendResult> {
-    const key = process.env.CRM_ENCRYPTION_KEY;
-    if (!key) throw new Error("CRM_ENCRYPTION_KEY no configurado");
-
-    const rows = await this.db.execute(sql`
-      SELECT phone_number_id,
-             pgp_sym_decrypt(access_token_encrypted, ${key})::text AS access_token
-      FROM wa_cuenta
-      WHERE id = ${options.wa_cuenta_id}::uuid AND tenant_id = ${tenantId}::uuid AND activo = true
-    `);
-    const cuenta = rows[0] as { phone_number_id: string; access_token: string } | undefined;
+    const cuenta = await this.repo.getWaCuentaWithToken(tenantId, options.wa_cuenta_id);
     if (!cuenta) throw new Error("WA cuenta no encontrada o inactiva");
 
     const url = `https://graph.facebook.com/v18.0/${cuenta.phone_number_id}/messages`;

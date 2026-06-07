@@ -13,7 +13,8 @@ const h = createModeloHandlers(repo);
 
 export const modeloRoutes = new Hono<{ Variables: HonoVariables }>();
 
-modeloRoutes.use(authMiddleware);
+modeloRoutes.use("/modelos", authMiddleware);
+modeloRoutes.use("/modelos/*", authMiddleware);
 
 modeloRoutes.get("/modelos", validateQuery(listModelosQuerySchema), h.list);
 modeloRoutes.post("/modelos", validateBody(createModeloSchema), h.create);

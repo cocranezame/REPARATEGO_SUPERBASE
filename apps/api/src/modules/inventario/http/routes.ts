@@ -37,7 +37,22 @@ const h = createInventarioHandlers(productoRepo, tasaPrecioRepo, metodoPagoRepo,
 
 export const inventarioRoutes = new Hono<{ Variables: HonoVariables }>();
 
-inventarioRoutes.use(authMiddleware);
+inventarioRoutes.use("/inventario", authMiddleware);
+inventarioRoutes.use("/inventario/*", authMiddleware);
+inventarioRoutes.use("/productos", authMiddleware);
+inventarioRoutes.use("/productos/*", authMiddleware);
+inventarioRoutes.use("/stock", authMiddleware);
+inventarioRoutes.use("/stock/*", authMiddleware);
+inventarioRoutes.use("/lotes", authMiddleware);
+inventarioRoutes.use("/lotes/*", authMiddleware);
+inventarioRoutes.use("/movimientos", authMiddleware);
+inventarioRoutes.use("/movimientos/*", authMiddleware);
+inventarioRoutes.use("/metodos-pago", authMiddleware);
+inventarioRoutes.use("/metodos-pago/*", authMiddleware);
+inventarioRoutes.use("/tasas-precio", authMiddleware);
+inventarioRoutes.use("/tasas-precio/*", authMiddleware);
+inventarioRoutes.use("/ingreso-oc", authMiddleware);
+inventarioRoutes.use("/ingreso-oc/*", authMiddleware);
 
 // ── GRUPO 1: Dashboard (I24, I25) ────────────────────────────────────────────
 inventarioRoutes.get("/inventario/dashboard", authorize("ADMIN", "ALMACEN"), h.getDashboard);

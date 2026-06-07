@@ -51,7 +51,7 @@ const historialH = new HistorialHandler(repo);
 
 export const serviciosRoutes = new Hono<{ Variables: HonoVariables }>();
 
-serviciosRoutes.use(authMiddleware);
+serviciosRoutes.use("/servicios-v2/*", authMiddleware);
 
 // ─── Instancias ───────────────────────────────────────────────────────────────
 serviciosRoutes.get(

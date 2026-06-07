@@ -146,9 +146,9 @@ function WaCuentaModal({ editing, onClose }: { editing: WaCuentaDto | null; onCl
               <input
                 id="wa-verify"
                 type="text"
-                readOnly
-                className="flex-1 border border-neutral-200 rounded-lg px-3 py-2 text-sm font-mono bg-neutral-50 text-neutral-700 cursor-default select-all"
+                className="flex-1 border border-neutral-200 rounded-lg px-3 py-2 text-sm font-mono"
                 value={form.webhook_verify_token}
+                onChange={(e) => setForm((f) => ({ ...f, webhook_verify_token: e.target.value }))}
               />
               <button
                 type="button"

@@ -17,8 +17,8 @@ const h = createCotizacionVentaHandlers(repo);
 
 export const cotizacionVentaRoutes = new Hono<{ Variables: HonoVariables }>();
 
-cotizacionVentaRoutes.use(authMiddleware);
-cotizacionVentaRoutes.use(requireCajaAbierta);
+cotizacionVentaRoutes.use("/ventas*", authMiddleware);
+cotizacionVentaRoutes.use("/ventas*", requireCajaAbierta);
 
 // ─── Cotizaciones referenciales (V15: sin impacto en inventario) ───────────────
 cotizacionVentaRoutes.get(

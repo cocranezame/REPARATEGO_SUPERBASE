@@ -21,8 +21,8 @@ const h = createVentaHandlers(repo);
 
 export const ventaRoutes = new Hono<{ Variables: HonoVariables }>();
 
-ventaRoutes.use(authMiddleware);
-ventaRoutes.use(requireCajaAbierta);
+ventaRoutes.use("/ventas*", authMiddleware);
+ventaRoutes.use("/ventas*", requireCajaAbierta);
 
 // ─── Crear venta ──────────────────────────────────────────────────────────────
 ventaRoutes.post("/ventas", authorize("VENDEDOR"), validateBody(createVentaSchema), h.create);

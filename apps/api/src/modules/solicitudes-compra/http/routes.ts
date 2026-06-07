@@ -16,7 +16,8 @@ const h = createSolicitudCompraHandlers(repo);
 
 export const solicitudCompraRoutes = new Hono<{ Variables: HonoVariables }>();
 
-solicitudCompraRoutes.use(authMiddleware);
+solicitudCompraRoutes.use("/solicitudes-compra", authMiddleware);
+solicitudCompraRoutes.use("/solicitudes-compra/*", authMiddleware);
 
 solicitudCompraRoutes.get("/solicitudes-compra", validateQuery(listSolicitudesQuerySchema), h.list);
 solicitudCompraRoutes.post(

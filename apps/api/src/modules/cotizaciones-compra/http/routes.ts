@@ -16,7 +16,8 @@ const h = createCotizacionCompraHandlers(repo);
 
 export const cotizacionCompraRoutes = new Hono<{ Variables: HonoVariables }>();
 
-cotizacionCompraRoutes.use(authMiddleware);
+cotizacionCompraRoutes.use("/cotizaciones-compra", authMiddleware);
+cotizacionCompraRoutes.use("/cotizaciones-compra/*", authMiddleware);
 
 cotizacionCompraRoutes.get(
   "/cotizaciones-compra",

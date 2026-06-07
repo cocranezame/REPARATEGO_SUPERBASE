@@ -21,7 +21,8 @@ const h = createProveedorHandlers(proveedorRepo);
 
 export const proveedorRoutes = new Hono<{ Variables: HonoVariables }>();
 
-proveedorRoutes.use(authMiddleware);
+proveedorRoutes.use("/proveedores", authMiddleware);
+proveedorRoutes.use("/proveedores/*", authMiddleware);
 
 // Proveedores
 proveedorRoutes.get("/proveedores", validateQuery(listProveedoresQuerySchema), h.list);

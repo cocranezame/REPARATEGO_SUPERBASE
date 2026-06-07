@@ -15,7 +15,8 @@ const h = createUsuarioHandlers(repo);
 
 export const usuarioRoutes = new Hono<{ Variables: HonoVariables }>();
 
-usuarioRoutes.use(authMiddleware, authorize(RolUsuario.ADMIN));
+usuarioRoutes.use("/usuarios", authMiddleware, authorize(RolUsuario.ADMIN));
+usuarioRoutes.use("/usuarios/*", authMiddleware, authorize(RolUsuario.ADMIN));
 
 usuarioRoutes.get("/usuarios", validateQuery(listUsuariosQuerySchema), h.list);
 usuarioRoutes.post("/usuarios", validateBody(createUsuarioSchema), h.create);

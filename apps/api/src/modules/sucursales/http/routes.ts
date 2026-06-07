@@ -15,7 +15,8 @@ const h = createSucursalHandlers(repo);
 
 export const sucursalRoutes = new Hono<{ Variables: HonoVariables }>();
 
-sucursalRoutes.use(authMiddleware, authorize(RolUsuario.ADMIN));
+sucursalRoutes.use("/sucursales", authMiddleware, authorize(RolUsuario.ADMIN));
+sucursalRoutes.use("/sucursales/*", authMiddleware, authorize(RolUsuario.ADMIN));
 
 sucursalRoutes.get("/sucursales", validateQuery(listSucursalesQuerySchema), h.list);
 sucursalRoutes.post("/sucursales", validateBody(createSucursalSchema), h.create);

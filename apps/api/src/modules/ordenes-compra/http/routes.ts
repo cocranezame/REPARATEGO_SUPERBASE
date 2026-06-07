@@ -17,7 +17,8 @@ const h = createOrdenCompraHandlers(repo);
 
 export const ordenCompraRoutes = new Hono<{ Variables: HonoVariables }>();
 
-ordenCompraRoutes.use(authMiddleware);
+ordenCompraRoutes.use("/ordenes-compra", authMiddleware);
+ordenCompraRoutes.use("/ordenes-compra/*", authMiddleware);
 
 ordenCompraRoutes.get("/ordenes-compra", validateQuery(listOrdenesQuerySchema), h.list);
 ordenCompraRoutes.post(

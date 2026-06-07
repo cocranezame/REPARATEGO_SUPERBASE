@@ -575,3 +575,22 @@ ALTER TYPE rol_usuario ADD VALUE IF NOT EXISTS 'ASISTENTE';
 **Corrección aplicada:** `apps/api/src/modules/crm/infra/repositories/crm.drizzle.ts` — `.delete()` reemplazado por `.update({ activo: false })` en `deleteWaCuenta`.
 
 **Regla:** Toda entidad con relaciones dependientes (leads, conversaciones) debe usar soft delete. El hard delete solo aplica en tablas hoja sin dependencias.
+
+---
+
+## C022 — 2026-06-07
+
+**ID:** C022
+**Afecta:** db, crm, servicios
+**Contexto:** E13 — CRM crearServicio (C006 migración pendiente)
+
+**`canal_servicio` enum no tenía el valor `WHATSAPP` en la DB:**
+C006 (2026-06-02) documentó que se necesitaba `ALTER TYPE canal_servicio ADD VALUE IF NOT EXISTS 'WHATSAPP'` pero la migración nunca fue creada ni aplicada. El enum fue creado en `0016_e10_servicios_c002.sql` solo con `TIENDA` y `DOMICILIO`. El código de `crearServicioNico` en `crm.drizzle.ts` ya usaba `"WHATSAPP"` como valor, lo que habría causado violación de constraint en runtime al crear servicios vía WhatsApp.
+
+**Corrección aplicada:**
+- `packages/db/drizzle/0021_c006_canal_servicio_whatsapp.sql` — archivo de migración manual creado
+- Migración aplicada en BD local (`reparatego_postgres` contenedor, puerto 5435): `ALTER TYPE` completado, enum ahora tiene `TIENDA | DOMICILIO | WHATSAPP`
+
+**Verificación:** `SELECT enumlabel FROM pg_enum JOIN pg_type ON ... WHERE typname = 'canal_servicio'` devuelve 3 filas.
+
+**Regla:** Cuando C005+ documenta una migración pendiente con `ALTER TYPE`, crear el archivo SQL en `packages/db/drizzle/` y aplicarlo antes de hacer cualquier test de la feature que lo requiere. El número de archivo sigue la secuencia manual (0021, 0022, ...).

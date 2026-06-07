@@ -140,6 +140,8 @@ export class CrmDrizzleRepository implements ICrmRepository {
         SET access_token_encrypted = pgp_sym_encrypt(${data.access_token}, ${key}),
             updated_at = now()
             ${data.negocio_nombre !== undefined ? sql`, negocio_nombre = ${data.negocio_nombre}` : sql``}
+            ${data.phone_number_id !== undefined ? sql`, phone_number_id = ${data.phone_number_id}` : sql``}
+            ${data.waba_id !== undefined ? sql`, waba_id = ${data.waba_id}` : sql``}
             ${data.webhook_verify_token !== undefined ? sql`, webhook_verify_token = ${data.webhook_verify_token}` : sql``}
             ${data.nombre !== undefined ? sql`, nombre = ${data.nombre}` : sql``}
             ${data.activo !== undefined ? sql`, activo = ${data.activo}` : sql``}
@@ -155,6 +157,8 @@ export class CrmDrizzleRepository implements ICrmRepository {
       UPDATE wa_cuenta
       SET updated_at = now()
           ${data.negocio_nombre !== undefined ? sql`, negocio_nombre = ${data.negocio_nombre}` : sql``}
+          ${data.phone_number_id !== undefined ? sql`, phone_number_id = ${data.phone_number_id}` : sql``}
+          ${data.waba_id !== undefined ? sql`, waba_id = ${data.waba_id}` : sql``}
           ${data.webhook_verify_token !== undefined ? sql`, webhook_verify_token = ${data.webhook_verify_token}` : sql``}
           ${data.nombre !== undefined ? sql`, nombre = ${data.nombre}` : sql``}
           ${data.activo !== undefined ? sql`, activo = ${data.activo}` : sql``}

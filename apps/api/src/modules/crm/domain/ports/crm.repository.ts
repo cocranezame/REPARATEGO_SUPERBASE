@@ -32,6 +32,8 @@ export type CreateWaCuentaData = {
 
 export type UpdateWaCuentaData = {
   negocio_nombre?: string | undefined;
+  phone_number_id?: string | undefined;
+  waba_id?: string | undefined;
   access_token?: string | undefined;
   webhook_verify_token?: string | undefined;
   nombre?: string | undefined;

@@ -22,10 +22,13 @@ function WaCuentaModal({ editing, onClose }: { editing: WaCuentaDto | null; onCl
     access_token: "",
     webhook_verify_token: editing?.webhook_verify_token ?? "",
     nombre: editing?.nombre ?? "",
-    activo: editing?.activo ?? true,
   });
 
   const isPending = creating || updating;
+
+  function generateVerifyToken() {
+    setForm((f) => ({ ...f, webhook_verify_token: crypto.randomUUID() }));
+  }
 
   function handleSubmit() {
     if (editing) {
@@ -33,11 +36,14 @@ function WaCuentaModal({ editing, onClose }: { editing: WaCuentaDto | null; onCl
         {
           id: editing.id,
           data: {
-            negocio_nombre: form.negocio_nombre || undefined,
+            ...(form.negocio_nombre ? { negocio_nombre: form.negocio_nombre } : {}),
+            ...(form.phone_number_id ? { phone_number_id: form.phone_number_id } : {}),
+            ...(form.waba_id ? { waba_id: form.waba_id } : {}),
             ...(form.access_token ? { access_token: form.access_token } : {}),
-            webhook_verify_token: form.webhook_verify_token || undefined,
-            nombre: form.nombre || undefined,
-            activo: form.activo,
+            ...(form.webhook_verify_token
+              ? { webhook_verify_token: form.webhook_verify_token }
+              : {}),
+            ...(form.nombre ? { nombre: form.nombre } : {}),
           },
         },
         { onSuccess: onClose }
@@ -95,34 +101,30 @@ function WaCuentaModal({ editing, onClose }: { editing: WaCuentaDto | null; onCl
               placeholder="Ej: Línea principal"
             />
           </div>
-          {!editing && (
-            <>
-              <div>
-                <label htmlFor="wa-phone" className="text-xs font-medium text-neutral-600">
-                  Phone Number ID *
-                </label>
-                <input
-                  id="wa-phone"
-                  type="text"
-                  className="w-full mt-1 border border-neutral-200 rounded-lg px-3 py-2 text-sm font-mono"
-                  value={form.phone_number_id}
-                  onChange={(e) => setForm((f) => ({ ...f, phone_number_id: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label htmlFor="wa-waba" className="text-xs font-medium text-neutral-600">
-                  WABA ID *
-                </label>
-                <input
-                  id="wa-waba"
-                  type="text"
-                  className="w-full mt-1 border border-neutral-200 rounded-lg px-3 py-2 text-sm font-mono"
-                  value={form.waba_id}
-                  onChange={(e) => setForm((f) => ({ ...f, waba_id: e.target.value }))}
-                />
-              </div>
-            </>
-          )}
+          <div>
+            <label htmlFor="wa-phone" className="text-xs font-medium text-neutral-600">
+              Phone Number ID {!editing && "*"}
+            </label>
+            <input
+              id="wa-phone"
+              type="text"
+              className="w-full mt-1 border border-neutral-200 rounded-lg px-3 py-2 text-sm font-mono"
+              value={form.phone_number_id}
+              onChange={(e) => setForm((f) => ({ ...f, phone_number_id: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label htmlFor="wa-waba" className="text-xs font-medium text-neutral-600">
+              WABA ID {!editing && "*"}
+            </label>
+            <input
+              id="wa-waba"
+              type="text"
+              className="w-full mt-1 border border-neutral-200 rounded-lg px-3 py-2 text-sm font-mono"
+              value={form.waba_id}
+              onChange={(e) => setForm((f) => ({ ...f, waba_id: e.target.value }))}
+            />
+          </div>
           <div>
             <label htmlFor="wa-token" className="text-xs font-medium text-neutral-600">
               Access Token {editing ? "(dejar vacío para no cambiar)" : "*"}
@@ -140,24 +142,29 @@ function WaCuentaModal({ editing, onClose }: { editing: WaCuentaDto | null; onCl
             <label htmlFor="wa-verify" className="text-xs font-medium text-neutral-600">
               Webhook Verify Token *
             </label>
-            <input
-              id="wa-verify"
-              type="text"
-              className="w-full mt-1 border border-neutral-200 rounded-lg px-3 py-2 text-sm font-mono"
-              value={form.webhook_verify_token}
-              onChange={(e) => setForm((f) => ({ ...f, webhook_verify_token: e.target.value }))}
-            />
-          </div>
-          {editing && (
-            <label className="flex items-center gap-2 cursor-pointer text-sm">
+            <div className="flex gap-2 mt-1">
               <input
-                type="checkbox"
-                checked={form.activo}
-                onChange={(e) => setForm((f) => ({ ...f, activo: e.target.checked }))}
+                id="wa-verify"
+                type="text"
+                readOnly
+                className="flex-1 border border-neutral-200 rounded-lg px-3 py-2 text-sm font-mono bg-neutral-50 text-neutral-700 cursor-default select-all"
+                value={form.webhook_verify_token}
               />
-              Activo
-            </label>
-          )}
+              <button
+                type="button"
+                onClick={generateVerifyToken}
+                className="shrink-0 border border-neutral-300 rounded-lg px-3 py-2 text-xs text-neutral-600 hover:bg-neutral-50"
+                title="Genera un nuevo UUID aleatorio. Cópialo antes de guardar."
+              >
+                Generar nuevo
+              </button>
+            </div>
+            {editing && (
+              <p className="text-xs text-amber-600 mt-1">
+                Si generas un nuevo token deberás actualizarlo también en Meta for Developers.
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex gap-2 mt-5">
           <button
@@ -187,6 +194,7 @@ export function ConfigWaCuentasPage() {
   const user = useAuthStore((s) => s.user);
   const { data, isLoading } = useWaCuentas();
   const { mutate: deleteCuenta } = useDeleteWaCuenta();
+  const { mutate: updateCuenta } = useUpdateWaCuenta();
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<WaCuentaDto | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -235,13 +243,20 @@ export function ConfigWaCuentasPage() {
                   </td>
                   <td className="px-4 py-3 text-neutral-600">{c.negocio_nombre}</td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${
-                        c.activo ? "bg-green-100 text-green-700" : "bg-neutral-100 text-neutral-500"
+                    <button
+                      type="button"
+                      onClick={() => updateCuenta({ id: c.id, data: { activo: !c.activo } })}
+                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+                        c.activo ? "bg-green-500" : "bg-neutral-300"
                       }`}
+                      title={c.activo ? "Desactivar" : "Activar"}
                     >
-                      {c.activo ? "Activo" : "Inactivo"}
-                    </span>
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                          c.activo ? "translate-x-4" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
                   </td>
                   <td className="px-4 py-3 text-xs text-neutral-500">
                     {new Date(c.created_at).toLocaleDateString("es-PE")}

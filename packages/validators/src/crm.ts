@@ -15,6 +15,8 @@ export type CreateWaCuentaInput = z.infer<typeof createWaCuentaSchema>;
 
 export const updateWaCuentaSchema = z.object({
   negocio_nombre: z.string().min(1).max(100).optional(),
+  phone_number_id: z.string().min(1).max(50).optional(),
+  waba_id: z.string().min(1).max(50).optional(),
   access_token: z.string().min(1).optional(),
   webhook_verify_token: z.string().min(1).max(100).optional(),
   nombre: z.string().max(100).optional(),
@@ -210,6 +212,7 @@ export const createAgenteSchema = z.object({
 export type CreateAgenteInput = z.infer<typeof createAgenteSchema>;
 
 export const updateAgenteSchema = z.object({
+  modelo_ia: z.string().max(100).optional(),
   tono: z.string().max(1000).optional(),
   prompt_base: z.string().optional(),
   max_mensajes_contexto: z.number().int().min(5).max(100).optional(),

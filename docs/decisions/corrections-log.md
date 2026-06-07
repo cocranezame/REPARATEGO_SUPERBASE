@@ -611,3 +611,25 @@ C006 (2026-06-02) documentó que se necesitaba `ALTER TYPE canal_servicio ADD VA
 - `apps/api/src/modules/crm/http/routes.ts` — instanciación cambiada de `new MetaSenderService(db)` a `new MetaSenderService(repo)`.
 
 **Regla:** Los servicios de infraestructura que necesitan datos persistidos deben usar el repositorio como fuente, no duplicar queries directas sobre el `DbClient`. La lógica de desencriptación de tokens debe vivir únicamente en `getWaCuentaWithToken()`.
+
+---
+
+## C024 — 2026-06-07
+
+**ID:** C024
+**Afecta:** crm, web
+
+**Contexto:** E13 — CRM wa_cuenta edición completa
+
+**`PUT /crm/wa-cuentas/:id` no permitía editar `phone_number_id` ni `waba_id`, y el formulario web los ocultaba en modo edición:**
+`updateWaCuentaSchema`, `UpdateWaCuentaData` y el SQL UPDATE de `updateWaCuenta()` no incluían `phone_number_id` ni `waba_id`. Al abrir el modal de edición, estos campos no se mostraban (solo se mostraban al crear). Tampoco existía el botón "Generar nuevo token" para `webhook_verify_token` — el campo era un input de texto libre, lo que permitía editar el valor manualmente y romper la sincronización con Meta sin advertencia.
+
+**Corrección aplicada:**
+- `packages/validators/src/crm.ts` — `updateWaCuentaSchema` agrega `phone_number_id` y `waba_id` como campos opcionales
+- `apps/api/src/modules/crm/domain/ports/crm.repository.ts` — `UpdateWaCuentaData` agrega `phone_number_id?: string | undefined` y `waba_id?: string | undefined`
+- `apps/api/src/modules/crm/infra/repositories/crm.drizzle.ts` — `updateWaCuenta()` agrega fragmentos SQL condicionales para ambos campos en las dos ramas del UPDATE (con y sin access_token)
+- `apps/web/src/modules/crm/pages/ConfigWaCuentasPage.tsx` — modal de edición ahora muestra `phone_number_id` y `waba_id` en modo edición; `webhook_verify_token` es `readOnly` con botón "Generar nuevo" que ejecuta `crypto.randomUUID()`; advertencia visible si se genera un nuevo token ("deberás actualizarlo también en Meta for Developers")
+
+**Verificación:** `PUT /crm/wa-cuentas/d02e0fef-...` con `{ phone_number_id, waba_id, negocio_nombre, webhook_verify_token }` → 200 OK con datos actualizados.
+
+**Regla:** El campo `webhook_verify_token` es readonly en el UI — solo se puede cambiar generando un nuevo UUID. `phone_number_id` y `waba_id` siempre son editables (tanto en create como en update) porque pueden cambiar al migrar entre cuentas de Meta.

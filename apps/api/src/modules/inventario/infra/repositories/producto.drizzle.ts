@@ -118,8 +118,7 @@ export class ProductoDrizzleRepository implements IProductoRepository {
           componente_id: data.componente_id ?? null,
           marca_id: data.marca_id ?? null,
           unidad_medida: data.unidad_medida ?? "UND",
-          precio_compra: data.precio_compra !== undefined ? String(data.precio_compra) : null,
-          precio_venta: String(data.precio_venta),
+          // precio_compra set by ingreso movements, precio_venta set by Tasas % system
           stock_minimo: data.stock_minimo ?? 0,
           imagen_url: data.imagen_url ?? null,
         })
@@ -141,9 +140,10 @@ export class ProductoDrizzleRepository implements IProductoRepository {
       if (data.componente_id !== undefined) setValues.componente_id = data.componente_id;
       if (data.marca_id !== undefined) setValues.marca_id = data.marca_id;
       if (data.unidad_medida !== undefined) setValues.unidad_medida = data.unidad_medida;
-      if (data.precio_compra !== undefined)
-        setValues.precio_compra = data.precio_compra !== null ? String(data.precio_compra) : null;
-      if (data.precio_venta !== undefined) setValues.precio_venta = String(data.precio_venta);
+      // _precio_compra/_precio_venta: only updated by ingreso/tasa services, not from product form
+      if (data._precio_compra !== undefined)
+        setValues.precio_compra = data._precio_compra !== null ? String(data._precio_compra) : null;
+      if (data._precio_venta !== undefined) setValues.precio_venta = String(data._precio_venta);
       if (data.stock_minimo !== undefined) setValues.stock_minimo = data.stock_minimo;
       if (data.imagen_url !== undefined) setValues.imagen_url = data.imagen_url;
       if (data.activo !== undefined) setValues.activo = data.activo;

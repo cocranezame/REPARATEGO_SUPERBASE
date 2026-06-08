@@ -17,6 +17,10 @@ import {
 } from "../hooks/useInventario";
 
 // ─── Form schema ──────────────────────────────────────────────────────────────
+// precio_venta y precio_compra NO están en el form:
+//   precio_venta → lo gestiona el módulo Tasas % (calculado desde último costo + tasa)
+//   precio_compra → lo fija el movimiento de ingreso (cotización asociada al ingreso)
+//                   Si no hay movimientos, se toma el promedio de cotizaciones del repuesto
 
 const productoFormSchema = z.object({
   tipo: z.enum(["PRODUCTO", "SERVICIO"] as const),
@@ -27,8 +31,6 @@ const productoFormSchema = z.object({
   componente_id: z.string().optional(),
   marca_id: z.string().optional(),
   unidad_medida: z.string().max(10).optional(),
-  precio_compra: z.string().optional(),
-  precio_venta: z.string().min(1, "Requerido"),
   stock_minimo: z.string().optional(),
   imagen_url: z.union([z.string().url("URL inválida"), z.literal("")]).optional(),
 });
@@ -47,16 +49,51 @@ const LABEL = "text-xs font-medium text-neutral-700";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function parsePrice(val: string | undefined): number | undefined {
-  if (!val || val.trim() === "") return undefined;
-  const n = Number.parseFloat(val);
-  return Number.isNaN(n) ? undefined : n;
-}
-
 function parseIntVal(val: string | undefined): number | undefined {
   if (!val || val.trim() === "") return undefined;
   const n = Number.parseInt(val, 10);
   return Number.isNaN(n) ? undefined : n;
+}
+
+function fmtPEN(val: string | null | undefined): string {
+  if (!val) return "—";
+  const n = Number.parseFloat(val);
+  return Number.isNaN(n) ? "—" : `S/ ${n.toFixed(2)}`;
+}
+
+// ─── Panel de precios (solo lectura) ─────────────────────────────────────────
+
+function PreciosInfo({
+  precioVenta,
+  precioCompra,
+}: {
+  precioVenta: string | undefined;
+  precioCompra: string | null | undefined;
+}) {
+  return (
+    <div className="col-span-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">Precios</p>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-xs text-neutral-500">Precio de venta</p>
+          <p className="mt-0.5 text-base font-semibold text-neutral-900">{fmtPEN(precioVenta)}</p>
+          <p className="mt-0.5 text-xs text-neutral-400">
+            Calculado desde{" "}
+            <a href="/inventario/tasas-precio" className="text-primary-600 hover:underline">
+              Tasas %
+            </a>
+          </p>
+        </div>
+        <div>
+          <p className="text-xs text-neutral-500">Precio de costo</p>
+          <p className="mt-0.5 text-base font-semibold text-neutral-900">{fmtPEN(precioCompra)}</p>
+          <p className="mt-0.5 text-xs text-neutral-400">
+            Cotización del último ingreso · promedio si sin movimientos
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ─── Compatibilidades section ─────────────────────────────────────────────────
@@ -226,8 +263,6 @@ export function ProductoFormPage() {
       componente_id: "",
       marca_id: "",
       unidad_medida: "UND",
-      precio_compra: "",
-      precio_venta: "",
       stock_minimo: "0",
       imagen_url: "",
     },
@@ -244,8 +279,6 @@ export function ProductoFormPage() {
         componente_id: existing.componente_id ?? "",
         marca_id: existing.marca_id ?? "",
         unidad_medida: existing.unidad_medida,
-        precio_compra: existing.precio_compra ?? "",
-        precio_venta: existing.precio_venta,
         stock_minimo: String(existing.stock_minimo),
         imagen_url: existing.imagen_url ?? "",
       });
@@ -270,13 +303,6 @@ export function ProductoFormPage() {
   async function onSubmit(values: ProductoFormValues) {
     setServerError(null);
 
-    const precioVentaNum = parsePrice(values.precio_venta);
-    if (precioVentaNum === undefined) {
-      setServerError("Precio de venta inválido.");
-      return;
-    }
-
-    const precioCompra = parsePrice(values.precio_compra);
     const stockMinimo = parseIntVal(values.stock_minimo);
 
     if (isEdit) {
@@ -295,8 +321,6 @@ export function ProductoFormPage() {
         ...(values.unidad_medida && values.unidad_medida !== ""
           ? { unidad_medida: values.unidad_medida }
           : {}),
-        ...(precioCompra !== undefined ? { precio_compra: precioCompra } : {}),
-        precio_venta: precioVentaNum,
         ...(stockMinimo !== undefined ? { stock_minimo: stockMinimo } : {}),
         ...(values.imagen_url && values.imagen_url !== "" ? { imagen_url: values.imagen_url } : {}),
       };
@@ -310,7 +334,6 @@ export function ProductoFormPage() {
         ...(values.tipo === "PRODUCTO" ? { alcance: values.alcance ?? "GLOBAL" } : {}),
         nombre: values.nombre,
         categoria_id: values.categoria_id,
-        precio_venta: precioVentaNum,
         ...(values.descripcion && values.descripcion !== ""
           ? { descripcion: values.descripcion }
           : {}),
@@ -321,7 +344,6 @@ export function ProductoFormPage() {
         ...(values.unidad_medida && values.unidad_medida !== ""
           ? { unidad_medida: values.unidad_medida }
           : {}),
-        ...(precioCompra !== undefined ? { precio_compra: precioCompra } : {}),
         ...(stockMinimo !== undefined ? { stock_minimo: stockMinimo } : {}),
         ...(values.imagen_url && values.imagen_url !== "" ? { imagen_url: values.imagen_url } : {}),
       };
@@ -518,44 +540,6 @@ export function ProductoFormPage() {
                 />
               </div>
 
-              {/* precio_venta */}
-              <div className="flex flex-col gap-1">
-                <label htmlFor="pf-pv" className={LABEL}>
-                  Precio de venta (S/) <span className="text-danger-500">*</span>
-                </label>
-                <input
-                  id="pf-pv"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  className={INPUT}
-                  {...register("precio_venta")}
-                />
-                {errors.precio_venta && (
-                  <span className="text-xs text-danger-600">{errors.precio_venta.message}</span>
-                )}
-              </div>
-
-              {/* precio_compra — solo PRODUCTO */}
-              {tipo === "PRODUCTO" && (
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="pf-pc" className={LABEL}>
-                    Precio de compra (S/){" "}
-                    <span className="font-normal text-neutral-400">(opcional)</span>
-                  </label>
-                  <input
-                    id="pf-pc"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0.00"
-                    className={INPUT}
-                    {...register("precio_compra")}
-                  />
-                </div>
-              )}
-
               {/* stock_minimo — solo PRODUCTO */}
               {tipo === "PRODUCTO" && (
                 <div className="flex flex-col gap-1">
@@ -597,6 +581,14 @@ export function ProductoFormPage() {
                   <span className="text-xs text-danger-600">{errors.imagen_url.message}</span>
                 )}
               </div>
+
+              {/* Precios — solo lectura, gestionados por otros módulos */}
+              {tipo === "PRODUCTO" && (
+                <PreciosInfo
+                  precioVenta={isEdit ? existing?.precio_venta : undefined}
+                  precioCompra={isEdit ? existing?.precio_compra : undefined}
+                />
+              )}
             </div>
 
             {serverError !== null && (

@@ -11,8 +11,8 @@ export type CreateProductoData = {
   componente_id?: string;
   marca_id?: string;
   unidad_medida?: string;
-  precio_compra?: number;
-  precio_venta: number;
+  // precio_compra: set by ingreso movements (from cotización linked to ingreso)
+  // precio_venta: set by Tasas % system (calculated from ultimo_costo + tasa)
   stock_minimo?: number;
   imagen_url?: string;
 };
@@ -25,8 +25,11 @@ export type UpdateProductoData = {
   componente_id?: string | null;
   marca_id?: string | null;
   unidad_medida?: string;
-  precio_compra?: number | null;
-  precio_venta?: number;
+  // precio_compra: updated by ingreso movements, not from product form
+  // precio_venta: updated by Tasas % system, not from product form
+  // Internal-only update path (e.g. ingreso service):
+  _precio_compra?: number | null;
+  _precio_venta?: number;
   stock_minimo?: number;
   imagen_url?: string | null;
   activo?: boolean;

@@ -50,7 +50,7 @@ export const producto = pgTable(
     marca_id: uuid("marca_id").references(() => marca.id),
     unidad_medida: varchar("unidad_medida", { length: 10 }).notNull().default("UND"),
     precio_compra: decimal("precio_compra", { precision: 12, scale: 2 }),
-    precio_venta: decimal("precio_venta", { precision: 12, scale: 2 }).notNull(),
+    precio_venta: decimal("precio_venta", { precision: 12, scale: 2 }).notNull().default("0"),
     stock_minimo: integer("stock_minimo").notNull().default(0),
     imagen_url: varchar("imagen_url", { length: 500 }),
     activo: boolean("activo").notNull().default(true),

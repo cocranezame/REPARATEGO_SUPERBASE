@@ -18,8 +18,8 @@ export const createProductoSchema = z.object({
   componente_id: uuidSchema.optional(),
   marca_id: uuidSchema.optional(),
   unidad_medida: z.string().max(10).optional(),
-  precio_compra: z.number().positive().optional(),
-  precio_venta: z.number().positive(),
+  // precio_compra: set by ingreso movement — NOT sent from product form
+  // precio_venta: set by Tasas % system — NOT sent from product form (defaults to 0 on DB)
   stock_minimo: z.number().int().min(0).optional(),
   imagen_url: z.string().url().optional(),
 });

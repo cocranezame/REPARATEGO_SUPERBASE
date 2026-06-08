@@ -125,6 +125,10 @@ export function NuevaOrdenPage() {
       setNewCategoriaId(result.data.id);
       setNewMarcaId("");
       setSelectedModeloId("");
+      setShowNuevoModelo(false);
+      setNuevoModeloNombre("");
+      setShowNuevaMarca(false);
+      setNuevaMarcaNombre("");
       setShowNuevaCategoria(false);
       setNuevaCategoriaNombre("");
     } catch (err) {
@@ -139,6 +143,8 @@ export function NuevaOrdenPage() {
       const result = await createMarca.mutateAsync({ nombre: nuevaMarcaNombre.trim() });
       setNewMarcaId(result.data.id);
       setSelectedModeloId("");
+      setShowNuevoModelo(false);
+      setNuevoModeloNombre("");
       setShowNuevaMarca(false);
       setNuevaMarcaNombre("");
     } catch (err) {
@@ -379,6 +385,10 @@ export function NuevaOrdenPage() {
                           setNewCategoriaId(e.target.value);
                           setNewMarcaId("");
                           setSelectedModeloId("");
+                          setShowNuevoModelo(false);
+                          setNuevoModeloNombre("");
+                          setShowNuevaMarca(false);
+                          setNuevaMarcaNombre("");
                         }}
                         className={SELECT}
                       >
@@ -443,6 +453,8 @@ export function NuevaOrdenPage() {
                         onChange={(e) => {
                           setNewMarcaId(e.target.value);
                           setSelectedModeloId("");
+                          setShowNuevoModelo(false);
+                          setNuevoModeloNombre("");
                         }}
                         className={SELECT}
                       >
@@ -536,7 +548,12 @@ export function NuevaOrdenPage() {
                       />
                       <button
                         type="button"
-                        disabled={createModelo.isPending || !nuevoModeloNombre.trim()}
+                        disabled={
+                          createModelo.isPending ||
+                          !nuevoModeloNombre.trim() ||
+                          !newMarcaId ||
+                          !newCategoriaId
+                        }
                         onClick={handleGuardarModelo}
                         className={BTN_SAVE}
                       >

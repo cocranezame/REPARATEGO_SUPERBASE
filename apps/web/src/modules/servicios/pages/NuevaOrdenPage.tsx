@@ -27,7 +27,6 @@ const BTN_CANCEL =
 
 const PASOS = ["Cliente", "Instancia", "Orden", "Confirmar"];
 
-type TipoServicio = "CORRECTIVO" | "PREVENTIVO" | "MIXTO";
 type Canal = "TIENDA" | "DOMICILIO";
 
 export function NuevaOrdenPage() {
@@ -58,7 +57,6 @@ export function NuevaOrdenPage() {
 
   // Step 2 — Orden
   const [fallaIngreso, setFallaIngreso] = useState("");
-  const [tipoServicio, setTipoServicio] = useState<TipoServicio>("CORRECTIVO");
   const [canal, setCanal] = useState<Canal>("TIENDA");
 
   // ── Hooks ──────────────────────────────────────────────────────────────────
@@ -200,7 +198,6 @@ export function NuevaOrdenPage() {
       const result = await createOrden.mutateAsync({
         instancia_id: instancia.id,
         canal,
-        tipo_servicio: tipoServicio,
         falla_ingreso: fallaIngreso,
         costo_revision: parseFloat(costoRevision),
       });
@@ -662,36 +659,19 @@ export function NuevaOrdenPage() {
                 className={INPUT}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1">
-                <label htmlFor="nueva-tipo" className="text-xs font-medium text-neutral-700">
-                  Tipo de servicio
-                </label>
-                <select
-                  id="nueva-tipo"
-                  value={tipoServicio}
-                  onChange={(e) => setTipoServicio(e.target.value as TipoServicio)}
-                  className={SELECT}
-                >
-                  <option value="CORRECTIVO">Correctivo</option>
-                  <option value="PREVENTIVO">Preventivo</option>
-                  <option value="MIXTO">Mixto</option>
-                </select>
-              </div>
-              <div className="flex flex-col gap-1">
-                <label htmlFor="nueva-canal" className="text-xs font-medium text-neutral-700">
-                  Canal
-                </label>
-                <select
-                  id="nueva-canal"
-                  value={canal}
-                  onChange={(e) => setCanal(e.target.value as Canal)}
-                  className={SELECT}
-                >
-                  <option value="TIENDA">Tienda (presencial)</option>
-                  <option value="DOMICILIO">Domicilio</option>
-                </select>
-              </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="nueva-canal" className="text-xs font-medium text-neutral-700">
+                Canal
+              </label>
+              <select
+                id="nueva-canal"
+                value={canal}
+                onChange={(e) => setCanal(e.target.value as Canal)}
+                className={SELECT}
+              >
+                <option value="TIENDA">Tienda (presencial)</option>
+                <option value="DOMICILIO">Domicilio</option>
+              </select>
             </div>
             <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm">
               <span className="text-neutral-500">Costo de revisión:</span>{" "}
@@ -717,7 +697,6 @@ export function NuevaOrdenPage() {
                 { label: "Equipo", value: instancia?.producto_nombre ?? "—" },
                 { label: "N/S", value: instancia?.numero_serie ?? "—" },
                 { label: "Falla", value: fallaIngreso },
-                { label: "Tipo", value: tipoServicio },
                 { label: "Canal", value: canal },
                 { label: "Costo revisión", value: `S/ ${Number(costoRevision).toFixed(2)}` },
               ].map(({ label, value }) => (

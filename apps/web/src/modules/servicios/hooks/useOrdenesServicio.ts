@@ -110,7 +110,7 @@ export function useCreateOrden() {
     {
       instancia_id: string;
       canal: string;
-      tipo_servicio: string;
+      tipo_servicio?: string;
       falla_ingreso: string;
       costo_revision: number;
       sucursal_id?: string | undefined;

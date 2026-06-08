@@ -32,12 +32,14 @@ function qs(params: Record<string, string | number | boolean | undefined>): stri
 // ─── Instancias ───────────────────────────────────────────────────────────────
 
 export function useInstancias(params: ListInstanciasParams = {}) {
+  const { enabled = true, ...rest } = params;
   return useQuery<ApiList<Instancia>>({
-    queryKey: ["instancias", params],
+    queryKey: ["instancias", rest],
     queryFn: () =>
       apiClient.get<ApiList<Instancia>>(
-        `${BASE}/instancias${qs({ ...params, page: params.page ?? 1, pageSize: params.pageSize ?? 20 })}`
+        `${BASE}/instancias${qs({ ...rest, page: rest.page ?? 1, pageSize: rest.pageSize ?? 20 })}`
       ),
+    enabled,
   });
 }
 

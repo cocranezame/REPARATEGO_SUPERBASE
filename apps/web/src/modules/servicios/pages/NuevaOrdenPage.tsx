@@ -67,8 +67,9 @@ export function NuevaOrdenPage() {
     pageSize: 50,
   });
   const { data: instanciasData, isLoading: instanciasLoading } = useInstancias({
-    cliente_id: clienteId,
+    ...(clienteId ? { cliente_id: clienteId } : {}),
     pageSize: 50,
+    enabled: clienteId !== "",
   });
   const { data: categoriasData } = useCategorias({ activo: true, pageSize: 100 });
   const { data: marcasData } = useMarcas({ activo: true, pageSize: 100 });

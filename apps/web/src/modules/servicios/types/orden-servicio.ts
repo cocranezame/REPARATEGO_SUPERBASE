@@ -240,6 +240,7 @@ export type ListInstanciasParams = {
   producto_id?: string;
   page?: number;
   pageSize?: number;
+  enabled?: boolean;
 };
 
 export type BuscarPresupuestoParams = {

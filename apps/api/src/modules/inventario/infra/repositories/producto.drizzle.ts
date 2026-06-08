@@ -111,6 +111,7 @@ export class ProductoDrizzleRepository implements IProductoRepository {
           tenant_id: tenantId,
           codigo,
           tipo: data.tipo as (typeof productoTable.tipo)["_"]["data"],
+          alcance: (data.alcance ?? "GLOBAL") as (typeof productoTable.alcance)["_"]["data"],
           nombre: data.nombre,
           descripcion: data.descripcion ?? null,
           categoria_id: data.categoria_id,
@@ -132,6 +133,8 @@ export class ProductoDrizzleRepository implements IProductoRepository {
       await setTenantLocal(tx, tenantId);
 
       const setValues: Partial<typeof productoTable.$inferInsert> = { updated_at: new Date() };
+      if (data.alcance !== undefined)
+        setValues.alcance = data.alcance as (typeof productoTable.alcance)["_"]["data"];
       if (data.nombre !== undefined) setValues.nombre = data.nombre;
       if (data.descripcion !== undefined) setValues.descripcion = data.descripcion;
       if (data.categoria_id !== undefined) setValues.categoria_id = data.categoria_id;

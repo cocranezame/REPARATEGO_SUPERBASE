@@ -7,7 +7,6 @@ import {
   costoRevision as costoRevisionTable,
   instanciaImagen as instanciaImagenTable,
   instancia as instanciaTable,
-  modelo as modeloTable,
   movimientoInventario as movimientoTable,
   ordenServicioAceptacion as osAceptacionTable,
   ordenServicioComponente as osComponenteTable,
@@ -26,7 +25,7 @@ import {
   venta as ventaTable,
 } from "@kallpasoft/db";
 import bcrypt from "bcryptjs";
-import { and, count, desc, eq, gte, ilike, inArray, lte, or, sql, sum } from "drizzle-orm";
+import { and, count, desc, eq, gte, ilike, inArray, isNull, lte, or, sql, sum } from "drizzle-orm";
 import type {
   ComponenteOrden,
   CostoRevision,
@@ -1395,64 +1394,60 @@ export class ServicioDrizzleRepository implements IServicioRepository {
     return this.db.transaction(async (tx) => {
       await setTenantLocal(tx, tenantId);
 
-      const baseConditions = [
+      // Base filters: tenant, activo, tipo mapping, búsqueda libre, componente
+      const tipoDb =
+        params.tipo === "REPUESTO" ? "PRODUCTO" : params.tipo === "SERVICIO" ? "SERVICIO" : null;
+      const baseConditions: Parameters<typeof and>[0][] = [
         eq(productoTable.tenant_id, tenantId),
         eq(productoTable.activo, true),
+        ...(tipoDb
+          ? [eq(productoTable.tipo, tipoDb as (typeof productoTable.tipo)["_"]["data"])]
+          : []),
+        ...(params.busqueda ? [ilike(productoTable.nombre, `%${params.busqueda}%`)] : []),
+        ...(params.componente_id ? [eq(productoTable.componente_id, params.componente_id)] : []),
       ];
-      if (params.tipo)
-        baseConditions.push(
-          eq(productoTable.tipo, params.tipo as (typeof productoTable.tipo)["_"]["data"])
-        );
-      if (params.busqueda) baseConditions.push(ilike(productoTable.nombre, `%${params.busqueda}%`));
-      if (params.componente_id)
-        baseConditions.push(eq(productoTable.componente_id, params.componente_id));
 
-      // Count at each level
-      const countAt = async (
-        extraJoins: boolean,
-        extraConditions: Parameters<typeof and>[0][]
-      ): Promise<number> => {
-        const allConditions = [...baseConditions, ...extraConditions].filter(Boolean) as Parameters<
-          typeof and
-        >[0][];
-        if (extraJoins && params.modelo_id) {
-          const r = await tx
-            .select({ n: count() })
-            .from(productoTable)
-            .innerJoin(productoCompatTable, eq(productoTable.id, productoCompatTable.producto_id))
-            .where(and(...allConditions));
-          return r[0]?.n ?? 0;
-        }
-        if (extraJoins && params.marca_id) {
-          const r = await tx
-            .select({ n: count() })
-            .from(productoTable)
-            .innerJoin(productoCompatTable, eq(productoTable.id, productoCompatTable.producto_id))
-            .innerJoin(modeloTable, eq(productoCompatTable.modelo_id, modeloTable.id))
-            .where(and(...allConditions));
-          return r[0]?.n ?? 0;
-        }
-        const r = await tx
+      // Alcance conditions: products are APPLICABLE to the device when their
+      // alcance matches one of the device's attributes.
+      const globalCond = or(isNull(productoTable.alcance), eq(productoTable.alcance, "GLOBAL"));
+      const catCond = params.categoria_id
+        ? and(
+            eq(productoTable.alcance, "CATEGORIA"),
+            eq(productoTable.categoria_id, params.categoria_id)
+          )
+        : undefined;
+      const marcaCond = params.marca_id
+        ? and(eq(productoTable.alcance, "MARCA"), eq(productoTable.marca_id, params.marca_id))
+        : undefined;
+
+      // Compat subquery: producto_ids compatible with the given modelo
+      const compatSubq = params.modelo_id
+        ? tx
+            .select({ id: productoCompatTable.producto_id })
+            .from(productoCompatTable)
+            .where(eq(productoCompatTable.modelo_id, params.modelo_id))
+        : null;
+      const compatCond = compatSubq
+        ? and(eq(productoTable.alcance, "COMPATIBILIDAD"), inArray(productoTable.id, compatSubq))
+        : undefined;
+
+      // Count per alcance type for the tabs
+      const countWhere = (extra: Parameters<typeof and>[0]) =>
+        tx
           .select({ n: count() })
           .from(productoTable)
-          .where(and(...allConditions));
-        return r[0]?.n ?? 0;
-      };
+          .leftJoin(componenteTable, eq(productoTable.componente_id, componenteTable.id))
+          .where(and(...baseConditions, extra))
+          .then((r) => r[0]?.n ?? 0);
 
       const [countComp, countMarca, countCat, countGlobal] = await Promise.all([
-        params.modelo_id
-          ? countAt(true, [eq(productoCompatTable.modelo_id, params.modelo_id)])
-          : Promise.resolve(0),
-        params.marca_id
-          ? countAt(true, [eq(modeloTable.marca_id, params.marca_id)])
-          : Promise.resolve(0),
-        params.categoria_id
-          ? countAt(false, [eq(productoTable.categoria_id, params.categoria_id)])
-          : Promise.resolve(0),
-        countAt(false, []),
+        compatCond ? countWhere(compatCond) : Promise.resolve(0),
+        marcaCond ? countWhere(marcaCond) : Promise.resolve(0),
+        catCond ? countWhere(catCond) : Promise.resolve(0),
+        globalCond ? countWhere(globalCond) : Promise.resolve(0),
       ]);
 
-      // Determine which level to query
+      // Determine which tab/nivel to show
       const nivel =
         params.nivel ??
         (countComp > 0
@@ -1463,11 +1458,18 @@ export class ServicioDrizzleRepository implements IServicioRepository {
               ? "CATEGORIA"
               : "GLOBAL");
 
+      // Build WHERE for the selected nivel
+      const nivelCond =
+        nivel === "COMPAT" && compatCond
+          ? compatCond
+          : nivel === "MARCA" && marcaCond
+            ? marcaCond
+            : nivel === "CATEGORIA" && catCond
+              ? catCond
+              : globalCond;
+
       const pageSize = params.pageSize > 50 ? 50 : params.pageSize;
       const offset = (params.page - 1) * pageSize;
-
-      let items: PresupuestoItem[] = [];
-      let total = 0;
 
       type PresupuestoRow = {
         producto: typeof productoTable.$inferSelect;
@@ -1476,8 +1478,6 @@ export class ServicioDrizzleRepository implements IServicioRepository {
 
       const buildItems = async (rows: PresupuestoRow[]): Promise<PresupuestoItem[]> => {
         if (rows.length === 0) return [];
-
-        // Calculate stock for each product
         const productIds = rows.map((r) => r.producto.id);
         const stockRows = await tx
           .select({
@@ -1492,11 +1492,8 @@ export class ServicioDrizzleRepository implements IServicioRepository {
             )
           )
           .groupBy(movimientoTable.producto_id);
-
         const stockMap = new Map<string, number>();
-        for (const s of stockRows) {
-          stockMap.set(s.producto_id, Number(s.stock ?? 0));
-        }
+        for (const s of stockRows) stockMap.set(s.producto_id, Number(s.stock ?? 0));
 
         return rows.map((r) => {
           const stockTotal = stockMap.get(r.producto.id) ?? 0;
@@ -1513,105 +1510,36 @@ export class ServicioDrizzleRepository implements IServicioRepository {
             precio_venta: r.producto.precio_venta,
             stock_disponible: r.producto.tipo === "SERVICIO" || stockTotal > 0,
             stock_total: r.producto.tipo === "SERVICIO" ? 0 : stockTotal,
-            nivel_alcance: nivel,
+            nivel_alcance: r.producto.alcance ?? "GLOBAL",
           };
         });
       };
 
-      const selectFields = {
-        producto: productoTable,
-        comp_nombre: componenteTable.nombre,
-      };
+      const selectFields = { producto: productoTable, comp_nombre: componenteTable.nombre };
+      const whereAll = and(...baseConditions, nivelCond);
 
-      const allConditions = [...baseConditions].filter(Boolean) as Parameters<typeof and>[0][];
-
-      if (nivel === "COMPAT" && params.modelo_id) {
-        const totalRows = await tx
-          .select({ n: count() })
-          .from(productoTable)
-          .innerJoin(productoCompatTable, eq(productoTable.id, productoCompatTable.producto_id))
-          .leftJoin(componenteTable, eq(productoTable.componente_id, componenteTable.id))
-          .where(and(...allConditions, eq(productoCompatTable.modelo_id, params.modelo_id)));
-        total = totalRows[0]?.n ?? 0;
-
-        const rows = await tx
-          .select(selectFields)
-          .from(productoTable)
-          .innerJoin(productoCompatTable, eq(productoTable.id, productoCompatTable.producto_id))
-          .leftJoin(componenteTable, eq(productoTable.componente_id, componenteTable.id))
-          .where(and(...allConditions, eq(productoCompatTable.modelo_id, params.modelo_id)))
-          .orderBy(productoTable.nombre)
-          .limit(pageSize)
-          .offset(offset);
-
-        items = await buildItems(rows);
-      } else if (nivel === "MARCA" && params.marca_id) {
-        const totalRows = await tx
-          .select({ n: count() })
-          .from(productoTable)
-          .innerJoin(productoCompatTable, eq(productoTable.id, productoCompatTable.producto_id))
-          .innerJoin(modeloTable, eq(productoCompatTable.modelo_id, modeloTable.id))
-          .leftJoin(componenteTable, eq(productoTable.componente_id, componenteTable.id))
-          .where(and(...allConditions, eq(modeloTable.marca_id, params.marca_id)));
-        total = totalRows[0]?.n ?? 0;
-
-        const rows = await tx
-          .select(selectFields)
-          .from(productoTable)
-          .innerJoin(productoCompatTable, eq(productoTable.id, productoCompatTable.producto_id))
-          .innerJoin(modeloTable, eq(productoCompatTable.modelo_id, modeloTable.id))
-          .leftJoin(componenteTable, eq(productoTable.componente_id, componenteTable.id))
-          .where(and(...allConditions, eq(modeloTable.marca_id, params.marca_id)))
-          .orderBy(productoTable.nombre)
-          .limit(pageSize)
-          .offset(offset);
-
-        items = await buildItems(rows);
-      } else if (nivel === "CATEGORIA" && params.categoria_id) {
-        const catConditions = [
-          ...allConditions,
-          eq(productoTable.categoria_id, params.categoria_id),
-        ];
-        const totalRows = await tx
+      const [totalRows, rows] = await Promise.all([
+        tx
           .select({ n: count() })
           .from(productoTable)
           .leftJoin(componenteTable, eq(productoTable.componente_id, componenteTable.id))
-          .where(and(...catConditions));
-        total = totalRows[0]?.n ?? 0;
-
-        const rows = await tx
+          .where(whereAll)
+          .then((r) => r[0]?.n ?? 0),
+        tx
           .select(selectFields)
           .from(productoTable)
           .leftJoin(componenteTable, eq(productoTable.componente_id, componenteTable.id))
-          .where(and(...catConditions))
+          .where(whereAll)
           .orderBy(productoTable.nombre)
           .limit(pageSize)
-          .offset(offset);
+          .offset(offset),
+      ]);
 
-        items = await buildItems(rows);
-      } else {
-        const totalRows = await tx
-          .select({ n: count() })
-          .from(productoTable)
-          .leftJoin(componenteTable, eq(productoTable.componente_id, componenteTable.id))
-          .where(and(...allConditions));
-        total = totalRows[0]?.n ?? 0;
-
-        const rows = await tx
-          .select(selectFields)
-          .from(productoTable)
-          .leftJoin(componenteTable, eq(productoTable.componente_id, componenteTable.id))
-          .where(and(...allConditions))
-          .orderBy(productoTable.nombre)
-          .limit(pageSize)
-          .offset(offset);
-
-        items = await buildItems(rows);
-      }
+      const items = await buildItems(rows);
 
       return {
         items,
-        total,
+        total: totalRows,
         counts: {
           compatibilidad: countComp,
           marca: countMarca,

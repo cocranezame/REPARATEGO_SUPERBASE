@@ -24,6 +24,33 @@ function TipoBadge({ tipo }: { tipo: "PRODUCTO" | "SERVICIO" }) {
   );
 }
 
+type AlcanceValue = "GLOBAL" | "CATEGORIA" | "MARCA" | "COMPATIBILIDAD";
+
+const ALCANCE_LABEL: Record<AlcanceValue, string> = {
+  GLOBAL: "Global",
+  CATEGORIA: "Categoría",
+  MARCA: "Marca",
+  COMPATIBILIDAD: "Compat.",
+};
+
+const ALCANCE_CLASS: Record<AlcanceValue, string> = {
+  GLOBAL: "bg-neutral-100 text-neutral-600",
+  CATEGORIA: "bg-sky-100 text-sky-700",
+  MARCA: "bg-amber-100 text-amber-700",
+  COMPATIBILIDAD: "bg-emerald-100 text-emerald-700",
+};
+
+function AlcanceBadge({ alcance }: { alcance: AlcanceValue | null }) {
+  if (!alcance) return null;
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${ALCANCE_CLASS[alcance]}`}
+    >
+      {ALCANCE_LABEL[alcance]}
+    </span>
+  );
+}
+
 function EstadoBadge({ activo }: { activo: boolean }) {
   return activo ? (
     <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
@@ -83,6 +110,7 @@ export function ProductosPage() {
 
   const [search, setSearch] = useState("");
   const [filterTipo, setFilterTipo] = useState("");
+  const [filterAlcance, setFilterAlcance] = useState("");
   const [filterCategoria, setFilterCategoria] = useState("");
   const [filterComponente, setFilterComponente] = useState("");
   const [filterActivo, setFilterActivo] = useState("");
@@ -115,6 +143,7 @@ export function ProductosPage() {
   function resetFilters() {
     setSearch("");
     setFilterTipo("");
+    setFilterAlcance("");
     setFilterCategoria("");
     setFilterComponente("");
     setFilterActivo("");
@@ -124,6 +153,7 @@ export function ProductosPage() {
   const hasFilters =
     search !== "" ||
     filterTipo !== "" ||
+    filterAlcance !== "" ||
     filterCategoria !== "" ||
     filterComponente !== "" ||
     filterActivo !== "";
@@ -163,6 +193,7 @@ export function ProductosPage() {
           value={filterTipo}
           onChange={(e) => {
             setFilterTipo(e.target.value);
+            setFilterAlcance("");
             setPage(1);
           }}
           className={SELECT}
@@ -171,6 +202,22 @@ export function ProductosPage() {
           <option value="PRODUCTO">Producto</option>
           <option value="SERVICIO">Servicio</option>
         </select>
+        {(filterTipo === "PRODUCTO" || filterTipo === "") && (
+          <select
+            value={filterAlcance}
+            onChange={(e) => {
+              setFilterAlcance(e.target.value);
+              setPage(1);
+            }}
+            className={SELECT}
+          >
+            <option value="">Todos los alcances</option>
+            <option value="GLOBAL">Global</option>
+            <option value="CATEGORIA">Por categoría</option>
+            <option value="MARCA">Por marca</option>
+            <option value="COMPATIBILIDAD">Por compatibilidad</option>
+          </select>
+        )}
         <select
           value={filterCategoria}
           onChange={(e) => {
@@ -252,6 +299,9 @@ export function ProductosPage() {
                 <th className="hidden px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 md:table-cell">
                   Tipo
                 </th>
+                <th className="hidden px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 lg:table-cell">
+                  Alcance
+                </th>
                 <th className="hidden px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-neutral-500 lg:table-cell">
                   Precio venta
                 </th>
@@ -269,7 +319,7 @@ export function ProductosPage() {
             <tbody className="divide-y divide-neutral-100">
               {data?.data.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-10 text-center text-neutral-500">
+                  <td colSpan={8} className="py-10 text-center text-neutral-500">
                     No se encontraron productos.
                   </td>
                 </tr>
@@ -287,6 +337,9 @@ export function ProductosPage() {
                     <td className="px-4 py-3 font-medium text-neutral-900">{p.nombre}</td>
                     <td className="hidden px-4 py-3 md:table-cell">
                       <TipoBadge tipo={p.tipo} />
+                    </td>
+                    <td className="hidden px-4 py-3 lg:table-cell">
+                      {p.tipo === "PRODUCTO" && <AlcanceBadge alcance={p.alcance} />}
                     </td>
                     <td className="hidden px-4 py-3 text-right text-neutral-700 lg:table-cell">
                       S/ {Number(p.precio_venta).toFixed(2)}

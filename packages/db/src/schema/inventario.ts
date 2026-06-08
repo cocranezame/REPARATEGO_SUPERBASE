@@ -1,4 +1,5 @@
 import {
+  AlcanceRepuesto,
   NivelTasaPrecio,
   TasaTipo,
   TipoMovimiento,
@@ -24,6 +25,7 @@ import { categoria, componente, marca, modelo } from "./catalogos.js";
 import { sucursal, tenant, usuario } from "./seguridad.js";
 
 export const tipoProductoEnum = pgEnum("tipo_producto", TipoProducto);
+export const alcanceRepuestoEnum = pgEnum("alcance_repuesto", AlcanceRepuesto);
 export const tipoMovimientoEnum = pgEnum("tipo_movimiento", TipoMovimiento);
 export const nivelTasaPrecioEnum = pgEnum("nivel_tasa_precio", NivelTasaPrecio);
 export const tipoRegistroTasaEnum = pgEnum("tipo_registro_tasa", TipoRegistroTasa);
@@ -38,6 +40,7 @@ export const producto = pgTable(
       .references(() => tenant.id),
     codigo: varchar("codigo", { length: 30 }).notNull(),
     tipo: tipoProductoEnum("tipo").notNull(),
+    alcance: alcanceRepuestoEnum("alcance"),
     nombre: varchar("nombre", { length: 200 }).notNull(),
     descripcion: text("descripcion"),
     categoria_id: uuid("categoria_id")

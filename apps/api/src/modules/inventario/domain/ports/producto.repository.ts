@@ -1,9 +1,10 @@
-import type { TipoProducto } from "@kallpasoft/shared";
+import type { AlcanceRepuesto, TipoProducto } from "@kallpasoft/shared";
 import type { Producto } from "../entities/producto.js";
 import type { ProductoCompatibilidad } from "../entities/producto-compatibilidad.js";
 
 export type CreateProductoData = {
   tipo: TipoProducto;
+  alcance?: AlcanceRepuesto;
   nombre: string;
   descripcion?: string;
   categoria_id: string;
@@ -17,6 +18,7 @@ export type CreateProductoData = {
 };
 
 export type UpdateProductoData = {
+  alcance?: AlcanceRepuesto | null;
   nombre?: string;
   descripcion?: string | null;
   categoria_id?: string;

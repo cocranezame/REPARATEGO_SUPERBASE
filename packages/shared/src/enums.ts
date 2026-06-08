@@ -52,6 +52,14 @@ export const TipoProducto = {
 } as const;
 export type TipoProducto = (typeof TipoProducto)[keyof typeof TipoProducto];
 
+export const AlcanceRepuesto = {
+  GLOBAL: "GLOBAL",
+  CATEGORIA: "CATEGORIA",
+  MARCA: "MARCA",
+  COMPATIBILIDAD: "COMPATIBILIDAD",
+} as const;
+export type AlcanceRepuesto = (typeof AlcanceRepuesto)[keyof typeof AlcanceRepuesto];
+
 export const TipoMovimiento = {
   INGRESO: "INGRESO",
   VENTA: "VENTA",

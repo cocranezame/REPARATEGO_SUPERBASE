@@ -1,4 +1,5 @@
 import {
+  AlcanceRepuesto,
   NivelTasaPrecio,
   TasaTipo,
   TipoMovimiento,
@@ -10,6 +11,7 @@ import { uuidSchema } from "./common.js";
 
 export const createProductoSchema = z.object({
   tipo: z.nativeEnum(TipoProducto),
+  alcance: z.nativeEnum(AlcanceRepuesto).optional(),
   nombre: z.string().min(1).max(200),
   descripcion: z.string().optional(),
   categoria_id: uuidSchema,

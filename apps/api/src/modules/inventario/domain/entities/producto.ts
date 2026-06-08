@@ -1,10 +1,11 @@
-import type { TipoProducto } from "@kallpasoft/shared";
+import type { AlcanceRepuesto, TipoProducto } from "@kallpasoft/shared";
 
 export type Producto = {
   id: string;
   tenant_id: string;
   codigo: string;
   tipo: TipoProducto;
+  alcance: AlcanceRepuesto | null;
   nombre: string;
   descripcion: string | null;
   categoria_id: string;

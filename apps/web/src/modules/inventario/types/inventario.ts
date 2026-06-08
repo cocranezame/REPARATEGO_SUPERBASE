@@ -3,6 +3,7 @@ export type ProductoDto = {
   tenant_id: string;
   codigo: string;
   tipo: "PRODUCTO" | "SERVICIO";
+  alcance: "GLOBAL" | "CATEGORIA" | "MARCA" | "COMPATIBILIDAD" | null;
   nombre: string;
   descripcion: string | null;
   categoria_id: string;

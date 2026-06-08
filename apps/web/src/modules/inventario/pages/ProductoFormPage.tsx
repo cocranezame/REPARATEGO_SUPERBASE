@@ -20,6 +20,7 @@ import {
 
 const productoFormSchema = z.object({
   tipo: z.enum(["PRODUCTO", "SERVICIO"] as const),
+  alcance: z.enum(["GLOBAL", "CATEGORIA", "MARCA", "COMPATIBILIDAD"] as const).optional(),
   nombre: z.string().min(1, "Requerido").max(200),
   descripcion: z.string().optional(),
   categoria_id: z.string().min(1, "Requerido"),
@@ -218,6 +219,7 @@ export function ProductoFormPage() {
     resolver: zodResolver(productoFormSchema),
     defaultValues: {
       tipo: "PRODUCTO",
+      alcance: "GLOBAL",
       nombre: "",
       descripcion: "",
       categoria_id: "",
@@ -235,6 +237,7 @@ export function ProductoFormPage() {
     if (existing !== undefined) {
       reset({
         tipo: existing.tipo,
+        alcance: existing.alcance ?? "GLOBAL",
         nombre: existing.nombre,
         descripcion: existing.descripcion ?? "",
         categoria_id: existing.categoria_id,
@@ -280,6 +283,7 @@ export function ProductoFormPage() {
       const body = {
         id: id ?? "",
         nombre: values.nombre,
+        ...(values.tipo === "PRODUCTO" && values.alcance ? { alcance: values.alcance } : {}),
         ...(values.descripcion && values.descripcion !== ""
           ? { descripcion: values.descripcion }
           : {}),
@@ -303,6 +307,7 @@ export function ProductoFormPage() {
     } else {
       const body = {
         tipo: values.tipo,
+        ...(values.tipo === "PRODUCTO" ? { alcance: values.alcance ?? "GLOBAL" } : {}),
         nombre: values.nombre,
         categoria_id: values.categoria_id,
         precio_venta: precioVentaNum,
@@ -404,6 +409,21 @@ export function ProductoFormPage() {
                   <option value="SERVICIO">Servicio</option>
                 </select>
               </div>
+
+              {/* alcance — solo PRODUCTO */}
+              {tipo === "PRODUCTO" && (
+                <div className="col-span-2 flex flex-col gap-1 sm:col-span-1">
+                  <label htmlFor="pf-alcance" className={LABEL}>
+                    Alcance <span className="text-danger-500">*</span>
+                  </label>
+                  <select id="pf-alcance" className={SELECT} {...register("alcance")}>
+                    <option value="GLOBAL">Global (cualquier categoría)</option>
+                    <option value="CATEGORIA">Por categoría</option>
+                    <option value="MARCA">Por marca</option>
+                    <option value="COMPATIBILIDAD">Por compatibilidad (modelo)</option>
+                  </select>
+                </div>
+              )}
 
               {/* nombre */}
               <div className="col-span-2 flex flex-col gap-1 sm:col-span-1">

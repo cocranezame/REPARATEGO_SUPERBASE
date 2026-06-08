@@ -409,23 +409,6 @@ export function createInventarioHandlers(
     return c.json({ success: true, data });
   }
 
-  // ── GRUPO 5: WhatsApp ─────────────────────────────────────────────────────
-
-  async function getMensajeWhatsappHandler(c: HonoCtx) {
-    const cotizacionId = c.req.param("id") as string;
-    const detalleId = c.req.param("detalleId") as string;
-    const tenantId = c.get("tenantId");
-    try {
-      const result = await stockRepo.getMensajeWhatsapp(tenantId, cotizacionId, detalleId);
-      return c.json({ success: true, data: result });
-    } catch (err) {
-      const msg = (err as Error).message;
-      if (msg.includes("no encontrado") || msg.includes("no tiene teléfono"))
-        throw new ApiError("WHATSAPP_ERROR", msg, 422);
-      throw err;
-    }
-  }
-
   return {
     getDashboard: getDashboardHandler,
     getStockAlertas: getStockAlertasHandler,
@@ -453,6 +436,5 @@ export function createInventarioHandlers(
     listMovimientos: listMovimientosHandler,
     createMovimiento: createMovimientoHandler,
     getProveedoresSugeridos: getProveedoresSugeridosHandler,
-    getMensajeWhatsapp: getMensajeWhatsappHandler,
   };
 }

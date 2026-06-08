@@ -6,9 +6,9 @@ import type { HonoVariables } from "../../../types/context.js";
 import { CotizacionCompraDrizzleRepository } from "../infra/repositories/cotizacion-compra.drizzle.js";
 import { createCotizacionCompraHandlers } from "./handlers.js";
 import {
-  cotizarCotizacionSchema,
   createCotizacionCompraSchema,
   listCotizacionesQuerySchema,
+  updateCotizacionCompraSchema,
 } from "./validators.js";
 
 const repo = new CotizacionCompraDrizzleRepository(getDb());
@@ -31,7 +31,9 @@ cotizacionCompraRoutes.post(
 );
 cotizacionCompraRoutes.get("/cotizaciones-compra/:id", h.getById);
 cotizacionCompraRoutes.put(
-  "/cotizaciones-compra/:id/cotizar",
-  validateBody(cotizarCotizacionSchema),
-  h.cotizar
+  "/cotizaciones-compra/:id",
+  validateBody(updateCotizacionCompraSchema),
+  h.update
 );
+cotizacionCompraRoutes.delete("/cotizaciones-compra/:id", h.remove);
+cotizacionCompraRoutes.get("/cotizaciones-compra/:id/whatsapp", h.getWhatsapp);

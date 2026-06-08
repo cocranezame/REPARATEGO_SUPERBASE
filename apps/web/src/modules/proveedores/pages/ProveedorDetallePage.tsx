@@ -1271,7 +1271,7 @@ function LineasTab({ proveedorId }: { proveedorId: string }) {
 const TABS = [
   { id: "contactos" as const, label: "Contactos" },
   { id: "metodos-pago" as const, label: "Métodos de pago" },
-  { id: "lineas" as const, label: "Líneas" },
+  { id: "lineas" as const, label: "Líneas que abastecen" },
 ];
 type TabId = (typeof TABS)[number]["id"];
 

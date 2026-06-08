@@ -20,7 +20,6 @@ import type {
   LoteResponse,
   LotesListResponse,
   LotesParams,
-  MensajeWhatsappResponse,
   MetodoPagoResponse,
   MetodosPagoListResponse,
   MovimientoResponse,
@@ -156,19 +155,6 @@ export function useProveedoresSugeridos(productoId: string) {
         `/inventario/cotizaciones/proveedores-sugeridos/${productoId}`
       ),
     enabled: productoId !== "",
-  });
-}
-
-// ─── Mensaje WhatsApp ──────────────────────────────────────────────────────────
-
-export function useMensajeWhatsapp(cotizacionId: string, detalleId: string) {
-  return useQuery<MensajeWhatsappResponse>({
-    queryKey: ["inventario-mensaje-whatsapp", cotizacionId, detalleId],
-    queryFn: () =>
-      apiClient.get<MensajeWhatsappResponse>(
-        `/inventario/cotizaciones/${cotizacionId}/mensaje-whatsapp/${detalleId}`
-      ),
-    enabled: cotizacionId !== "" && detalleId !== "",
   });
 }
 

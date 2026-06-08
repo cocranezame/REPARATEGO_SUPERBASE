@@ -712,3 +712,46 @@ C021 cambió `deleteWaCuenta` de hard delete a soft delete (`activo = false`) po
 - `apps/web/src/modules/inventario/pages/ProductoFormPage.tsx` — inputs de precio eliminados del form schema, defaultValues, reset y onSubmit; reemplazados por panel `PreciosInfo` (solo lectura) que muestra los valores actuales con nota de origen
 
 **Regla:** `precio_venta` y `precio_compra` nunca se envían desde el form de repuesto. Solo se actualizan desde los servicios de Tasas y Movimientos de Ingreso respectivamente.
+
+---
+
+## C029 — 2026-06-08
+
+**ID:** C029
+**Afecta:** compras, db, web, inventario
+
+**Contexto:** E6 — Rediseño radical de cotizaciones
+
+**Regla de negocio establecida:**
+- Una cotización = selección de un proveedor para un repuesto con su precio. No tiene estado, ni multi-ítem, ni fechas.
+- Los proveedores tienen "Líneas que abastecen" (categoría + componente) para filtrar cuáles pueden atender un repuesto.
+- Al crear cotización: seleccionar repuesto → ver proveedores sugeridos por líneas → enviar WhatsApp → registrar precio.
+
+**Problema:** `cotizacion_compra` era un documento multi-ítem con estado (PENDIENTE/COTIZADA), `cotizacion_compra_detalle` con los repuestos, y `estado_cotizacion_compra` enum. Esto era innecesariamente complejo para la necesidad real: registrar el precio de un proveedor para un repuesto.
+
+**Correcciones aplicadas:**
+
+**DB:**
+- `packages/db/drizzle/0024_simplify_cotizacion.sql` — migración: TRUNCATE + DROP detalle, DROP columnas viejas, ADD `producto_id UUID NOT NULL` + `precio_unitario DECIMAL(12,2)`, UNIQUE INDEX `(tenant_id, proveedor_id, producto_id)`, DROP ENUM `estado_cotizacion_compra`
+- `packages/db/src/schema/compras.ts` — tabla simplificada a: id, tenant_id, proveedor_id, producto_id, precio_unitario, notas, timestamps; sin `cotizacionCompraDetalle`, sin `estadoCotizacionCompraEnum`
+
+**Validators:**
+- `packages/validators/src/compras.ts` — `createCotizacionCompraSchema`: solo proveedor_id, producto_id, precio_unitario?, notas?; `updateCotizacionCompraSchema`: precio_unitario?, notas?; eliminados todos los tipos viejos (EstadoCotizacionCompra, CreateCotizacionCompraDetalleInput, etc.)
+
+**API:**
+- `apps/api/src/modules/cotizaciones-compra/domain/entities/cotizacion-compra.ts` — entidad simplificada
+- `apps/api/src/modules/cotizaciones-compra/domain/ports/cotizacion-compra.repository.ts` — interfaz con: list, findById, create, update, delete, getWhatsapp
+- `apps/api/src/modules/cotizaciones-compra/infra/repositories/cotizacion-compra.drizzle.ts` — implementación completa con getWhatsapp (genera URL `wa.me` desde teléfono del proveedor/contacto)
+- `apps/api/src/modules/cotizaciones-compra/http/` — handlers, validators y routes reescritos; POST devuelve 409 si ya existe (proveedor+producto)
+- `apps/api/src/modules/inventario/infra/repositories/stock.drizzle.ts` — `cotizaciones_pendientes` del dashboard ahora cuenta `IS NULL precio_unitario` en lugar de `estado='PENDIENTE'`
+- `apps/api/src/modules/inventario/http/` — eliminado `getMensajeWhatsappHandler` y ruta `GET /inventario/cotizaciones/:id/mensaje-whatsapp/:detalleId`
+
+**Web:**
+- `apps/web/src/modules/compras/types/cotizacion.ts` — tipos simplificados
+- `apps/web/src/modules/compras/hooks/useCotizaciones.ts` — hooks para el nuevo modelo
+- `apps/web/src/modules/compras/pages/CotizacionesPage.tsx` — flujo: buscar repuesto → ver proveedores sugeridos (seguros/posibles) → WhatsApp por proveedor → registrar precio; lista con editar/eliminar
+- `apps/web/src/modules/compras/pages/ComparadorPage.tsx` — adaptado al nuevo modelo (sin estado, sin detalles; filtra por precio_unitario IS NOT NULL)
+- `apps/web/src/modules/proveedores/pages/ProveedorDetallePage.tsx` — tab "Líneas" renombrado a "Líneas que abastecen"
+- `apps/web/src/modules/inventario/hooks/useInventario.ts` — eliminado `useMensajeWhatsapp` (endpoint ya no existe)
+
+**Regla:** `cotizacion_compra` tiene exactamente una fila por (tenant, proveedor, repuesto). No hay estados. `precio_unitario` NULL = sin precio aún. El WhatsApp se genera client-side con el teléfono del proveedor sugerido.

@@ -189,10 +189,3 @@ inventarioRoutes.get(
   authorize("ADMIN", "ALMACEN"),
   h.getProveedoresSugeridos
 );
-
-// ── GRUPO 5: Mensaje WhatsApp (I10) ───────────────────────────────────────────
-inventarioRoutes.get(
-  "/inventario/cotizaciones/:id/mensaje-whatsapp/:detalleId",
-  authorize("ADMIN", "ALMACEN"),
-  h.getMensajeWhatsapp
-);

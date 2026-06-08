@@ -181,7 +181,7 @@ export function DashboardInventarioPage() {
               <QuickLink
                 to="/inventario/productos"
                 icon={<Package className="h-4 w-4" />}
-                label="Productos"
+                label="Repuestos"
               />
               <QuickLink
                 to="/inventario/stock"

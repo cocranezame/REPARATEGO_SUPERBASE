@@ -125,7 +125,7 @@ const NAV_GROUPS: NavGroup[] = [
     activePrefix: "/inventario",
     items: [
       { label: "Dashboard", to: "/inventario", icon: <Package className="h-5 w-5" />, end: true },
-      { label: "Productos", to: "/inventario/productos", icon: <Package className="h-5 w-5" /> },
+      { label: "Repuestos", to: "/inventario/productos", icon: <Package className="h-5 w-5" /> },
       {
         label: "Stock y alertas",
         to: "/inventario/stock",
@@ -307,7 +307,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   clientes: "Clientes",
   proveedores: "Proveedores",
   inventario: "Inventario",
-  productos: "Productos",
+  productos: "Repuestos",
   compras: "Compras",
   cotizaciones: "Cotizaciones",
   comparar: "Comparador",

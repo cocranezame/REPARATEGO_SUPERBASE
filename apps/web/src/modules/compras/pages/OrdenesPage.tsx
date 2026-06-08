@@ -161,7 +161,7 @@ function GenerarOcModal({ onClose }: { onClose: () => void }) {
             {/* Items */}
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium text-neutral-700">Productos a ordenar</span>
+                <span className="text-xs font-medium text-neutral-700">Repuestos a ordenar</span>
                 <button
                   type="button"
                   onClick={addItem}

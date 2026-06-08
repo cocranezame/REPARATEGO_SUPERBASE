@@ -133,7 +133,7 @@ function CompatibilidadesSection({ productoId }: { productoId: string }) {
   return (
     <div className="space-y-4">
       <p className="text-sm text-neutral-500">
-        Marca los modelos compatibles con este producto. Se reemplazarán todas las compatibilidades
+        Marca los modelos compatibles con este repuesto. Se reemplazarán todas las compatibilidades
         al guardar.
       </p>
 
@@ -359,7 +359,7 @@ export function ProductoFormPage() {
         </button>
         <div>
           <h1 className="text-xl font-semibold text-neutral-900">
-            {isEdit ? "Editar producto" : "Nuevo producto"}
+            {isEdit ? "Editar repuesto" : "Nuevo repuesto"}
           </h1>
           {isEdit && existing !== undefined && (
             <p className="text-sm text-neutral-500">{existing.codigo}</p>
@@ -405,7 +405,7 @@ export function ProductoFormPage() {
                   Tipo
                 </label>
                 <select id="pf-tipo" className={SELECT} {...register("tipo")} disabled={isEdit}>
-                  <option value="PRODUCTO">Producto</option>
+                  <option value="PRODUCTO">Repuesto</option>
                   <option value="SERVICIO">Servicio</option>
                 </select>
               </div>
@@ -450,7 +450,7 @@ export function ProductoFormPage() {
                 <textarea
                   id="pf-desc"
                   rows={2}
-                  placeholder="Descripción del producto..."
+                  placeholder="Descripción..."
                   className={`${INPUT} resize-none`}
                   {...register("descripcion")}
                 />
@@ -634,7 +634,7 @@ export function ProductoFormPage() {
             <CompatibilidadesSection productoId={editId} />
           ) : (
             <p className="text-sm text-neutral-500">
-              Guarda el producto primero para agregar compatibilidades.
+              Guarda el repuesto primero para agregar compatibilidades.
             </p>
           )}
         </div>

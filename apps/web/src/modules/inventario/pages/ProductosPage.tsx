@@ -15,7 +15,7 @@ const SELECT =
 function TipoBadge({ tipo }: { tipo: "PRODUCTO" | "SERVICIO" }) {
   return tipo === "PRODUCTO" ? (
     <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-      Producto
+      Repuesto
     </span>
   ) : (
     <span className="inline-flex items-center rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700">
@@ -164,7 +164,7 @@ export function ProductosPage() {
     <div className="space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-neutral-900">Productos</h1>
+        <h1 className="text-xl font-semibold text-neutral-900">Repuestos</h1>
         {puedeEscribir && (
           <button
             type="button"
@@ -172,7 +172,7 @@ export function ProductosPage() {
             className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
           >
             <Plus className="h-4 w-4" />
-            Nuevo producto
+            Nuevo repuesto
           </button>
         )}
       </div>
@@ -198,8 +198,8 @@ export function ProductosPage() {
           }}
           className={SELECT}
         >
-          <option value="">Producto + Servicio</option>
-          <option value="PRODUCTO">Producto</option>
+          <option value="">Repuesto + Servicio</option>
+          <option value="PRODUCTO">Repuesto</option>
           <option value="SERVICIO">Servicio</option>
         </select>
         {(filterTipo === "PRODUCTO" || filterTipo === "") && (
@@ -283,7 +283,7 @@ export function ProductosPage() {
         )}
         {isError && (
           <p className="py-8 text-center text-sm text-danger-600">
-            Error al cargar productos. Intenta recargar la página.
+            Error al cargar repuestos. Intenta recargar la página.
           </p>
         )}
         {!isLoading && !isError && (
@@ -320,7 +320,7 @@ export function ProductosPage() {
               {data?.data.length === 0 && (
                 <tr>
                   <td colSpan={8} className="py-10 text-center text-neutral-500">
-                    No se encontraron productos.
+                    No se encontraron repuestos.
                   </td>
                 </tr>
               )}
@@ -391,7 +391,7 @@ export function ProductosPage() {
       {meta !== undefined && meta.total > 0 && (
         <div className="flex items-center justify-between text-sm text-neutral-500">
           <span>
-            {meta.total} producto{meta.total !== 1 ? "s" : ""}
+            {meta.total} repuesto{meta.total !== 1 ? "s" : ""}
           </span>
           <div className="flex items-center gap-2">
             <button

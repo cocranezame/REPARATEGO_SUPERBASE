@@ -1,7 +1,10 @@
 import { ArrowLeft, ArrowRight, Check, Plus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useCategorias } from "../../catalogos/hooks/useCategorias";
+import { useMarcas } from "../../catalogos/hooks/useMarcas";
 import { useClientes } from "../../clientes/hooks/useClientes";
+import { useProductos } from "../../inventario/hooks/useProductos";
 import {
   useCostosRevision,
   useCreateInstancia,
@@ -33,7 +36,9 @@ export function NuevaOrdenPage() {
   // Step 1 — Instancia
   const [instancia, setInstancia] = useState<Instancia | null>(null);
   const [showNewInstancia, setShowNewInstancia] = useState(false);
-  const [newProductoId, setNewProductoId] = useState("");
+  const [newCategoriaId, setNewCategoriaId] = useState("");
+  const [newMarcaId, setNewMarcaId] = useState("");
+  const [selectedProductoId, setSelectedProductoId] = useState("");
   const [newNumeroSerie, setNewNumeroSerie] = useState("");
 
   // Step 2 — Orden
@@ -49,6 +54,15 @@ export function NuevaOrdenPage() {
   const { data: instanciasData, isLoading: instanciasLoading } = useInstancias({
     cliente_id: clienteId,
     pageSize: 50,
+  });
+  const { data: categoriasData } = useCategorias({ activo: true, pageSize: 100 });
+  const { data: marcasData } = useMarcas({ activo: true, pageSize: 100 });
+  const { data: productosData } = useProductos({
+    ...(newCategoriaId ? { categoria_id: newCategoriaId } : {}),
+    ...(newMarcaId ? { marca_id: newMarcaId } : {}),
+    activo: true,
+    pageSize: 100,
+    enabled: newCategoriaId !== "" && newMarcaId !== "",
   });
   const { data: costosData } = useCostosRevision();
   const createInstancia = useCreateInstancia();
@@ -69,20 +83,22 @@ export function NuevaOrdenPage() {
   }
 
   async function handleCrearInstancia() {
-    if (!newProductoId) {
-      setServerError("El ID de producto es obligatorio");
+    if (!selectedProductoId) {
+      setServerError("Selecciona un producto");
       return;
     }
     setServerError(null);
     try {
       const result = await createInstancia.mutateAsync({
         cliente_id: clienteId,
-        producto_id: newProductoId,
+        producto_id: selectedProductoId,
         ...(newNumeroSerie ? { numero_serie: newNumeroSerie } : {}),
       });
       setInstancia(result.data);
       setShowNewInstancia(false);
-      setNewProductoId("");
+      setNewCategoriaId("");
+      setNewMarcaId("");
+      setSelectedProductoId("");
       setNewNumeroSerie("");
     } catch (err) {
       setServerError((err as Error).message);
@@ -266,23 +282,67 @@ export function NuevaOrdenPage() {
               <div className="rounded-lg border border-neutral-200 p-4 space-y-3">
                 <h3 className="text-sm font-semibold text-neutral-800">Nuevo equipo</h3>
                 <div className="flex flex-col gap-1">
-                  <label
-                    htmlFor="inst-producto-id"
-                    className="text-xs font-medium text-neutral-700"
-                  >
-                    ID de Producto (UUID) <span className="text-red-500">*</span>
+                  <label htmlFor="inst-categoria" className="text-xs font-medium text-neutral-700">
+                    Categoría <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    id="inst-producto-id"
-                    type="text"
-                    value={newProductoId}
-                    onChange={(e) => setNewProductoId(e.target.value)}
-                    placeholder="UUID del modelo de dispositivo"
-                    className={INPUT}
-                  />
-                  <p className="text-xs text-neutral-400">
-                    Ingresa el UUID del modelo de producto del catálogo
-                  </p>
+                  <select
+                    id="inst-categoria"
+                    value={newCategoriaId}
+                    onChange={(e) => {
+                      setNewCategoriaId(e.target.value);
+                      setNewMarcaId("");
+                      setSelectedProductoId("");
+                    }}
+                    className={SELECT}
+                  >
+                    <option value="">Selecciona una categoría</option>
+                    {(categoriasData?.data ?? []).map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="inst-marca" className="text-xs font-medium text-neutral-700">
+                    Marca <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="inst-marca"
+                    value={newMarcaId}
+                    disabled={newCategoriaId === ""}
+                    onChange={(e) => {
+                      setNewMarcaId(e.target.value);
+                      setSelectedProductoId("");
+                    }}
+                    className={SELECT}
+                  >
+                    <option value="">Selecciona una marca</option>
+                    {(marcasData?.data ?? []).map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="inst-producto" className="text-xs font-medium text-neutral-700">
+                    Producto <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="inst-producto"
+                    value={selectedProductoId}
+                    disabled={newMarcaId === ""}
+                    onChange={(e) => setSelectedProductoId(e.target.value)}
+                    className={SELECT}
+                  >
+                    <option value="">Selecciona un producto</option>
+                    {(productosData?.data ?? []).map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.nombre}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="flex flex-col gap-1">
                   <label htmlFor="inst-serie" className="text-xs font-medium text-neutral-700">
@@ -315,7 +375,7 @@ export function NuevaOrdenPage() {
                   </button>
                   <button
                     type="button"
-                    disabled={createInstancia.isPending}
+                    disabled={createInstancia.isPending || selectedProductoId === ""}
                     onClick={handleCrearInstancia}
                     className="rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
                   >

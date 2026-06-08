@@ -636,6 +636,38 @@ C006 (2026-06-02) documentó que se necesitaba `ALTER TYPE canal_servicio ADD VA
 
 ---
 
+## C026 — 2026-06-08
+
+**ID:** C026
+**Afecta:** inventario, servicios, db, web
+
+**Contexto:** E4 — Alcance de repuesto para cotización de servicios
+
+**Problema — `buscarPresupuesto` no filtraba repuestos por contexto de la instancia:**
+Al cotizar un servicio, la lista de repuestos disponibles incluía todos los productos del tenant sin considerar la categoría, marca o modelo del equipo del cliente. Esto generaba listas largas con repuestos irrelevantes, incrementando el riesgo de errores del vendedor.
+
+**Decisión de diseño — campo `alcance` explícito vs. inferencia por joins:**
+Se optó por un campo `alcance` en la tabla `producto` (GLOBAL/CATEGORIA/MARCA/COMPATIBILIDAD) en lugar de inferir el nivel dinámicamente desde las relaciones de `categoria_id`, `marca_id` y `producto_compatibilidad`. Ventajas: determinista, fácil de filtrar con un WHERE simple, visible en el UI sin joins adicionales.
+
+**Correcciones aplicadas:**
+- `packages/db/drizzle/0022_alcance_repuesto.sql` — `CREATE TYPE alcance_repuesto AS ENUM (...)` + `ALTER TABLE producto ADD COLUMN alcance alcance_repuesto DEFAULT 'GLOBAL'`
+- `packages/shared/src/enums.ts` — enum `AlcanceRepuesto` (GLOBAL/CATEGORIA/MARCA/COMPATIBILIDAD)
+- `packages/db/src/schema/inventario.ts` — `alcanceRepuestoEnum` + columna `alcance` en tabla `producto`
+- `packages/validators/src/inventario.ts` — `alcance: z.nativeEnum(AlcanceRepuesto).optional()` en `createProductoSchema`
+- `apps/api/src/modules/inventario/domain/entities/producto.ts` — campo `alcance: AlcanceRepuesto | null`
+- `apps/api/src/modules/inventario/domain/ports/producto.repository.ts` — `alcance?` en `CreateProductoData` y `UpdateProductoData`
+- `apps/api/src/modules/inventario/infra/repositories/producto.drizzle.ts` — persiste `alcance` en create y update
+- `apps/api/src/modules/servicios/infra/repositories/servicio.drizzle.ts` → `buscarPresupuesto()` reescrito con condiciones `or(isNull, eq GLOBAL, eq CATEGORIA, eq MARCA)` + subquery Drizzle para COMPATIBILIDAD. También corrige bug: mapeo `"REPUESTO"→"PRODUTO"` que hacía que el tipo param nunca coincidiera con el enum DB
+- `apps/web/src/modules/inventario/types/inventario.ts` — `alcance` en `ProductoDto`
+- `apps/web/src/modules/inventario/pages/ProductoFormPage.tsx` — select alcance (solo tipo=PRODUCTO), incluido en create y update body
+- `apps/web/src/modules/inventario/pages/ProductosPage.tsx` — `AlcanceBadge` coloreado, columna alcance en tabla, filtro por alcance
+
+**Bug colateral corregido:** `buscarPresupuesto` recibía `params.tipo = "REPUESTO"` (TipoItemCotizacion) pero comparaba contra el enum DB `"PRODUCTO"`. El nuevo código mapea explícitamente antes del WHERE.
+
+**Regla:** Todo producto tipo PRODUCTO debe tener `alcance` definido. El default GLOBAL garantiza compatibilidad con productos creados antes de la migración.
+
+---
+
 ## C025 — 2026-06-07
 
 **ID:** C025

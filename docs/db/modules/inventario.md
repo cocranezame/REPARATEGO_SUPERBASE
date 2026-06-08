@@ -13,6 +13,7 @@
 | tenant_id | UUID | NO | | FK → tenant.id |
 | codigo | VARCHAR(30) | NO | | Autogenerado: PRD-XXXX o SRV-XXXX |
 | tipo | VARCHAR(10) | NO | | PRODUCTO, SERVICIO |
+| alcance | ENUM | SI | 'GLOBAL' | Solo tipo PRODUCTO. GLOBAL / CATEGORIA / MARCA / COMPATIBILIDAD |
 | nombre | VARCHAR(200) | NO | | |
 | descripcion | TEXT | SI | | |
 | categoria_id | UUID | NO | | FK → categoria.id |
@@ -131,8 +132,27 @@ Registro de toda entrada/salida de stock.
 
 ```sql
 CREATE TYPE tipo_producto AS ENUM ('PRODUCTO', 'SERVICIO');
+CREATE TYPE alcance_repuesto AS ENUM ('GLOBAL', 'CATEGORIA', 'MARCA', 'COMPATIBILIDAD');
 CREATE TYPE tipo_movimiento AS ENUM ('INGRESO', 'VENTA', 'SERVICIO', 'MERMA', 'REAJUSTE', 'TRANSFERENCIA');
 ```
+
+**`alcance_repuesto`** — Determina en qué contexto de cotización aparece un repuesto:
+- **GLOBAL**: visible para cualquier categoría
+- **CATEGORIA**: solo para órdenes de la misma categoría del producto
+- **MARCA**: solo para órdenes de la misma marca
+- **COMPATIBILIDAD**: solo si el modelo de la instancia aparece en `producto_compatibilidad`
+
+Agregado en migración `0022_alcance_repuesto.sql`.
+
+## Reglas de negocio — Alcance de repuesto
+
+Al buscar repuestos para cotizar un servicio (`buscarPresupuesto`), el sistema filtra los productos tipo PRODUCTO según su `alcance` y los datos de la instancia (categoría, marca, modelo):
+- Se incluyen siempre los **GLOBAL** (o `alcance IS NULL`)
+- Se incluyen los **CATEGORIA** donde `producto.categoria_id = instancia.categoria_id`
+- Se incluyen los **MARCA** donde `producto.marca_id = instancia.marca_id`
+- Se incluyen los **COMPATIBILIDAD** donde existe fila en `producto_compatibilidad` con `modelo_id = instancia.modelo_id`
+
+Implementado como subquery Drizzle en `servicio.drizzle.ts → buscarPresupuesto()`.
 
 ## Reglas de negocio
 

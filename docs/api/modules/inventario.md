@@ -9,7 +9,8 @@
 - Query: `?tipo=&categoria_id=&componente_id=&marca_id=&search=&activo=true&page=1&pageSize=20`
 
 ### POST /api/v1/productos
-- Body: `{ tipo, nombre, descripcion?, categoria_id, componente_id?, marca_id?, unidad_medida?, precio_compra?, precio_venta, stock_minimo?, imagen_url? }`
+- Body: `{ tipo, alcance?, nombre, descripcion?, categoria_id, componente_id?, marca_id?, unidad_medida?, precio_compra?, precio_venta, stock_minimo?, imagen_url? }`
+- `alcance` solo aplica para tipo PRODUCTO: `GLOBAL | CATEGORIA | MARCA | COMPATIBILIDAD` (default GLOBAL)
 - Código autogenerado: PRD-XXXX o SRV-XXXX según tipo
 
 ### GET /api/v1/productos/:id
@@ -66,6 +67,15 @@
 ### POST /api/v1/movimientos
 - Body: `{ producto_id, lote_id?, sucursal_id, tipo, cantidad, referencia_tipo?, referencia_id?, notas? }`
 - Solo para MERMA, REAJUSTE, TRANSFERENCIA (los demás se crean automáticamente)
+
+## Filtrado por alcance — buscarPresupuesto (C026)
+
+`GET /api/v1/servicios/:id/presupuesto?tipo=REPUESTO|SERVICIO` ya usa `alcance` para filtrar qué productos devuelve:
+- Incluye GLOBAL siempre
+- Incluye CATEGORIA si `categoria_id` del presupuesto coincide
+- Incluye MARCA si `marca_id` coincide
+- Incluye COMPATIBILIDAD via subquery `producto_compatibilidad` donde `modelo_id` coincide
+- El campo `nivel_alcance` en la respuesta refleja el `alcance` guardado en el producto (no se infiere por joins)
 
 ## Endpoints nuevos C004
 

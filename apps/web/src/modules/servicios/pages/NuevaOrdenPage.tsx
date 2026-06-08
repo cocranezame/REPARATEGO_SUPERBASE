@@ -1,8 +1,9 @@
 import { ArrowLeft, ArrowRight, Check, Plus } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCategorias } from "../../catalogos/hooks/useCategorias";
-import { useMarcas } from "../../catalogos/hooks/useMarcas";
+import { useCategorias, useCreateCategoria } from "../../catalogos/hooks/useCategorias";
+import { useCreateMarca, useMarcas } from "../../catalogos/hooks/useMarcas";
+import { useCreateModelo, useModelos } from "../../catalogos/hooks/useModelos";
 import { useClientes } from "../../clientes/hooks/useClientes";
 import { useProductos } from "../../inventario/hooks/useProductos";
 import {
@@ -17,6 +18,12 @@ const INPUT =
   "w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none";
 const SELECT =
   "w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-primary-500 focus:outline-none";
+const BTN_INLINE =
+  "shrink-0 flex items-center gap-1 rounded-lg border border-primary-300 px-2.5 py-1.5 text-xs text-primary-600 hover:bg-primary-50";
+const BTN_SAVE =
+  "shrink-0 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60";
+const BTN_CANCEL =
+  "shrink-0 rounded-lg border border-neutral-300 px-3 py-1.5 text-xs text-neutral-700";
 
 const PASOS = ["Cliente", "Instancia", "Orden", "Confirmar"];
 
@@ -33,20 +40,28 @@ export function NuevaOrdenPage() {
   const [clienteId, setClienteId] = useState("");
   const [clienteNombre, setClienteNombre] = useState("");
 
-  // Step 1 — Instancia
+  // Step 1 — Instancia (selects en cascada)
   const [instancia, setInstancia] = useState<Instancia | null>(null);
   const [showNewInstancia, setShowNewInstancia] = useState(false);
   const [newCategoriaId, setNewCategoriaId] = useState("");
   const [newMarcaId, setNewMarcaId] = useState("");
-  const [selectedProductoId, setSelectedProductoId] = useState("");
+  const [selectedModeloId, setSelectedModeloId] = useState("");
   const [newNumeroSerie, setNewNumeroSerie] = useState("");
+
+  // Inline create toggles
+  const [showNuevaCategoria, setShowNuevaCategoria] = useState(false);
+  const [showNuevaMarca, setShowNuevaMarca] = useState(false);
+  const [showNuevoModelo, setShowNuevoModelo] = useState(false);
+  const [nuevaCategoriaNombre, setNuevaCategoriaNombre] = useState("");
+  const [nuevaMarcaNombre, setNuevaMarcaNombre] = useState("");
+  const [nuevoModeloNombre, setNuevoModeloNombre] = useState("");
 
   // Step 2 — Orden
   const [fallaIngreso, setFallaIngreso] = useState("");
   const [tipoServicio, setTipoServicio] = useState<TipoServicio>("CORRECTIVO");
   const [canal, setCanal] = useState<Canal>("TIENDA");
 
-  // Hooks
+  // ── Hooks ──────────────────────────────────────────────────────────────────
   const { data: clientesData } = useClientes({
     ...(searchCliente ? { search: searchCliente } : {}),
     pageSize: 50,
@@ -57,6 +72,13 @@ export function NuevaOrdenPage() {
   });
   const { data: categoriasData } = useCategorias({ activo: true, pageSize: 100 });
   const { data: marcasData } = useMarcas({ activo: true, pageSize: 100 });
+  const { data: modelosData } = useModelos({
+    ...(newCategoriaId ? { categoria_id: newCategoriaId } : {}),
+    ...(newMarcaId ? { marca_id: newMarcaId } : {}),
+    activo: true,
+    pageSize: 100,
+    enabled: newCategoriaId !== "" && newMarcaId !== "",
+  });
   const { data: productosData } = useProductos({
     ...(newCategoriaId ? { categoria_id: newCategoriaId } : {}),
     ...(newMarcaId ? { marca_id: newMarcaId } : {}),
@@ -65,11 +87,19 @@ export function NuevaOrdenPage() {
     enabled: newCategoriaId !== "" && newMarcaId !== "",
   });
   const { data: costosData } = useCostosRevision();
+  const createCategoria = useCreateCategoria();
+  const createMarca = useCreateMarca();
+  const createModelo = useCreateModelo();
   const createInstancia = useCreateInstancia();
   const createOrden = useCreateOrden();
 
   const instancias = instanciasData?.data ?? [];
   const costos = costosData?.data ?? [];
+
+  // Cuando hay modelo seleccionado, resuelve el primer producto que coincide con categoria + marca
+  const productoResuelto = selectedModeloId !== "" ? (productosData?.data?.[0] ?? null) : null;
+  const sinProducto =
+    selectedModeloId !== "" && productosData !== undefined && productoResuelto === null;
 
   const costoRevision = instancia?.categoria_id
     ? (costos.find((c) => c.categoria_id === instancia.categoria_id)?.monto ?? "0")
@@ -82,23 +112,74 @@ export function NuevaOrdenPage() {
     return true;
   }
 
+  // ── Handlers inline create ──────────────────────────────────────────────────
+
+  async function handleGuardarCategoria() {
+    if (!nuevaCategoriaNombre.trim()) return;
+    setServerError(null);
+    try {
+      const result = await createCategoria.mutateAsync({
+        nombre: nuevaCategoriaNombre.trim(),
+        orden: 0,
+      });
+      setNewCategoriaId(result.data.id);
+      setNewMarcaId("");
+      setSelectedModeloId("");
+      setShowNuevaCategoria(false);
+      setNuevaCategoriaNombre("");
+    } catch (err) {
+      setServerError((err as Error).message);
+    }
+  }
+
+  async function handleGuardarMarca() {
+    if (!nuevaMarcaNombre.trim()) return;
+    setServerError(null);
+    try {
+      const result = await createMarca.mutateAsync({ nombre: nuevaMarcaNombre.trim() });
+      setNewMarcaId(result.data.id);
+      setSelectedModeloId("");
+      setShowNuevaMarca(false);
+      setNuevaMarcaNombre("");
+    } catch (err) {
+      setServerError((err as Error).message);
+    }
+  }
+
+  async function handleGuardarModelo() {
+    if (!nuevoModeloNombre.trim() || !newMarcaId || !newCategoriaId) return;
+    setServerError(null);
+    try {
+      const result = await createModelo.mutateAsync({
+        nombre: nuevoModeloNombre.trim(),
+        marca_id: newMarcaId,
+        categoria_id: newCategoriaId,
+      });
+      setSelectedModeloId(result.data.id);
+      setShowNuevoModelo(false);
+      setNuevoModeloNombre("");
+    } catch (err) {
+      setServerError((err as Error).message);
+    }
+  }
+
   async function handleCrearInstancia() {
-    if (!selectedProductoId) {
-      setServerError("Selecciona un producto");
+    if (!productoResuelto) {
+      setServerError("No hay producto registrado para este modelo");
       return;
     }
     setServerError(null);
     try {
       const result = await createInstancia.mutateAsync({
         cliente_id: clienteId,
-        producto_id: selectedProductoId,
+        producto_id: productoResuelto.id,
         ...(newNumeroSerie ? { numero_serie: newNumeroSerie } : {}),
       });
       setInstancia(result.data);
       setShowNewInstancia(false);
       setNewCategoriaId("");
       setNewMarcaId("");
-      setSelectedProductoId("");
+      setSelectedModeloId("");
       setNewNumeroSerie("");
     } catch (err) {
       setServerError((err as Error).message);
@@ -121,6 +202,8 @@ export function NuevaOrdenPage() {
       setServerError((err as Error).message);
     }
   }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -279,71 +362,217 @@ export function NuevaOrdenPage() {
                 Registrar nuevo equipo
               </button>
             ) : (
-              <div className="rounded-lg border border-neutral-200 p-4 space-y-3">
+              <div className="rounded-lg border border-neutral-200 p-4 space-y-4">
                 <h3 className="text-sm font-semibold text-neutral-800">Nuevo equipo</h3>
+
+                {/* Categoría */}
                 <div className="flex flex-col gap-1">
                   <label htmlFor="inst-categoria" className="text-xs font-medium text-neutral-700">
                     Categoría <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    id="inst-categoria"
-                    value={newCategoriaId}
-                    onChange={(e) => {
-                      setNewCategoriaId(e.target.value);
-                      setNewMarcaId("");
-                      setSelectedProductoId("");
-                    }}
-                    className={SELECT}
-                  >
-                    <option value="">Selecciona una categoría</option>
-                    {(categoriasData?.data ?? []).map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nombre}
-                      </option>
-                    ))}
-                  </select>
+                  {!showNuevaCategoria ? (
+                    <div className="flex gap-2">
+                      <select
+                        id="inst-categoria"
+                        value={newCategoriaId}
+                        onChange={(e) => {
+                          setNewCategoriaId(e.target.value);
+                          setNewMarcaId("");
+                          setSelectedModeloId("");
+                        }}
+                        className={SELECT}
+                      >
+                        <option value="">Selecciona una categoría</option>
+                        {(categoriasData?.data ?? []).map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.nombre}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setShowNuevaCategoria(true)}
+                        className={BTN_INLINE}
+                      >
+                        <Plus className="h-3 w-3" /> Nueva
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        id="inst-categoria"
+                        type="text"
+                        value={nuevaCategoriaNombre}
+                        onChange={(e) => setNuevaCategoriaNombre(e.target.value)}
+                        placeholder="Nombre de categoría"
+                        className={INPUT}
+                      />
+                      <button
+                        type="button"
+                        disabled={createCategoria.isPending || !nuevaCategoriaNombre.trim()}
+                        onClick={handleGuardarCategoria}
+                        className={BTN_SAVE}
+                      >
+                        {createCategoria.isPending ? "..." : "Guardar"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowNuevaCategoria(false);
+                          setNuevaCategoriaNombre("");
+                        }}
+                        className={BTN_CANCEL}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  )}
                 </div>
+
+                {/* Marca */}
                 <div className="flex flex-col gap-1">
                   <label htmlFor="inst-marca" className="text-xs font-medium text-neutral-700">
                     Marca <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    id="inst-marca"
-                    value={newMarcaId}
-                    disabled={newCategoriaId === ""}
-                    onChange={(e) => {
-                      setNewMarcaId(e.target.value);
-                      setSelectedProductoId("");
-                    }}
-                    className={SELECT}
-                  >
-                    <option value="">Selecciona una marca</option>
-                    {(marcasData?.data ?? []).map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.nombre}
-                      </option>
-                    ))}
-                  </select>
+                  {!showNuevaMarca ? (
+                    <div className="flex gap-2">
+                      <select
+                        id="inst-marca"
+                        value={newMarcaId}
+                        disabled={newCategoriaId === ""}
+                        onChange={(e) => {
+                          setNewMarcaId(e.target.value);
+                          setSelectedModeloId("");
+                        }}
+                        className={SELECT}
+                      >
+                        <option value="">Selecciona una marca</option>
+                        {(marcasData?.data ?? []).map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.nombre}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={newCategoriaId === ""}
+                        onClick={() => setShowNuevaMarca(true)}
+                        className={BTN_INLINE}
+                      >
+                        <Plus className="h-3 w-3" /> Nueva
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        id="inst-marca"
+                        type="text"
+                        value={nuevaMarcaNombre}
+                        onChange={(e) => setNuevaMarcaNombre(e.target.value)}
+                        placeholder="Nombre de marca"
+                        className={INPUT}
+                      />
+                      <button
+                        type="button"
+                        disabled={createMarca.isPending || !nuevaMarcaNombre.trim()}
+                        onClick={handleGuardarMarca}
+                        className={BTN_SAVE}
+                      >
+                        {createMarca.isPending ? "..." : "Guardar"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowNuevaMarca(false);
+                          setNuevaMarcaNombre("");
+                        }}
+                        className={BTN_CANCEL}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  )}
                 </div>
+
+                {/* Modelo */}
                 <div className="flex flex-col gap-1">
-                  <label htmlFor="inst-producto" className="text-xs font-medium text-neutral-700">
-                    Producto <span className="text-red-500">*</span>
+                  <label htmlFor="inst-modelo" className="text-xs font-medium text-neutral-700">
+                    Modelo <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    id="inst-producto"
-                    value={selectedProductoId}
-                    disabled={newMarcaId === ""}
-                    onChange={(e) => setSelectedProductoId(e.target.value)}
-                    className={SELECT}
-                  >
-                    <option value="">Selecciona un producto</option>
-                    {(productosData?.data ?? []).map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.nombre}
-                      </option>
-                    ))}
-                  </select>
+                  {!showNuevoModelo ? (
+                    <div className="flex gap-2">
+                      <select
+                        id="inst-modelo"
+                        value={selectedModeloId}
+                        disabled={newMarcaId === ""}
+                        onChange={(e) => setSelectedModeloId(e.target.value)}
+                        className={SELECT}
+                      >
+                        <option value="">Selecciona un modelo</option>
+                        {(modelosData?.data ?? []).map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.nombre}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={newMarcaId === ""}
+                        onClick={() => setShowNuevoModelo(true)}
+                        className={BTN_INLINE}
+                      >
+                        <Plus className="h-3 w-3" /> Nuevo
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        id="inst-modelo"
+                        type="text"
+                        value={nuevoModeloNombre}
+                        onChange={(e) => setNuevoModeloNombre(e.target.value)}
+                        placeholder="Nombre de modelo"
+                        className={INPUT}
+                      />
+                      <button
+                        type="button"
+                        disabled={createModelo.isPending || !nuevoModeloNombre.trim()}
+                        onClick={handleGuardarModelo}
+                        className={BTN_SAVE}
+                      >
+                        {createModelo.isPending ? "..." : "Guardar"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowNuevoModelo(false);
+                          setNuevoModeloNombre("");
+                        }}
+                        className={BTN_CANCEL}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  )}
                 </div>
+
+                {/* Alerta sin producto */}
+                {sinProducto && (
+                  <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800">
+                    No hay producto registrado para esta combinación. Contacta a un administrador
+                    para registrar el producto en el catálogo de inventario.
+                  </div>
+                )}
+
+                {/* Producto resuelto */}
+                {productoResuelto && (
+                  <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-800">
+                    Producto identificado:{" "}
+                    <span className="font-medium">{productoResuelto.nombre}</span>
+                  </div>
+                )}
+
+                {/* Número de serie */}
                 <div className="flex flex-col gap-1">
                   <label htmlFor="inst-serie" className="text-xs font-medium text-neutral-700">
                     Número de serie
@@ -357,11 +586,13 @@ export function NuevaOrdenPage() {
                     className={INPUT}
                   />
                 </div>
+
                 {serverError && (
                   <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
                     {serverError}
                   </div>
                 )}
+
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -375,9 +606,10 @@ export function NuevaOrdenPage() {
                   </button>
                   <button
                     type="button"
-                    disabled={createInstancia.isPending || selectedProductoId === ""}
+                    disabled={createInstancia.isPending || !productoResuelto}
                     onClick={handleCrearInstancia}
                     className="rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+                    title={!productoResuelto ? "No hay producto para esta combinación" : undefined}
                   >
                     {createInstancia.isPending ? "Creando..." : "Crear equipo"}
                   </button>
@@ -464,14 +696,8 @@ export function NuevaOrdenPage() {
             <div className="rounded-lg bg-neutral-50 p-4 text-sm space-y-2">
               {[
                 { label: "Cliente", value: clienteNombre },
-                {
-                  label: "Equipo",
-                  value: instancia?.producto_nombre ?? "—",
-                },
-                {
-                  label: "N/S",
-                  value: instancia?.numero_serie ?? "—",
-                },
+                { label: "Equipo", value: instancia?.producto_nombre ?? "—" },
+                { label: "N/S", value: instancia?.numero_serie ?? "—" },
                 { label: "Falla", value: fallaIngreso },
                 { label: "Tipo", value: tipoServicio },
                 { label: "Canal", value: canal },

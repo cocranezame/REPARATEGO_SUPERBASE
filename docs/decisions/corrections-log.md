@@ -685,3 +685,30 @@ C021 cambió `deleteWaCuenta` de hard delete a soft delete (`activo = false`) po
 **Verificación:** `DELETE /crm/wa-cuentas/:id` → 200 y registro eliminado de DB. Cuenta sin dependentes: eliminación exitosa. Cuenta con leads: 409.
 
 **Regla:** El toggle (activo/inactivo) y el botón Eliminar cumplen roles distintos. El toggle pausa la cuenta sin perder datos. El botón Eliminar borra físicamente — solo posible si no hay leads ni conversaciones vinculadas.
+
+---
+
+## C028 — 2026-06-08
+
+**ID:** C028
+**Afecta:** inventario, db, web
+
+**Contexto:** E4 — Gestión de precios de repuestos
+
+**Regla de negocio establecida:**
+- `precio_venta` lo gestiona el módulo **Tasas %**: se calcula como `ultimo_costo × (1 + tasa_valor)` aplicando jerarquía POR_REPUESTO > POR_TIPO > POR_COMPONENTE. No es editable en el form de repuesto.
+- `precio_compra` lo fija el **movimiento de ingreso** (INGRESO) vinculado a la cotización del proveedor. Si el repuesto no tiene movimientos, se promedia el `precio_unitario` de las cotizaciones asociadas. No es editable en el form de repuesto.
+
+**Problema:** El form de repuesto (`ProductoFormPage`) tenía inputs editables para `precio_venta` y `precio_compra`, lo que rompía la regla de negocio: el vendedor podía sobreescribir precios que deben derivarse de Tasas y Movimientos.
+
+**Correcciones aplicadas:**
+- `packages/db/drizzle/0023_precio_venta_default.sql` — `ALTER TABLE producto ALTER COLUMN precio_venta SET DEFAULT 0` (permite INSERT sin enviar el campo)
+- `packages/db/src/schema/inventario.ts` — `.default("0")` en columna `precio_venta`
+- `packages/validators/src/inventario.ts` — eliminados `precio_venta: z.number().positive()` y `precio_compra: z.number().positive().optional()` de `createProductoSchema`; reemplazados por comentarios que explican la regla
+- `apps/api/src/modules/inventario/domain/ports/producto.repository.ts` — eliminados de `CreateProductoData`; en `UpdateProductoData` renombrados a `_precio_compra` y `_precio_venta` (prefijo underscore = camino interno, no desde el form)
+- `apps/api/src/modules/inventario/infra/repositories/producto.drizzle.ts` — `create()` sin precio_venta/precio_compra; `update()` usa `_precio_compra`/`_precio_venta`
+- `apps/api/src/modules/inventario/domain/use-cases/create-producto.ts` — eliminadas líneas `precio_venta` y `precio_compra`
+- `apps/api/src/modules/inventario/domain/use-cases/update-producto.ts` — eliminadas líneas `precio_compra` y `precio_venta`
+- `apps/web/src/modules/inventario/pages/ProductoFormPage.tsx` — inputs de precio eliminados del form schema, defaultValues, reset y onSubmit; reemplazados por panel `PreciosInfo` (solo lectura) que muestra los valores actuales con nota de origen
+
+**Regla:** `precio_venta` y `precio_compra` nunca se envían desde el form de repuesto. Solo se actualizan desde los servicios de Tasas y Movimientos de Ingreso respectivamente.

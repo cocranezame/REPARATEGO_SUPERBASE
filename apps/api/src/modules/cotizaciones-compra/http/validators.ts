@@ -1,8 +1,12 @@
-import { cotizarCotizacionSchema, createCotizacionCompraSchema } from "@kallpasoft/validators";
+import {
+  cotizarCotizacionSchema,
+  createCotizacionCompraSchema,
+  uuidSchema,
+} from "@kallpasoft/validators";
 import { z } from "zod";
 
 export const listCotizacionesQuerySchema = z.object({
-  proveedor_id: z.string().uuid().optional(),
+  proveedor_id: uuidSchema.optional(),
   estado: z.enum(["PENDIENTE", "COTIZADA", "VENCIDA"]).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),

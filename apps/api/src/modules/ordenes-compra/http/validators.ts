@@ -2,12 +2,13 @@ import {
   confirmarOrdenCompraSchema,
   generarOrdenCompraSchema,
   updateEstadoOrdenCompraSchema,
+  uuidSchema,
 } from "@kallpasoft/validators";
 import { z } from "zod";
 
 export const listOrdenesQuerySchema = z.object({
   estado: z.enum(["GENERADA", "ENVIADA", "TERMINADA", "INGRESADA", "PENDIENTE_PAGO"]).optional(),
-  proveedor_id: z.string().uuid().optional(),
+  proveedor_id: uuidSchema.optional(),
   desde: z.string().optional(),
   hasta: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),

@@ -1,8 +1,8 @@
-import { createComponenteSchema } from "@kallpasoft/validators";
+import { createComponenteSchema, uuidSchema } from "@kallpasoft/validators";
 import { z } from "zod";
 
 export const listComponentesQuerySchema = z.object({
-  categoria_id: z.string().uuid().optional(),
+  categoria_id: uuidSchema.optional(),
   search: z.string().optional(),
   activo: z
     .union([z.literal("true"), z.literal("false")])

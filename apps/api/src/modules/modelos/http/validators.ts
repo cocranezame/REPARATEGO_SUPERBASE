@@ -1,9 +1,9 @@
-import { createModeloSchema } from "@kallpasoft/validators";
+import { createModeloSchema, uuidSchema } from "@kallpasoft/validators";
 import { z } from "zod";
 
 export const listModelosQuerySchema = z.object({
-  marca_id: z.string().uuid().optional(),
-  categoria_id: z.string().uuid().optional(),
+  marca_id: uuidSchema.optional(),
+  categoria_id: uuidSchema.optional(),
   search: z.string().optional(),
   activo: z
     .union([z.literal("true"), z.literal("false")])

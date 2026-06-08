@@ -5,6 +5,7 @@ import {
   createProductoSchema,
   syncCompatibilidadesSchema,
   updateProductoSchema,
+  uuidSchema,
 } from "@kallpasoft/validators";
 import { z } from "zod";
 
@@ -42,8 +43,8 @@ export {
 };
 
 export const listStockQuerySchema = z.object({
-  producto_id: z.string().uuid().optional(),
-  sucursal_id: z.string().uuid().optional(),
+  producto_id: uuidSchema.optional(),
+  sucursal_id: uuidSchema.optional(),
   alerta_minimo: z
     .union([z.literal("true"), z.literal("false")])
     .optional()
@@ -52,17 +53,17 @@ export const listStockQuerySchema = z.object({
 export type ListStockQuery = z.infer<typeof listStockQuerySchema>;
 
 export const listLotesQuerySchema = z.object({
-  producto_id: z.string().uuid().optional(),
-  sucursal_id: z.string().uuid().optional(),
+  producto_id: uuidSchema.optional(),
+  sucursal_id: uuidSchema.optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
 export type ListLotesQuery = z.infer<typeof listLotesQuerySchema>;
 
 export const listMovimientosQuerySchema = z.object({
-  producto_id: z.string().uuid().optional(),
+  producto_id: uuidSchema.optional(),
   tipo: z.nativeEnum(TipoMovimiento).optional(),
-  sucursal_id: z.string().uuid().optional(),
+  sucursal_id: uuidSchema.optional(),
   desde: z.string().optional(),
   hasta: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),

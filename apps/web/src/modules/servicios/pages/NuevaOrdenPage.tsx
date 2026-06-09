@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useCategorias, useCreateCategoria } from "../../catalogos/hooks/useCategorias";
 import { useCreateMarca, useMarcas } from "../../catalogos/hooks/useMarcas";
 import { useCreateModelo, useModelos } from "../../catalogos/hooks/useModelos";
-import { useClientes } from "../../clientes/hooks/useClientes";
-import { useProductos } from "../../inventario/hooks/useProductos";
+import { useClientes, useCreateCliente } from "../../clientes/hooks/useClientes";
+import { useCreateProducto, useProductos } from "../../inventario/hooks/useProductos";
 import {
   useCostosRevision,
   useCreateInstancia,
@@ -27,6 +27,58 @@ const BTN_CANCEL =
 
 const PASOS = ["Cliente", "Instancia", "Orden", "Confirmar"];
 
+const DISTRITOS_LIMA = [
+  {
+    zona: "Lima Norte",
+    distritos: [
+      "Carabayllo",
+      "Comas",
+      "Independencia",
+      "Los Olivos",
+      "Puente Piedra",
+      "San Martín de Porres",
+      "Santa Rosa",
+    ],
+  },
+  {
+    zona: "Lima Centro",
+    distritos: [
+      "Breña",
+      "El Agustino",
+      "Jesús María",
+      "La Victoria",
+      "Lima (Cercado)",
+      "Lince",
+      "Magdalena del Mar",
+      "Miraflores",
+      "Pueblo Libre",
+      "Rímac",
+      "San Borja",
+      "San Isidro",
+      "San Luis",
+      "San Miguel",
+      "Surquillo",
+    ],
+  },
+  {
+    zona: "Lima Sur",
+    distritos: [
+      "Ate",
+      "Barranco",
+      "Chorrillos",
+      "Cieneguilla",
+      "La Molina",
+      "Lurín",
+      "Pachacámac",
+      "San Juan de Miraflores",
+      "Santa Anita",
+      "Santiago de Surco",
+      "Villa El Salvador",
+      "Villa María del Triunfo",
+    ],
+  },
+];
+
 type Canal = "TIENDA" | "DOMICILIO";
 
 export function NuevaOrdenPage() {
@@ -38,6 +90,18 @@ export function NuevaOrdenPage() {
   const [searchCliente, setSearchCliente] = useState("");
   const [clienteId, setClienteId] = useState("");
   const [clienteNombre, setClienteNombre] = useState("");
+
+  // Step 0 — Nuevo cliente inline
+  const [showNuevoCliente, setShowNuevoCliente] = useState(false);
+  const [nuevoTipoPersona, setNuevoTipoPersona] = useState<"NATURAL" | "JURIDICA">("NATURAL");
+  const [nuevoTipoDoc, setNuevoTipoDoc] = useState<"DNI" | "CE">("DNI");
+  const [nuevoNumDoc, setNuevoNumDoc] = useState("");
+  const [nuevoNombres, setNuevoNombres] = useState("");
+  const [nuevoApellidos, setNuevoApellidos] = useState("");
+  const [nuevoRazonSocial, setNuevoRazonSocial] = useState("");
+  const [nuevoTelefono, setNuevoTelefono] = useState("");
+  const [nuevoDistrito, setNuevoDistrito] = useState("Comas");
+  const [nuevoNivel, setNuevoNivel] = useState<"ALTO" | "NORMAL" | "BAJO">("NORMAL");
 
   // Step 1 — Instancia (selects en cascada)
   const [instancia, setInstancia] = useState<Instancia | null>(null);
@@ -79,23 +143,24 @@ export function NuevaOrdenPage() {
     enabled: newCategoriaId !== "" && newMarcaId !== "",
   });
   const { data: productosData } = useProductos({
-    ...(newCategoriaId ? { categoria_id: newCategoriaId } : {}),
-    ...(newMarcaId ? { marca_id: newMarcaId } : {}),
+    ...(selectedModeloId ? { modelo_id: selectedModeloId } : {}),
     activo: true,
-    pageSize: 100,
-    enabled: newCategoriaId !== "" && newMarcaId !== "",
+    pageSize: 10,
+    enabled: selectedModeloId !== "",
   });
   const { data: costosData } = useCostosRevision();
   const createCategoria = useCreateCategoria();
   const createMarca = useCreateMarca();
   const createModelo = useCreateModelo();
+  const createCliente = useCreateCliente();
+  const createProducto = useCreateProducto();
   const createInstancia = useCreateInstancia();
   const createOrden = useCreateOrden();
 
   const instancias = instanciasData?.data ?? [];
   const costos = costosData?.data ?? [];
 
-  // Cuando hay modelo seleccionado, resuelve el primer producto que coincide con categoria + marca
+  // C008: busca el equipo por modelo_id exacto (no por categoria+marca)
   const productoResuelto = selectedModeloId !== "" ? (productosData?.data?.[0] ?? null) : null;
   const sinProducto =
     selectedModeloId !== "" && productosData !== undefined && productoResuelto === null;
@@ -112,6 +177,59 @@ export function NuevaOrdenPage() {
   }
 
   // ── Handlers inline create ──────────────────────────────────────────────────
+
+  function canGuardarCliente(): boolean {
+    if (!nuevoNumDoc.trim() || !nuevoDistrito) return false;
+    if (nuevoTipoPersona === "NATURAL") {
+      return nuevoNombres.trim() !== "" && nuevoApellidos.trim() !== "";
+    }
+    return nuevoRazonSocial.trim() !== "" && nuevoNumDoc.trim().length === 11;
+  }
+
+  async function handleGuardarCliente() {
+    setServerError(null);
+    try {
+      const result = await createCliente.mutateAsync(
+        nuevoTipoPersona === "NATURAL"
+          ? {
+              tipo_persona: "NATURAL",
+              tipo_documento: nuevoTipoDoc,
+              numero_documento: nuevoNumDoc.trim(),
+              nombres: nuevoNombres.trim(),
+              apellidos: nuevoApellidos.trim(),
+              ...(nuevoTelefono.trim() ? { telefono: nuevoTelefono.trim() } : {}),
+              distrito: nuevoDistrito,
+              nivel: nuevoNivel,
+            }
+          : {
+              tipo_persona: "JURIDICA",
+              tipo_documento: "RUC",
+              numero_documento: nuevoNumDoc.trim(),
+              razon_social: nuevoRazonSocial.trim(),
+              ...(nuevoTelefono.trim() ? { telefono: nuevoTelefono.trim() } : {}),
+              distrito: nuevoDistrito,
+              nivel: nuevoNivel,
+            }
+      );
+      const nombre =
+        nuevoTipoPersona === "JURIDICA"
+          ? nuevoRazonSocial.trim()
+          : `${nuevoNombres.trim()} ${nuevoApellidos.trim()}`.trim();
+      setClienteId(result.data.id);
+      setClienteNombre(nombre);
+      setInstancia(null);
+      setShowNuevoCliente(false);
+      setNuevoNumDoc("");
+      setNuevoNombres("");
+      setNuevoApellidos("");
+      setNuevoRazonSocial("");
+      setNuevoTelefono("");
+      setNuevoDistrito("Comas");
+      setNuevoNivel("NORMAL");
+    } catch (err) {
+      setServerError((err as Error).message);
+    }
+  }
 
   async function handleGuardarCategoria() {
     if (!nuevaCategoriaNombre.trim()) return;
@@ -169,15 +287,27 @@ export function NuevaOrdenPage() {
   }
 
   async function handleCrearInstancia() {
-    if (!productoResuelto) {
-      setServerError("No hay producto registrado para este modelo");
-      return;
-    }
+    if (!selectedModeloId) return;
     setServerError(null);
     try {
+      // C008: si no existe producto para este modelo, lo crea automáticamente
+      let productoId = productoResuelto?.id;
+      if (!productoId) {
+        const modeloNombre =
+          (modelosData?.data ?? []).find((m) => m.id === selectedModeloId)?.nombre ?? "Equipo";
+        const created = await createProducto.mutateAsync({
+          tipo: "PRODUCTO",
+          nombre: modeloNombre,
+          ...(newCategoriaId ? { categoria_id: newCategoriaId } : {}),
+          ...(newMarcaId ? { marca_id: newMarcaId } : {}),
+          modelo_id: selectedModeloId,
+          alcance: "GLOBAL",
+        });
+        productoId = created.data.id;
+      }
       const result = await createInstancia.mutateAsync({
         cliente_id: clienteId,
-        producto_id: productoResuelto.id,
+        producto_id: productoId,
         ...(newNumeroSerie ? { numero_serie: newNumeroSerie } : {}),
       });
       setInstancia(result.data);
@@ -306,6 +436,214 @@ export function NuevaOrdenPage() {
             </div>
             {clienteId && (
               <p className="text-xs font-medium text-primary-700">Seleccionado: {clienteNombre}</p>
+            )}
+
+            {/* Nuevo cliente inline */}
+            {!showNuevoCliente ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNuevoCliente(true);
+                  setServerError(null);
+                }}
+                className="flex items-center gap-1 text-xs text-primary-600 hover:underline"
+              >
+                <Plus className="h-3 w-3" />
+                Registrar nuevo cliente
+              </button>
+            ) : (
+              <div className="rounded-lg border border-neutral-200 p-4 space-y-3">
+                <h3 className="text-sm font-semibold text-neutral-800">Nuevo cliente</h3>
+
+                {/* Tipo persona */}
+                <div className="flex gap-4">
+                  {(["NATURAL", "JURIDICA"] as const).map((tp) => (
+                    <label key={tp} className="flex items-center gap-1.5 text-xs cursor-pointer">
+                      <input
+                        type="radio"
+                        checked={nuevoTipoPersona === tp}
+                        onChange={() => {
+                          setNuevoTipoPersona(tp);
+                          setNuevoNumDoc("");
+                          setNuevoTipoDoc("DNI");
+                        }}
+                      />
+                      {tp === "NATURAL" ? "Persona natural" : "Empresa / RUC"}
+                    </label>
+                  ))}
+                </div>
+
+                {/* Documento */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="nc-tipo-doc" className="text-xs font-medium text-neutral-700">
+                      Tipo doc.
+                    </label>
+                    {nuevoTipoPersona === "NATURAL" ? (
+                      <select
+                        id="nc-tipo-doc"
+                        value={nuevoTipoDoc}
+                        onChange={(e) => setNuevoTipoDoc(e.target.value as "DNI" | "CE")}
+                        className={SELECT}
+                      >
+                        <option value="DNI">DNI</option>
+                        <option value="CE">CE</option>
+                      </select>
+                    ) : (
+                      <input
+                        value="RUC"
+                        disabled
+                        className={`${INPUT} bg-neutral-100 text-neutral-500`}
+                      />
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="nc-num-doc" className="text-xs font-medium text-neutral-700">
+                      Número <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="nc-num-doc"
+                      type="text"
+                      value={nuevoNumDoc}
+                      onChange={(e) => setNuevoNumDoc(e.target.value)}
+                      placeholder={nuevoTipoPersona === "JURIDICA" ? "11 dígitos" : ""}
+                      maxLength={nuevoTipoPersona === "JURIDICA" ? 11 : 20}
+                      className={INPUT}
+                    />
+                  </div>
+                </div>
+
+                {/* Nombre según tipo */}
+                {nuevoTipoPersona === "NATURAL" ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-1">
+                      <label htmlFor="nc-nombres" className="text-xs font-medium text-neutral-700">
+                        Nombres <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="nc-nombres"
+                        type="text"
+                        value={nuevoNombres}
+                        onChange={(e) => setNuevoNombres(e.target.value)}
+                        className={INPUT}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label
+                        htmlFor="nc-apellidos"
+                        className="text-xs font-medium text-neutral-700"
+                      >
+                        Apellidos <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="nc-apellidos"
+                        type="text"
+                        value={nuevoApellidos}
+                        onChange={(e) => setNuevoApellidos(e.target.value)}
+                        className={INPUT}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    <label
+                      htmlFor="nc-razon-social"
+                      className="text-xs font-medium text-neutral-700"
+                    >
+                      Razón social <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="nc-razon-social"
+                      type="text"
+                      value={nuevoRazonSocial}
+                      onChange={(e) => setNuevoRazonSocial(e.target.value)}
+                      className={INPUT}
+                    />
+                  </div>
+                )}
+
+                {/* Distrito + Nivel */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="nc-distrito" className="text-xs font-medium text-neutral-700">
+                      Distrito <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="nc-distrito"
+                      value={nuevoDistrito}
+                      onChange={(e) => setNuevoDistrito(e.target.value)}
+                      className={SELECT}
+                    >
+                      {DISTRITOS_LIMA.map((zona) => (
+                        <optgroup key={zona.zona} label={zona.zona}>
+                          {zona.distritos.map((d) => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label htmlFor="nc-nivel" className="text-xs font-medium text-neutral-700">
+                      Nivel
+                    </label>
+                    <select
+                      id="nc-nivel"
+                      value={nuevoNivel}
+                      onChange={(e) => setNuevoNivel(e.target.value as "ALTO" | "NORMAL" | "BAJO")}
+                      className={SELECT}
+                    >
+                      <option value="ALTO">Alto</option>
+                      <option value="NORMAL">Normal</option>
+                      <option value="BAJO">Bajo</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Teléfono */}
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="nc-telefono" className="text-xs font-medium text-neutral-700">
+                    Teléfono <span className="font-normal text-neutral-400">(opcional)</span>
+                  </label>
+                  <input
+                    id="nc-telefono"
+                    type="tel"
+                    value={nuevoTelefono}
+                    onChange={(e) => setNuevoTelefono(e.target.value)}
+                    placeholder="9XXXXXXXX"
+                    className={INPUT}
+                  />
+                </div>
+
+                {serverError && (
+                  <div className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">
+                    {serverError}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNuevoCliente(false);
+                      setServerError(null);
+                    }}
+                    className={BTN_CANCEL}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={createCliente.isPending || !canGuardarCliente()}
+                    onClick={handleGuardarCliente}
+                    className={BTN_SAVE}
+                  >
+                    {createCliente.isPending ? "Guardando..." : "Guardar cliente"}
+                  </button>
+                </div>
+              </div>
             )}
           </>
         )}
@@ -571,19 +909,16 @@ export function NuevaOrdenPage() {
                   )}
                 </div>
 
-                {/* Alerta sin producto */}
-                {sinProducto && (
-                  <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-800">
-                    No hay producto registrado para esta combinación. Contacta a un administrador
-                    para registrar el producto en el catálogo de inventario.
+                {/* Equipo resuelto o auto-creación */}
+                {selectedModeloId && productoResuelto && (
+                  <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-800">
+                    Equipo identificado:{" "}
+                    <span className="font-medium">{productoResuelto.nombre}</span>
                   </div>
                 )}
-
-                {/* Producto resuelto */}
-                {productoResuelto && (
-                  <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-800">
-                    Producto identificado:{" "}
-                    <span className="font-medium">{productoResuelto.nombre}</span>
+                {sinProducto && (
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+                    Se creará el equipo automáticamente al registrar.
                   </div>
                 )}
 
@@ -621,12 +956,15 @@ export function NuevaOrdenPage() {
                   </button>
                   <button
                     type="button"
-                    disabled={createInstancia.isPending || !productoResuelto}
+                    disabled={
+                      createInstancia.isPending || createProducto.isPending || !selectedModeloId
+                    }
                     onClick={handleCrearInstancia}
                     className="rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
-                    title={!productoResuelto ? "No hay producto para esta combinación" : undefined}
                   >
-                    {createInstancia.isPending ? "Creando..." : "Crear equipo"}
+                    {createInstancia.isPending || createProducto.isPending
+                      ? "Creando..."
+                      : "Crear equipo"}
                   </button>
                 </div>
               </div>

@@ -166,6 +166,18 @@ export class ServicioDrizzleRepository implements IServicioRepository {
     return this.db.transaction(async (tx) => {
       await setTenantLocal(tx, tenantId);
 
+      // C008: solo equipos (componente_id IS NULL) pueden ser instancias
+      const [prodCheck] = await tx
+        .select({ componente_id: productoTable.componente_id })
+        .from(productoTable)
+        .where(and(eq(productoTable.id, data.producto_id), eq(productoTable.tenant_id, tenantId)))
+        .limit(1);
+
+      if (!prodCheck) throw new Error("Producto no encontrado");
+      if (prodCheck.componente_id !== null) {
+        throw new Error("Solo se pueden crear instancias de equipos, no de repuestos");
+      }
+
       const [row] = await tx
         .insert(instanciaTable)
         .values({
@@ -209,7 +221,12 @@ export class ServicioDrizzleRepository implements IServicioRepository {
     return this.db.transaction(async (tx) => {
       await setTenantLocal(tx, tenantId);
 
-      const conditions = [eq(instanciaTable.tenant_id, tenantId), eq(instanciaTable.activo, true)];
+      const conditions = [
+        eq(instanciaTable.tenant_id, tenantId),
+        eq(instanciaTable.activo, true),
+        // C008: solo equipos (componente_id IS NULL) deben aparecer en listado
+        isNull(productoTable.componente_id),
+      ];
       if (params.cliente_id) conditions.push(eq(instanciaTable.cliente_id, params.cliente_id));
       if (params.producto_id) conditions.push(eq(instanciaTable.producto_id, params.producto_id));
 
@@ -217,7 +234,11 @@ export class ServicioDrizzleRepository implements IServicioRepository {
       const offset = (params.page - 1) * params.pageSize;
 
       const [countRows, rows] = await Promise.all([
-        tx.select({ total: count() }).from(instanciaTable).where(where),
+        tx
+          .select({ total: count() })
+          .from(instanciaTable)
+          .leftJoin(productoTable, eq(instanciaTable.producto_id, productoTable.id))
+          .where(where),
         tx
           .select({
             instancia: instanciaTable,

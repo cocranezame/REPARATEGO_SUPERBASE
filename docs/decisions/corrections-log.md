@@ -5,6 +5,26 @@
 
 ---
 
+## C032 — 2026-06-08
+
+**ID:** C032
+**Afecta:** db, validators, api/inventario, api/servicios, web/inventario
+**Contexto:** Rediseño formulario Nuevo Repuesto — subtipo + alcance condicional + multi-categoría UI
+
+- **Migración 0027** `packages/db/drizzle/0027_producto_subtipo_cat_nullable.sql`: `ADD COLUMN subtipo VARCHAR(50)` + `ALTER COLUMN categoria_id DROP NOT NULL`
+- **schema** `packages/db/src/schema/inventario.ts`: `categoria_id` sin `.notNull()`, nuevo `subtipo varchar(50)`
+- **validators** `packages/validators/src/inventario.ts`: `categoria_id` → `uuidSchema.optional()`, `subtipo: z.string().max(50).optional()`
+- **entity** `apps/api/src/modules/inventario/domain/entities/producto.ts`: `categoria_id: string | null`, `subtipo: string | null`
+- **ports** `apps/api/src/modules/inventario/domain/ports/producto.repository.ts`: `categoria_id?` en Create, `categoria_id?: string | null` en Update, `subtipo?` en ambos
+- **use-cases** create-producto.ts + update-producto.ts: pass-through de `subtipo`
+- **repo drizzle** producto.drizzle.ts: `categoria_id: data.categoria_id ?? null`, `subtipo: data.subtipo ?? null`
+- **downstream fix** stock.drizzle.ts L969/L1000: `eq(proveedorLinea.categoria_id, prod.categoria_id)` → conditional `prod.categoria_id ? eq(...) : sql\`true\``
+- **downstream fix** servicios/domain/entities/servicio.ts: `Instancia.categoria_id?: string | null | undefined`, `PresupuestoItem.categoria_id: string | null`
+- **web types** inventario.ts: `ProductoDto.categoria_id: string | null`, `subtipo: string | null`
+- **web form** ProductoFormPage.tsx: rediseño completo — secciones por alcance (GLOBAL/CATEGORIA/MARCA/COMPATIBILIDAD), multi-row categorías (UI), botón Generar nombre, modelos inline con doble-click, sin unidad_medida
+
+---
+
 ## C001 — 2026-05-26
 
 **ID:** C001  
@@ -574,7 +594,9 @@ ALTER TYPE rol_usuario ADD VALUE IF NOT EXISTS 'ASISTENTE';
 
 **Corrección aplicada:** `apps/api/src/modules/crm/infra/repositories/crm.drizzle.ts` — `.delete()` reemplazado por `.update({ activo: false })` en `deleteWaCuenta`.
 
-**Regla:** Toda entidad con relaciones dependientes (leads, conversaciones) debe usar soft delete. El hard delete solo aplica en tablas hoja sin dependencias.
+**Regla:** ~~Toda entidad con relaciones dependientes (leads, conversaciones) debe usar soft delete. El hard delete solo aplica en tablas hoja sin dependencias.~~
+
+> ⚠️ **Revertido en C025 (2026-06-07):** se descubrió que el toggle activo/inactivo ya cumple el rol de soft delete. El botón "Eliminar" debe hacer hard delete real con manejo de FK. Ver C025.
 
 ---
 
@@ -632,7 +654,9 @@ C006 (2026-06-02) documentó que se necesitaba `ALTER TYPE canal_servicio ADD VA
 
 **Verificación:** `PUT /crm/wa-cuentas/d02e0fef-...` con `{ phone_number_id, waba_id, negocio_nombre, webhook_verify_token }` → 200 OK con datos actualizados.
 
-**Regla:** El campo `webhook_verify_token` es readonly en el UI — solo se puede cambiar generando un nuevo UUID. `phone_number_id` y `waba_id` siempre son editables (tanto en create como en update) porque pueden cambiar al migrar entre cuentas de Meta.
+**Regla:** `phone_number_id` y `waba_id` siempre son editables (tanto en create como en update) porque pueden cambiar al migrar entre cuentas de Meta. El campo `webhook_verify_token` admite escritura manual Y tiene botón "Generar nuevo" para generar un UUID v4 aleatorio vía `crypto.randomUUID()` — el admin decide si escribe el valor o lo genera.
+
+> 📝 **Actualización 2026-06-09:** el campo `webhook_verify_token` fue cambiado de `readOnly` a editable manualmente a pedido explícito. La entrada original de C024 documentaba readonly; el estado real del código es editable + botón generar.
 
 ---
 
@@ -688,6 +712,40 @@ C021 cambió `deleteWaCuenta` de hard delete a soft delete (`activo = false`) po
 
 ---
 
+## C026 — 2026-06-09
+
+**ID:** C026
+**Afecta:** api (múltiples módulos)
+**Contexto:** E13 — fix authMiddleware path en routes
+
+**`authMiddleware` sin path explícito bloqueaba rutas públicas en algunos módulos:**
+Varios módulos usaban `routes.use(authMiddleware)` sin path, aplicando el middleware a TODAS las rutas del router incluyendo las que deben ser públicas (ej: webhook GET/POST en CRM, health checks). Esto causaba que rutas registradas antes del `use()` en el mismo router pudieran verse afectadas por orden de registro, dependiendo del framework version.
+
+**Corrección aplicada:** 20 archivos `routes.ts` cambiados de `routes.use(authMiddleware)` a `routes.use("/ventas/*", authMiddleware)` (o el path base correspondiente a cada módulo). El path explícito garantiza que solo se aplica el middleware a las rutas protegidas, independientemente del orden de registro.
+
+**Archivos afectados:** cajas, categorias, clientes, componentes, cotizaciones-compra, cotizaciones-venta, domicilios, feature-flags, inventario, marcas, modelos, ordenes-compra, pagos-proveedor, portal, proveedores, servicios, solicitudes-compra, sucursales, usuarios, ventas.
+
+**Regla:** `routes.use(middleware)` sin path aplica el middleware a todas las rutas del router, incluso las definidas después. Siempre usar path explícito: `routes.use("/base-path/*", middleware)`.
+
+---
+
+## C027 — 2026-06-09
+
+**ID:** C027
+**Afecta:** crm, web
+**Contexto:** E13 — CRM ConfigAgentesPage + useCreateAgente
+
+**`ConfigAgentesPage` no tenía modal de creación de agentes y `useCrm.ts` no exportaba `useCreateAgente`:**
+La página `/crm/config/agentes` solo permitía editar agentes existentes. No existía forma de crear un agente nuevo desde el UI, y el hook `useCreateAgente` no estaba implementado en `useCrm.ts` a pesar de que el endpoint `POST /crm/agentes` ya existía en la API.
+
+**Corrección aplicada:**
+- `apps/web/src/modules/crm/hooks/useCrm.ts` — agrega `useCreateAgente()` mutation que llama `POST /crm/agentes`
+- `apps/web/src/modules/crm/pages/ConfigAgentesPage.tsx` — agrega `NuevoAgenteModal` con selector visual de modelo Claude (radio buttons con etiqueta de costo por 1M tokens): Haiku 4.5 (`claude-haiku-4-5-20251001`), Sonnet 4.6 (`claude-sonnet-4-6`), Opus 4.8 (`claude-opus-4-8`). El selector (`ModelIaSelect`) se reutiliza también en el formulario de edición de agente existente.
+
+**Regla:** Cuando un endpoint POST existe en la API, el UI debe tener el formulario de creación correspondiente. No dejar endpoints huérfanos sin interfaz.
+
+---
+
 ## C028 — 2026-06-08
 
 **ID:** C028
@@ -712,6 +770,74 @@ C021 cambió `deleteWaCuenta` de hard delete a soft delete (`activo = false`) po
 - `apps/web/src/modules/inventario/pages/ProductoFormPage.tsx` — inputs de precio eliminados del form schema, defaultValues, reset y onSubmit; reemplazados por panel `PreciosInfo` (solo lectura) que muestra los valores actuales con nota de origen
 
 **Regla:** `precio_venta` y `precio_compra` nunca se envían desde el form de repuesto. Solo se actualizan desde los servicios de Tasas y Movimientos de Ingreso respectivamente.
+
+---
+
+## C031 — 2026-06-08
+
+**ID:** C031
+**Afecta:** proveedores, db, api, web
+**Contexto:** telefono3 + actualización completa del frontend de proveedores
+
+**DB:**
+- `packages/db/drizzle/0026_proveedor_telefono3.sql` — `ALTER TABLE proveedor ADD COLUMN IF NOT EXISTS telefono3 VARCHAR(20)`
+- `packages/db/src/schema/proveedores.ts` — `telefono3` añadido al proveedor table
+
+**API:**
+- `packages/validators/src/proveedores.ts` — `telefono3` añadido a createProveedorSchema/updateProveedorSchema
+- `domain/entities/proveedor.ts` — `telefono3: string | null` en Proveedor
+- `domain/ports/proveedor.repository.ts` — `telefono3` en CreateProveedorData y UpdateProveedorData
+- `domain/use-cases/create-proveedor.ts` y `update-proveedor.ts` — spread condicional para telefono3
+- `infra/repositories/proveedor.drizzle.ts` — telefono3 en create y update
+
+**Web — tipos y hooks:**
+- `types/proveedor.ts` — `CondicionPagoDto` añadido; `ProveedorDto` con todos los campos nuevos (contacto_nombre, telefono2, telefono3, departamento, condicion_pago_id, observaciones); `ProveedorMetodoPagoDto` con `tipo_cuenta`; `CondicionPagoListResponse` + `CondicionPagoResponse` nuevos
+- `hooks/useProveedores.ts` — importa tipos condicion_pago; añadidos `useCondicionesPago`, `useCreateCondicionPago`, `useUpdateCondicionPago`, `useDeleteCondicionPago`
+
+**Web — páginas:**
+- `ProveedoresPage.tsx` — formulario ampliado con contacto_nombre, telefono2, telefono3, departamento, observaciones
+- `ProveedorDetallePage.tsx`:
+  - Tab por defecto cambiado a "Líneas que abastecen"
+  - Orden de tabs: Líneas → Contactos → Métodos de pago
+  - Datos generales: muestra contacto_nombre, telefono (3 números), departamento, observaciones
+  - MetodoPagoModal: campo grupo (tipo_cuenta banco/monedero)
+  - MetodosPagoTab: badge de tipo_cuenta (azul=banco, púrpura=monedero)
+  - ProveedorEditModal: todos los campos nuevos incluidos
+
+---
+
+## C030 — 2026-06-08
+
+**ID:** C030
+**Afecta:** proveedores, db, api
+**Contexto:** Adaptación estructura proveedores al modelo de referencia
+
+**Cambios aplicados:**
+
+**DB — nueva tabla `condicion_pago`:**
+- `migración 0025_proveedores_condicion_pago.sql`
+- Campos: nombre, dias_credito, es_default, activo. UNIQUE (tenant_id, nombre)
+- RLS habilitado
+
+**DB — nuevos campos en `proveedor`:**
+- `contacto_nombre VARCHAR(100)` — contacto principal directo
+- `telefono2 VARCHAR(20)` — teléfono secundario
+- `departamento VARCHAR(100)` — departamento del país (texto libre)
+- `condicion_pago_id UUID FK → condicion_pago.id`
+- `observaciones TEXT` — campo adicional (notas se mantiene)
+
+**DB — nuevo campo en `proveedor_metodo_pago`:**
+- `tipo_cuenta VARCHAR(20)` — grupo "banco" o "monedero"
+
+**API — nuevos endpoints:**
+- `GET /proveedores/condiciones-pago`
+- `POST /proveedores/condiciones-pago`
+- `PUT /proveedores/condiciones-pago/:id`
+- `DELETE /proveedores/condiciones-pago/:id` (soft-delete)
+
+**Archivos modificados:** `packages/db/schema/proveedores.ts`, `packages/validators/src/proveedores.ts`, `domain/entities`, `domain/ports`, `domain/use-cases` (4 nuevos para condicion_pago), `infra/repositories`, `http/validators`, `http/handlers`, `http/routes`
+
+**Regla:** `proveedor_linea` no cambia — proveedores siguen usando solo `categoria_id + componente_id` para clasificación.
 
 ---
 

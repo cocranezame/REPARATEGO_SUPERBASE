@@ -5,9 +5,11 @@ import type {
   CreateProductoInput,
   CreateTasaPrecioInput,
   IngresoManualInput,
+  SyncCategoriasProductoInput,
   SyncCompatibilidadesInput,
 } from "@kallpasoft/validators";
 import type { Context } from "hono";
+import { isDuplicateKeyError } from "../../../lib/db-errors.js";
 import { ApiError } from "../../../middlewares/error-handler.js";
 import type { HonoVariables } from "../../../types/context.js";
 import type { IMetodoPagoRepository } from "../domain/ports/metodo-pago.repository.js";
@@ -24,10 +26,12 @@ import { deleteMetodoPago } from "../domain/use-cases/delete-metodo-pago.js";
 import { deleteProducto } from "../domain/use-cases/delete-producto.js";
 import { deleteTasaPrecio } from "../domain/use-cases/delete-tasa-precio.js";
 import { getProductoById } from "../domain/use-cases/get-producto-by-id.js";
+import { listCategoriasProducto } from "../domain/use-cases/list-categorias-producto.js";
 import { listCompatibilidades } from "../domain/use-cases/list-compatibilidades.js";
 import { listMetodosPago } from "../domain/use-cases/list-metodos-pago.js";
 import { listProductos } from "../domain/use-cases/list-productos.js";
 import { listTasasPrecio } from "../domain/use-cases/list-tasas-precio.js";
+import { syncCategoriasProducto } from "../domain/use-cases/sync-categorias-producto.js";
 import { syncCompatibilidades } from "../domain/use-cases/sync-compatibilidades.js";
 import type { UpdateMetodoPagoInput } from "../domain/use-cases/update-metodo-pago.js";
 import { updateMetodoPago } from "../domain/use-cases/update-metodo-pago.js";
@@ -45,10 +49,6 @@ import type {
 
 // biome-ignore lint/suspicious/noExplicitAny: Hono's Input generic doesn't compose well with separately-defined handlers
 type HonoCtx = Context<{ Variables: HonoVariables }, string, any>;
-
-function isDuplicateKeyError(err: unknown): boolean {
-  return (err as { code?: string })?.code === "23505";
-}
 
 export function createInventarioHandlers(
   productoRepo: IProductoRepository,
@@ -85,8 +85,12 @@ export function createInventarioHandlers(
       ...(query.categoria_id !== undefined ? { categoria_id: query.categoria_id } : {}),
       ...(query.componente_id !== undefined ? { componente_id: query.componente_id } : {}),
       ...(query.marca_id !== undefined ? { marca_id: query.marca_id } : {}),
+      ...(query.modelo_id !== undefined ? { modelo_id: query.modelo_id } : {}),
       ...(query.search !== undefined ? { search: query.search } : {}),
       ...(query.activo !== undefined ? { activo: query.activo } : {}),
+      ...(query.con_imagen !== undefined ? { con_imagen: query.con_imagen } : {}),
+      ...(query.sin_cotizacion !== undefined ? { sin_cotizacion: query.sin_cotizacion } : {}),
+      ...(query.sin_tasa !== undefined ? { sin_tasa: query.sin_tasa } : {}),
     };
 
     const result = await listProductos(productoRepo, tenantId, params);
@@ -173,6 +177,27 @@ export function createInventarioHandlers(
       }
       throw err;
     }
+  }
+
+  // ── Categorías (alcance CATEGORIA) ────────────────────────────────────────
+
+  async function listCategoriasProductoHandler(c: HonoCtx) {
+    const id = c.req.param("id") as string;
+    const tenantId = c.get("tenantId");
+    const producto = await getProductoById(productoRepo, tenantId, id);
+    if (!producto) throw new ApiError("PRODUCTO_NOT_FOUND", "Producto no encontrado", 404);
+    const items = await listCategoriasProducto(productoRepo, tenantId, id);
+    return c.json({ success: true, data: items });
+  }
+
+  async function syncCategoriasProductoHandler(c: HonoCtx) {
+    const id = c.req.param("id") as string;
+    const body = c.req.valid("json") as SyncCategoriasProductoInput;
+    const tenantId = c.get("tenantId");
+    const producto = await getProductoById(productoRepo, tenantId, id);
+    if (!producto) throw new ApiError("PRODUCTO_NOT_FOUND", "Producto no encontrado", 404);
+    const items = await syncCategoriasProducto(productoRepo, tenantId, id, body);
+    return c.json({ success: true, data: items });
   }
 
   // ── GRUPO 3: Tasas de precio (jerarquía) ───────────────────────────────────
@@ -419,6 +444,8 @@ export function createInventarioHandlers(
     deleteProducto: deleteProductoHandler,
     listCompatibilidades: listCompatibilidadesHandler,
     syncCompatibilidades: syncCompatibilidadesHandler,
+    listCategoriasProducto: listCategoriasProductoHandler,
+    syncCategoriasProducto: syncCategoriasProductoHandler,
     listTasasPrecio: listTasasPrecioHandler,
     createTasaPrecio: createTasaPrecioHandler,
     updateTasaPrecio: updateTasaPrecioHandler,

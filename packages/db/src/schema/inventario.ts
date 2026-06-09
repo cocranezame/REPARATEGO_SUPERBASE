@@ -21,7 +21,7 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
-import { categoria, componente, marca, modelo } from "./catalogos.js";
+import { categoria, componente, marca, modelo, tipoRepuesto } from "./catalogos.js";
 import { sucursal, tenant, usuario } from "./seguridad.js";
 
 export const tipoProductoEnum = pgEnum("tipo_producto", TipoProducto);
@@ -43,11 +43,11 @@ export const producto = pgTable(
     alcance: alcanceRepuestoEnum("alcance"),
     nombre: varchar("nombre", { length: 200 }).notNull(),
     descripcion: text("descripcion"),
-    categoria_id: uuid("categoria_id")
-      .notNull()
-      .references(() => categoria.id),
+    categoria_id: uuid("categoria_id").references(() => categoria.id),
     componente_id: uuid("componente_id").references(() => componente.id),
     marca_id: uuid("marca_id").references(() => marca.id),
+    modelo_id: uuid("modelo_id").references(() => modelo.id),
+    tipo_repuesto_id: uuid("tipo_repuesto_id").references(() => tipoRepuesto.id),
     unidad_medida: varchar("unidad_medida", { length: 10 }).notNull().default("UND"),
     precio_compra: decimal("precio_compra", { precision: 12, scale: 2 }),
     precio_venta: decimal("precio_venta", { precision: 12, scale: 2 }).notNull().default("0"),
@@ -82,6 +82,25 @@ export const productoCompatibilidad = pgTable(
   (t) => [
     uniqueIndex("uq_prod_compat_tenant_prod_modelo").on(t.tenant_id, t.producto_id, t.modelo_id),
   ]
+);
+
+export const productoCategoria = pgTable(
+  "producto_categoria_componente",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenant_id: uuid("tenant_id")
+      .notNull()
+      .references(() => tenant.id),
+    producto_id: uuid("producto_id")
+      .notNull()
+      .references(() => producto.id),
+    categoria_id: uuid("categoria_id")
+      .notNull()
+      .references(() => categoria.id),
+    componente_id: uuid("componente_id").references(() => componente.id),
+    created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("uq_prod_cat_comp").on(t.tenant_id, t.producto_id, t.categoria_id)]
 );
 
 export const tasaPrecio = pgTable(
@@ -184,9 +203,24 @@ export const productoRelations = relations(producto, ({ one, many }) => ({
   categoria: one(categoria, { fields: [producto.categoria_id], references: [categoria.id] }),
   componente: one(componente, { fields: [producto.componente_id], references: [componente.id] }),
   marca: one(marca, { fields: [producto.marca_id], references: [marca.id] }),
+  modelo: one(modelo, { fields: [producto.modelo_id], references: [modelo.id] }),
   compatibilidades: many(productoCompatibilidad),
+  categorias: many(productoCategoria),
   lotes: many(lote),
   movimientos: many(movimientoInventario),
+}));
+
+export const productoCategoriaRelations = relations(productoCategoria, ({ one }) => ({
+  tenant: one(tenant, { fields: [productoCategoria.tenant_id], references: [tenant.id] }),
+  producto: one(producto, { fields: [productoCategoria.producto_id], references: [producto.id] }),
+  categoria: one(categoria, {
+    fields: [productoCategoria.categoria_id],
+    references: [categoria.id],
+  }),
+  componente: one(componente, {
+    fields: [productoCategoria.componente_id],
+    references: [componente.id],
+  }),
 }));
 
 export const productoCompatibilidadRelations = relations(productoCompatibilidad, ({ one }) => ({

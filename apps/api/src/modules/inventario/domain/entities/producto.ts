@@ -8,9 +8,11 @@ export type Producto = {
   alcance: AlcanceRepuesto | null;
   nombre: string;
   descripcion: string | null;
-  categoria_id: string;
+  categoria_id: string | null;
   componente_id: string | null;
   marca_id: string | null;
+  modelo_id: string | null;
+  tipo_repuesto_id: string | null;
   unidad_medida: string;
   precio_compra: string | null;
   precio_venta: string;

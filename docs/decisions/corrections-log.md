@@ -5,6 +5,24 @@
 
 ---
 
+## C033 — 2026-06-09
+
+**ID:** C033
+**Afecta:** db, validators, api/clientes, web/servicios/NuevaOrdenPage
+**Contexto:** Campos `distrito` y `nivel` en cliente para segmentación geográfica y prioridad
+
+- **Migración 0032** `packages/db/drizzle/0032_cliente_distrito_nivel.sql`: `ADD COLUMN distrito VARCHAR(100)`, `ADD COLUMN nivel VARCHAR(10) NOT NULL DEFAULT 'NORMAL'`
+- **schema** `packages/db/src/schema/clientes.ts`: `distrito varchar(100)`, `nivel varchar(10).notNull().default("NORMAL")`
+- **validators** `packages/validators/src/clientes.ts`: `nivelClienteSchema = z.enum(["ALTO","NORMAL","BAJO"])`, `clienteBaseSchema` extiende con `distrito?` y `nivel` (default "NORMAL"); `updateClienteSchema` agrega ambos opcionales
+- **entity** `apps/api/src/modules/clientes/domain/entities/cliente.ts`: `distrito: string | null`, `nivel: string`
+- **ports** `apps/api/src/modules/clientes/domain/ports/cliente.repository.ts`: `distrito?` y `nivel?` en Create; `distrito?: string | null` y `nivel?` en Update
+- **use-cases** `create-cliente.ts` + `update-cliente.ts`: pass-through de `distrito` y `nivel`
+- **repo drizzle** `cliente.drizzle.ts`: insert y update incluyen `distrito` y `nivel`
+- **web types** `clientes/types/cliente.ts`: `distrito: string | null`, `nivel: "ALTO" | "NORMAL" | "BAJO"`
+- **web form** `NuevaOrdenPage.tsx`: selector distrito (agrupado Lima Norte/Centro/Sur, default Comas) + selector nivel (default Normal), ambos requeridos en formulario inline nuevo cliente
+
+---
+
 ## C032 — 2026-06-08
 
 **ID:** C032
@@ -881,3 +899,22 @@ La página `/crm/config/agentes` solo permitía editar agentes existentes. No ex
 - `apps/web/src/modules/inventario/hooks/useInventario.ts` — eliminado `useMensajeWhatsapp` (endpoint ya no existe)
 
 **Regla:** `cotizacion_compra` tiene exactamente una fila por (tenant, proveedor, repuesto). No hay estados. `precio_unitario` NULL = sin precio aún. El WhatsApp se genera client-side con el teléfono del proveedor sugerido.
+
+---
+
+## [C008] 2026-06-09 — Agregar modelo_id a tabla producto y validar instancia solo con equipos
+- **Afecta:** inventario, servicios
+- **Antes:**
+  - Tabla producto no tenía modelo_id como FK. La relación equipo↔modelo no existía directamente.
+  - producto_compatibilidad era la única relación con modelo, diseñada para repuestos, no equipos.
+  - instancia.producto_id no validaba que el producto fuera un equipo (componente_id IS NULL). Bug confirmado: una instancia apunta a un repuesto (Batería Apple).
+  - Dos equipos con misma categoría+marca (ej: Galaxy S24 y Galaxy A15, ambos Celulares+Samsung) no se podían distinguir porque no había modelo_id.
+- **Ahora:**
+  - Se agrega campo modelo_id (FK a modelo, nullable) en tabla producto
+  - Para equipos: modelo_id es obligatorio. Combinación categoria_id + marca_id + modelo_id identifica un equipo único
+  - Para repuestos: modelo_id sigue siendo null. La relación con modelos sigue vía producto_compatibilidad
+  - Se agrega CHECK constraint o validación en API: instancia.producto_id solo acepta productos con componente_id IS NULL (equipos)
+  - Flujo NuevaOrden: Categoría → Marca → Modelo → sistema busca/crea producto automáticamente con esa combinación
+  - Limpiar dato corrupto: eliminar instancia que apunta a repuesto (Batería Apple)
+- **Razón:** gap de diseño que impedía identificar equipos por modelo y permitía crear instancias con repuestos
+- **Migración:** ALTER TABLE producto ADD COLUMN modelo_id UUID REFERENCES modelo(id); limpiar instancias corruptas

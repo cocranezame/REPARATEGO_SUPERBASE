@@ -87,12 +87,39 @@ export function usePerifericosPorCategoria(categoriaId: string | undefined) {
   });
 }
 
+export function usePerifericos(categoriaId?: string) {
+  return useQuery<ApiOk<Periferico[]>>({
+    queryKey: ["perifericos-all", categoriaId],
+    queryFn: () =>
+      apiClient.get<ApiOk<Periferico[]>>(
+        `${BASE}/perifericos${qs(categoriaId ? { categoria_id: categoriaId } : {})}`
+      ),
+  });
+}
+
 export function useCreatePeriferico() {
   const qc = useQueryClient();
   return useMutation<ApiOk<Periferico>, Error, { categoria_id: string; nombre: string }>({
     mutationFn: (body) => apiClient.post<ApiOk<Periferico>>(`${BASE}/perifericos`, body),
     onSuccess: (_d, vars) => {
       void qc.invalidateQueries({ queryKey: ["perifericos", vars.categoria_id] });
+      void qc.invalidateQueries({ queryKey: ["perifericos-all"] });
+    },
+  });
+}
+
+export function useUpdatePeriferico() {
+  const qc = useQueryClient();
+  return useMutation<
+    ApiOk<Periferico>,
+    Error,
+    { id: string; nombre?: string | undefined; activo?: boolean | undefined }
+  >({
+    mutationFn: ({ id, ...body }) =>
+      apiClient.patch<ApiOk<Periferico>>(`${BASE}/perifericos/${id}`, body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["perifericos"] });
+      void qc.invalidateQueries({ queryKey: ["perifericos-all"] });
     },
   });
 }

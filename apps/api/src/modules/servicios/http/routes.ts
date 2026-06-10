@@ -18,6 +18,7 @@ import {
   updateCostoRevisionSchema,
   updateEstadoOrdenServicioSchema,
   updateOrdenServicioSchema,
+  updatePerifericoSchema,
   updateRequerimientoEstadoSchema,
   upsertComponentesOrdenSchema,
 } from "@kallpasoft/validators";
@@ -67,6 +68,11 @@ serviciosRoutes.post(
   "/servicios-v2/perifericos",
   validateBody(createPerifericoSchema),
   perifericosH.create
+);
+serviciosRoutes.patch(
+  "/servicios-v2/perifericos/:id",
+  validateBody(updatePerifericoSchema),
+  perifericosH.update
 );
 
 // ─── Instancias ───────────────────────────────────────────────────────────────

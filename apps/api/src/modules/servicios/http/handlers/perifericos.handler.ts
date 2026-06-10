@@ -1,5 +1,10 @@
-import type { CreatePerifericoInput, ListPerifericosQuery } from "@kallpasoft/validators";
+import type {
+  CreatePerifericoInput,
+  ListPerifericosQuery,
+  UpdatePerifericoInput,
+} from "@kallpasoft/validators";
 import type { Context } from "hono";
+import { ApiError } from "../../../../middlewares/error-handler.js";
 import type { HonoVariables } from "../../../../types/context.js";
 import type { IServicioRepository } from "../../domain/ports/servicio.repository.js";
 
@@ -27,5 +32,17 @@ export class PerifericosHandler {
       nombre: body.nombre,
     });
     return c.json({ success: true, data: periferico }, 201);
+  };
+
+  update = async (c: HonoCtx) => {
+    const tenantId = c.get("tenantId");
+    const id = c.req.param("id") as string;
+    const body = c.req.valid("json") as UpdatePerifericoInput;
+    const periferico = await this.repo.updatePeriferico(tenantId, id, {
+      ...(body.nombre !== undefined ? { nombre: body.nombre } : {}),
+      ...(body.activo !== undefined ? { activo: body.activo } : {}),
+    });
+    if (!periferico) throw new ApiError("PERIFERICO_NOT_FOUND", "Periférico no encontrado", 404);
+    return c.json({ success: true, data: periferico });
   };
 }

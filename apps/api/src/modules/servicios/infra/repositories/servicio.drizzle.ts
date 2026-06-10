@@ -1096,6 +1096,8 @@ export class ServicioDrizzleRepository implements IServicioRepository {
         if (ventaRows[0]?.estado !== "COMPLETADA") {
           throw new Error("R12: La venta debe estar PAGADA antes de entregar el equipo");
         }
+        // [C009-B] Consumo definitivo de stock al momento de entrega real
+        await this._confirmarConsumoStock(tx, tenantId, id);
       }
 
       let ventaId = os.venta_id;
@@ -1236,34 +1238,8 @@ export class ServicioDrizzleRepository implements IServicioRepository {
       );
     }
 
-    // Mark assigned SKUs as CONSUMIDO and create movimientos
-    const skusRows: Array<typeof osSkuTable.$inferSelect> = await tx
-      .select()
-      .from(osSkuTable)
-      .where(and(eq(osSkuTable.orden_servicio_id, ordenId), eq(osSkuTable.estado, "ASIGNADO")));
-
-    if (skusRows.length > 0) {
-      // Mark as consumed
-      await tx
-        .update(osSkuTable)
-        .set({ estado: "CONSUMIDO", updated_at: new Date() })
-        .where(and(eq(osSkuTable.orden_servicio_id, ordenId), eq(osSkuTable.estado, "ASIGNADO")));
-
-      // Create SERVICIO movements
-      await tx.insert(movimientoTable).values(
-        skusRows.map((sku) => ({
-          tenant_id: tenantId,
-          producto_id: sku.producto_id,
-          lote_id: sku.lote_id,
-          sucursal_id: os.sucursal_id,
-          tipo: "SERVICIO" as const,
-          cantidad: -sku.cantidad,
-          referencia_tipo: "orden_servicio",
-          referencia_id: ordenId,
-          usuario_id: userId,
-        }))
-      );
-    }
+    // [C009-B] SKUs se marcan CONSUMIDO en ENTREGADO, no aquí.
+    // Los movimientos negativos ya fueron insertados en asignarSku como RESERVA.
 
     return ventaId;
   }
@@ -1330,6 +1306,26 @@ export class ServicioDrizzleRepository implements IServicioRepository {
     });
 
     return ventaId;
+  }
+
+  // [C009-B] Marca SKUs ASIGNADO → CONSUMIDO al momento de entrega real.
+  // Los movimientos negativos ya existen desde asignarSku (RESERVA), no se duplican.
+  private async _confirmarConsumoStock(
+    // biome-ignore lint/suspicious/noExplicitAny: Drizzle PgTransaction type is deeply generic
+    tx: any,
+    tenantId: string,
+    ordenId: string
+  ): Promise<void> {
+    await tx
+      .update(osSkuTable)
+      .set({ estado: "CONSUMIDO", updated_at: new Date() })
+      .where(
+        and(
+          eq(osSkuTable.orden_servicio_id, ordenId),
+          eq(osSkuTable.tenant_id, tenantId),
+          eq(osSkuTable.estado, "ASIGNADO")
+        )
+      );
   }
 
   // ─── Componentes ──────────────────────────────────────────────────────────────

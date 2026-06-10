@@ -334,6 +334,7 @@ export const ordenServicioAceptacion = pgTable(
     manual_reason: varchar("manual_reason", { length: 20 }),
     evidence_image_url: text("evidence_image_url"),
     preventivo_accepted: boolean("preventivo_accepted"),
+    hash_sha256: varchar("hash_sha256", { length: 64 }),
     created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("idx_osac_orden_servicio").on(t.orden_servicio_id)]

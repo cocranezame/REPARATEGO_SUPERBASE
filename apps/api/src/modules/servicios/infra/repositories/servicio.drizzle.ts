@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { DbClient } from "@kallpasoft/db";
 import {
   caja as cajaTable,
@@ -2087,6 +2088,11 @@ export class ServicioDrizzleRepository implements IServicioRepository {
         }
       }
 
+      // [C009-D] SHA-256 del texto mostrado para integridad criptográfica legal
+      const hash_sha256 = data.texto_mostrado
+        ? createHash("sha256").update(data.texto_mostrado).digest("hex")
+        : null;
+
       const [row] = await tx
         .insert(osAceptacionTable)
         .values({
@@ -2101,6 +2107,7 @@ export class ServicioDrizzleRepository implements IServicioRepository {
             ? { documento_version: data.documento_version }
             : {}),
           ...(data.texto_mostrado !== undefined ? { texto_mostrado: data.texto_mostrado } : {}),
+          ...(hash_sha256 !== null ? { hash_sha256 } : {}),
           ...(data.metodo_aceptacion !== undefined
             ? {
                 metodo_aceptacion:

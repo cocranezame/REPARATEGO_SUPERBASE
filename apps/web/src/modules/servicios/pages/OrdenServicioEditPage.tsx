@@ -11,7 +11,6 @@ import {
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useComponentes } from "../../catalogos/hooks/useComponentes";
-import { useUsuarios } from "../../usuarios/hooks/useUsuarios";
 import {
   useAsignarSku,
   useCambiarEstado,
@@ -59,21 +58,21 @@ const ESTADO_COLORS: Record<EstadoOS, string> = {
   DEVOLUCION: "bg-red-100 text-red-600",
 };
 
-const TRANSICIONES: Record<EstadoOS, EstadoOS[]> = {
-  VALIDACION: ["REVISION"],
-  REVISION: ["DIAG_PRELIMINAR", "DIAG_FINAL"],
-  DIAG_PRELIMINAR: ["DIAG_FINAL"],
-  DIAG_FINAL: ["COTIZADO", "DEVOLUCION"],
-  COTIZADO: ["APROBADO"],
-  APROBADO: ["AGREGAR_SKU", "COTIZADO"],
-  AGREGAR_SKU: ["PRIORIDAD", "REPARADO", "APROBADO"],
-  PRIORIDAD: ["REPARADO"],
-  REPARADO: ["AVISADO"],
-  AVISADO: ["ENTREGADO"],
-  ENTREGADO: ["GARANTIA"],
-  GARANTIA: [],
-  DEVOLUCION: [],
-};
+const ALL_ESTADOS: EstadoOS[] = [
+  "VALIDACION",
+  "REVISION",
+  "DIAG_PRELIMINAR",
+  "DIAG_FINAL",
+  "COTIZADO",
+  "APROBADO",
+  "AGREGAR_SKU",
+  "PRIORIDAD",
+  "REPARADO",
+  "AVISADO",
+  "ENTREGADO",
+  "GARANTIA",
+  "DEVOLUCION",
+];
 
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString("es-PE", {
@@ -158,7 +157,7 @@ function Accordion({ title, hasData, editable, defaultOpen = false, children }: 
 // ─── Sección 1: Validación ────────────────────────────────────────────────────
 
 function SeccionValidacion({ os }: { os: OrdenServicioDetalle }) {
-  const editable = os.estado === "VALIDACION";
+  const editable = true;
   const aceptacionVal = os.aceptaciones.find((a) => a.tipo === "VALIDACION");
 
   const [tab, setTab] = useState<"wa" | "manual">("wa");
@@ -323,10 +322,8 @@ function SeccionValidacion({ os }: { os: OrdenServicioDetalle }) {
 
 // ─── Sección 2: Diagnóstico ───────────────────────────────────────────────────
 
-const DIAG_ESTADOS: EstadoOS[] = ["REVISION", "DIAG_PRELIMINAR", "DIAG_FINAL"];
-
 function SeccionDiagnostico({ os }: { os: OrdenServicioDetalle }) {
-  const editable = DIAG_ESTADOS.includes(os.estado);
+  const editable = true;
   const hasData = !!(os.diagnostico_tecnico || os.solucion);
 
   const [diag, setDiag] = useState(os.diagnostico_tecnico ?? "");
@@ -419,7 +416,7 @@ function SeccionDiagnostico({ os }: { os: OrdenServicioDetalle }) {
 // ─── Sección 3: Componentes ───────────────────────────────────────────────────
 
 function SeccionComponentes({ os }: { os: OrdenServicioDetalle }) {
-  const editable = DIAG_ESTADOS.includes(os.estado);
+  const editable = true;
   const hasData = os.componentes.length > 0;
 
   const { data: compData } = useComponentes({ activo: true, pageSize: 200 });
@@ -609,10 +606,8 @@ function SeccionComponentes({ os }: { os: OrdenServicioDetalle }) {
 
 // ─── Sección 4: Evidencias ────────────────────────────────────────────────────
 
-const EVIDENCIA_ESTADOS: EstadoOS[] = ["REVISION", "DIAG_PRELIMINAR", "DIAG_FINAL"];
-
 function SeccionEvidencias({ os }: { os: OrdenServicioDetalle }) {
-  const editable = EVIDENCIA_ESTADOS.includes(os.estado);
+  const editable = true;
   const { data: evData } = useEvidencias(os.id);
   const evidencias = evData?.data ?? os.evidencias;
 
@@ -717,7 +712,7 @@ function SeccionEvidencias({ os }: { os: OrdenServicioDetalle }) {
 // ─── Sección 5: Requerimientos ────────────────────────────────────────────────
 
 function SeccionRequerimientos({ os }: { os: OrdenServicioDetalle }) {
-  const editable = DIAG_ESTADOS.includes(os.estado);
+  const editable = true;
   const { data: reqData } = useRequerimientos(os.id);
   const reqs = reqData?.data ?? os.requerimientos;
 
@@ -830,7 +825,7 @@ type LocalItem = {
 type BuscarCtx = { tipo: "REPUESTO" | "SERVICIO"; componenteId?: string; esPreventivo: boolean };
 
 function SeccionCotizacion({ os }: { os: OrdenServicioDetalle }) {
-  const editable = os.estado === "DIAG_FINAL";
+  const editable = true;
   const hasCot = os.cotizacion.items.length > 0;
 
   const [items, setItems] = useState<LocalItem[]>([]);
@@ -843,7 +838,6 @@ function SeccionCotizacion({ os }: { os: OrdenServicioDetalle }) {
   const [error, setError] = useState<string | null>(null);
 
   const createCotizacion = useCreateCotizacion();
-  const cambiarEstado = useCambiarEstado();
 
   const finalComps = os.componentes.filter((c) => c.etapa === "FINAL");
 
@@ -916,13 +910,12 @@ function SeccionCotizacion({ os }: { os: OrdenServicioDetalle }) {
           es_preventivo: i.es_preventivo,
         })),
       });
-      await cambiarEstado.mutateAsync({ id: os.id, estado: "COTIZADO" });
     } catch (err) {
       setError((err as Error).message);
     }
   }
 
-  const isPending = createCotizacion.isPending || cambiarEstado.isPending;
+  const isPending = createCotizacion.isPending;
 
   return (
     <>
@@ -1184,7 +1177,7 @@ function SeccionCotizacion({ os }: { os: OrdenServicioDetalle }) {
                   disabled={isPending || items.length === 0}
                   className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-60"
                 >
-                  {isPending ? "Registrando..." : "Registrar cotización → COTIZADO"}
+                  {isPending ? "Guardando..." : "Guardar cotización"}
                 </button>
               </div>
             </div>
@@ -1215,7 +1208,7 @@ function SeccionCotizacion({ os }: { os: OrdenServicioDetalle }) {
 // ─── Sección 7: Aprobación presupuesto ───────────────────────────────────────
 
 function SeccionAprobacion({ os }: { os: OrdenServicioDetalle }) {
-  const editable = os.estado === "COTIZADO";
+  const editable = true;
   const aceptacionPres = os.aceptaciones.find((a) => a.tipo === "PRESUPUESTO");
   const hasData = !!aceptacionPres;
   const hasPreventivo = Number(os.cotizacion.total_preventivo) > 0;
@@ -1426,7 +1419,7 @@ function SeccionAprobacion({ os }: { os: OrdenServicioDetalle }) {
 // ─── Sección 8: SKUs ──────────────────────────────────────────────────────────
 
 function SeccionSkus({ os }: { os: OrdenServicioDetalle }) {
-  const editable = os.estado === "AGREGAR_SKU";
+  const editable = true;
   const { data: skusData } = useSkus(os.id);
   const skus = skusData?.data ?? os.skus;
   const hasData = skus.length > 0;
@@ -1672,7 +1665,7 @@ const MOTIVOS = [
 ];
 
 function SeccionDevolucion({ os }: { os: OrdenServicioDetalle }) {
-  const editable = os.estado === "DIAG_FINAL";
+  const editable = true;
   const isDev = os.estado === "DEVOLUCION";
   const hasData = isDev || !!os.motivo_devolucion;
 
@@ -1958,30 +1951,10 @@ export function OrdenServicioEditPage() {
   const { data, isLoading, isError } = useOrden(osId);
   const os = data?.data;
 
-  const { data: tecnicosData } = useUsuarios({ rol: "TECNICO", activo: true, pageSize: 100 });
-  const tecnicos = tecnicosData?.data ?? [];
-
-  const [tecnicoId, setTecnicoId] = useState<string>("");
-  const [tecnicoInitialized, setTecnicoInitialized] = useState(false);
   const [estadoTarget, setEstadoTarget] = useState<EstadoOS | "">("");
   const [cambioError, setCambioError] = useState<string | null>(null);
 
-  const updateOrden = useUpdateOrden();
   const cambiarEstado = useCambiarEstado();
-
-  if (!tecnicoInitialized && os) {
-    setTecnicoId(os.tecnico_id ?? "");
-    setTecnicoInitialized(true);
-  }
-
-  async function handleSaveTecnico() {
-    if (!os) return;
-    try {
-      await updateOrden.mutateAsync({ id: os.id, tecnico_id: tecnicoId || undefined });
-    } catch {
-      // silencioso, el estado de error del hook maneja esto
-    }
-  }
 
   async function handleCambiarEstado() {
     if (!os || !estadoTarget) return;
@@ -2012,8 +1985,6 @@ export function OrdenServicioEditPage() {
       </div>
     );
   }
-
-  const transicionesDisponibles = TRANSICIONES[os.estado] ?? [];
 
   return (
     <div className="space-y-4">
@@ -2084,68 +2055,36 @@ export function OrdenServicioEditPage() {
           </div>
 
           <div className="flex flex-col gap-3 min-w-[220px]">
-            {/* Técnico editable */}
+            {/* Cambiar estado — cualquier estado disponible */}
             <div className="flex flex-col gap-1">
-              <label htmlFor="hdr-tecnico" className="text-xs font-medium text-neutral-600">
-                Técnico asignado
+              <label htmlFor="hdr-estado" className="text-xs font-medium text-neutral-600">
+                Cambiar estado
               </label>
               <div className="flex gap-2">
                 <select
-                  id="hdr-tecnico"
-                  value={tecnicoId}
-                  onChange={(e) => setTecnicoId(e.target.value)}
+                  id="hdr-estado"
+                  value={estadoTarget}
+                  onChange={(e) => setEstadoTarget(e.target.value as EstadoOS | "")}
                   className="flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none"
                 >
-                  <option value="">Sin asignar</option>
-                  {tecnicos.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.nombres} {t.apellidos}
+                  <option value="">Seleccionar...</option>
+                  {ALL_ESTADOS.filter((e) => e !== os.estado).map((e) => (
+                    <option key={e} value={e}>
+                      {e.replace(/_/g, " ")}
                     </option>
                   ))}
                 </select>
                 <button
                   type="button"
-                  onClick={handleSaveTecnico}
-                  disabled={updateOrden.isPending}
-                  className="rounded-lg bg-neutral-100 px-3 py-1.5 text-xs text-neutral-700 hover:bg-neutral-200 disabled:opacity-50"
+                  onClick={handleCambiarEstado}
+                  disabled={!estadoTarget || cambiarEstado.isPending}
+                  className="rounded-lg bg-neutral-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
                 >
-                  {updateOrden.isPending ? "..." : "Guardar"}
+                  {cambiarEstado.isPending ? "..." : "Aplicar"}
                 </button>
               </div>
+              {cambioError !== null && <p className="text-xs text-red-600">{cambioError}</p>}
             </div>
-
-            {/* Cambiar estado */}
-            {transicionesDisponibles.length > 0 && (
-              <div className="flex flex-col gap-1">
-                <label htmlFor="hdr-estado" className="text-xs font-medium text-neutral-600">
-                  Cambiar estado
-                </label>
-                <div className="flex gap-2">
-                  <select
-                    id="hdr-estado"
-                    value={estadoTarget}
-                    onChange={(e) => setEstadoTarget(e.target.value as EstadoOS | "")}
-                    className="flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm focus:border-primary-500 focus:outline-none"
-                  >
-                    <option value="">Seleccionar...</option>
-                    {transicionesDisponibles.map((e) => (
-                      <option key={e} value={e}>
-                        {e.replace(/_/g, " ")}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={handleCambiarEstado}
-                    disabled={!estadoTarget || cambiarEstado.isPending}
-                    className="rounded-lg bg-neutral-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
-                  >
-                    {cambiarEstado.isPending ? "..." : "Aplicar"}
-                  </button>
-                </div>
-                {cambioError !== null && <p className="text-xs text-red-600">{cambioError}</p>}
-              </div>
-            )}
 
             {os.venta_id && (
               <Link

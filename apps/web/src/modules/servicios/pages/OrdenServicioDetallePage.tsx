@@ -1,4 +1,4 @@
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, Pencil } from "lucide-react";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -147,6 +147,13 @@ export function OrdenServicioDetallePage() {
             </p>
           </div>
           <div className="text-right text-sm space-y-1">
+            <Link
+              to={`/servicios/${osId}/editar`}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-700"
+            >
+              <Pencil className="h-3 w-3" />
+              Editar orden
+            </Link>
             <p className="text-neutral-500">
               Técnico:{" "}
               <span className="font-medium text-neutral-800">{os.tecnico_nombre ?? "—"}</span>

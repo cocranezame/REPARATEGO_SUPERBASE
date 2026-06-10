@@ -1,6 +1,6 @@
-import { Plus, Search } from "lucide-react";
+import { Eye, Pencil, Plus, Search } from "lucide-react";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useOrdenes } from "../hooks/useOrdenesServicio";
 import type { EstadoOS, OrdenServicioResumen } from "../types/orden-servicio";
 
@@ -45,6 +45,7 @@ function fmtDate(d: string): string {
 }
 
 function OSRow({ os }: { os: OrdenServicioResumen }) {
+  const navigate = useNavigate();
   return (
     <tr className="hover:bg-neutral-50">
       <td className="whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold">
@@ -73,6 +74,25 @@ function OSRow({ os }: { os: OrdenServicioResumen }) {
       </td>
       <td className="whitespace-nowrap px-4 py-3 text-xs text-neutral-500">
         {fmtDate(os.created_at)}
+      </td>
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-1">
+          <Link
+            to={`/servicios/${os.id}`}
+            title="Ver detalle"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+          >
+            <Eye className="h-3.5 w-3.5" />
+          </Link>
+          <button
+            type="button"
+            title="Editar orden"
+            onClick={() => navigate(`/servicios/${os.id}/editar`)}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-primary-50 hover:text-primary-600"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </td>
     </tr>
   );
@@ -152,22 +172,29 @@ export function ServiciosPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-200 bg-neutral-50">
-                  {["Código", "Cliente", "Producto", "Canal", "Técnico", "Estado", "Fecha"].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-3 text-left text-xs font-medium uppercase text-neutral-500"
-                      >
-                        {h}
-                      </th>
-                    )
-                  )}
+                  {[
+                    "Código",
+                    "Cliente",
+                    "Producto",
+                    "Canal",
+                    "Técnico",
+                    "Estado",
+                    "Fecha",
+                    "Acciones",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="px-4 py-3 text-left text-xs font-medium uppercase text-neutral-500"
+                    >
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {ordenes.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-10 text-center text-neutral-500">
+                    <td colSpan={8} className="py-10 text-center text-neutral-500">
                       No hay órdenes registradas.
                     </td>
                   </tr>

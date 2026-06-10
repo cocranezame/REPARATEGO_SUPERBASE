@@ -290,3 +290,47 @@ N29 — Un solo webhook endpoint para todos los negocios. Ruteo interno por phon
 N30 — ADMINISTRADOR: acceso total al CRM, configuración de etapas/etiquetas/agentes/bots/plantillas/cuentas WhatsApp.
 N31 — VENDEDOR: bandeja de conversaciones, chat en vivo, kanban de leads, ficha de lead, notas.
 N32 — TECNICO: solo mensajería interna.
+
+## Asistencia y Planilla — Reglas de Negocio (C007)
+
+### Marcado de asistencia
+A1  — El marcado requiere doble validación: WiFi (SSID+BSSID match) + GPS (haversine dentro del radio). La validación final es AND de ambas.
+A2  — La validación GPS es CRÍTICA y obligatoria. WiFi es capa de seguridad adicional (puede no estar disponible desde navegador móvil).
+A3  — Si BSSID no disponible desde el navegador, se envía null. La validación WiFi se basa solo en SSID cuando BSSID no está disponible.
+A4  — Si el marcado no es aprobado (fuera de zona o WiFi no autorizado), se registra igual pero se notifica al administrador vía EventBridge.
+A5  — Tardanza se calcula solo en tipo_evento=ENTRADA: si fecha_hora > turno.hora_inicio + tolerancia_minutos → minutos de diferencia.
+A6  — Hora extra se calcula solo en tipo_evento=SALIDA: si fecha_hora > turno.hora_fin → minutos de diferencia.
+A7  — El admin puede registrar marcados manuales con observación (estado=MANUAL, registrado_por=admin_id).
+
+### Turnos y trabajadores
+A8  — Un turno define hora_inicio, hora_fin, tolerancia y días laborales (LUN-DOM).
+A9  — Solo 1 config activa por trabajador (UNIQUE usuario_id en trabajador_config).
+A10 — Los tipos de contrato son: PLANILLA, HONORARIOS, PRACTICANTE.
+A11 — Factor hora extra configurable por trabajador (default 1.25).
+
+### Planilla mensual
+A12 — valor_dia = sueldo_base / dias_laborables del periodo según turno.
+A13 — valor_hora = valor_dia / 8.
+A14 — descuento_faltas = dias_falta_injustificada * valor_dia.
+A15 — descuento_tardanzas: si POR_MINUTO = minutos_total * monto_descuento_min. Si POR_RANGO = count(tardanzas) * (valor_hora / 2). Si SIN_DESCUENTO = 0.
+A16 — monto_horas_extra = horas_extra_total * valor_hora * factor_hora_extra.
+A17 — total_bruto = sueldo_base - descuento_faltas - descuento_tardanzas + monto_horas_extra + bonificaciones.
+A18 — total_neto = total_bruto - otros_descuentos.
+A19 — Estados de planilla: BORRADOR → CALCULADO → APROBADO → PAGADO. Una vez PAGADO no se puede modificar.
+A20 — Solo ADMINISTRADOR puede aprobar y marcar como pagado.
+
+### Permisos y justificaciones
+A21 — Cualquier rol puede solicitar un permiso. Solo ADMINISTRADOR o ASISTENTE pueden aprobar/rechazar.
+A22 — Tipos de permiso: MEDICO, PERSONAL, VACACIONES, CAPACITACION, LICENCIA, OTRO.
+A23 — Si un permiso aprobado tiene afecta_pago=true y existe planilla en BORRADOR/CALCULADO → recalcular planilla automáticamente.
+
+### Portal trabajador
+A24 — Auth separada del sistema principal: DNI + contraseña → JWT temporal (mismo patrón portal servicios C002).
+A25 — El trabajador solo ve su propia información: marcados, historial, planilla estimada.
+A26 — Si planilla no existe en BD para el período consultado, se calcula estimado en tiempo real desde eventos.
+A27 — El portal es mobile-first (PWA). Los trabajadores acceden desde su celular.
+
+### Permisos de acceso
+A28 — ADMINISTRADOR: acceso total al módulo (config, panel tiempo real, planilla, permisos, reportes).
+A29 — ASISTENTE: puede aprobar/rechazar permisos.
+A30 — VENDEDOR, TECNICO: solo pueden solicitar permisos y usar el portal trabajador.

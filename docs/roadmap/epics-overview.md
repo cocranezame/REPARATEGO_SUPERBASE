@@ -1,7 +1,7 @@
 # Epics Overview — ReparaTego
 
 > Estado de cada épica. Se actualiza al completar tickets.
-> Total: 18 épicas + deploy, ~182 tickets
+> Total: 19 épicas + deploy, ~194 tickets
 
 | Épica | Nombre | Estado | Doc |
 |-------|--------|--------|-----|
@@ -24,6 +24,7 @@
 | E0D | Deploy a Producción | ⬜ TODO | E00D-deploy.md |
 | E16 | App Móvil | ⬜ TODO | E16-mobile.md |
 | E17 | Integración SUNAT | ⬜ TODO | E17-sunat.md |
+| E19 | Asistencia y Planilla — 12 tickets | ⬜ TODO | E19-asistencia.md |
 
 ## Orden de ejecución
 

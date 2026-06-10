@@ -3,6 +3,17 @@ import { useAuthStore } from "../stores/auth-store";
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api/v1";
 const TENANT_ID = import.meta.env.VITE_TENANT_ID ?? "";
 
+export class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly code?: string
+  ) {
+    super(message);
+    this.name = "ApiRequestError";
+  }
+}
+
 type HttpMethod = "DELETE" | "GET" | "PATCH" | "POST" | "PUT";
 
 type RequestOptions = {
@@ -75,13 +86,15 @@ async function request<T>(path: string, options: RequestOptions = {}, isRetry = 
 
   if (!res.ok) {
     let message = `HTTP ${res.status}`;
+    let code: string | undefined;
     try {
-      const errorBody = (await res.json()) as { error?: { message?: string } };
+      const errorBody = (await res.json()) as { error?: { message?: string; code?: string } };
       if (errorBody?.error?.message) message = errorBody.error.message;
+      if (errorBody?.error?.code) code = errorBody.error.code;
     } catch {
       // keep default message
     }
-    throw new Error(message);
+    throw new ApiRequestError(message, res.status, code);
   }
 
   return res.json() as Promise<T>;

@@ -9,13 +9,16 @@ import {
   createCostoRevisionSchema,
   createInstanciaSchema,
   createOrdenServicioSchema,
+  createPerifericoSchema,
   createRequerimientoSchema,
   listInstanciasQuerySchema,
   listOrdenesServicioQuerySchema,
+  listPerifericosQuerySchema,
   registrarCotizacionSchema,
   updateCostoRevisionSchema,
   updateEstadoOrdenServicioSchema,
   updateOrdenServicioSchema,
+  updatePerifericoSchema,
   updateRequerimientoEstadoSchema,
   upsertComponentesOrdenSchema,
 } from "@kallpasoft/validators";
@@ -33,6 +36,7 @@ import { EvidenciasHandler } from "./handlers/evidencias.handler.js";
 import { HistorialHandler } from "./handlers/historial.handler.js";
 import { InstanciasHandler } from "./handlers/instancias.handler.js";
 import { OrdenesHandler } from "./handlers/ordenes.handler.js";
+import { PerifericosHandler } from "./handlers/perifericos.handler.js";
 import { RequerimientosHandler } from "./handlers/requerimientos.handler.js";
 import { SkusHandler } from "./handlers/skus.handler.js";
 
@@ -48,10 +52,28 @@ const skusH = new SkusHandler(repo);
 const requerimientosH = new RequerimientosHandler(repo);
 const aceptacionesH = new AceptacionesHandler(repo);
 const historialH = new HistorialHandler(repo);
+const perifericosH = new PerifericosHandler(repo);
 
 export const serviciosRoutes = new Hono<{ Variables: HonoVariables }>();
 
-serviciosRoutes.use(authMiddleware);
+serviciosRoutes.use("/servicios-v2/*", authMiddleware);
+
+// ─── Periféricos ─────────────────────────────────────────────────────────────
+serviciosRoutes.get(
+  "/servicios-v2/perifericos",
+  validateQuery(listPerifericosQuerySchema),
+  perifericosH.list
+);
+serviciosRoutes.post(
+  "/servicios-v2/perifericos",
+  validateBody(createPerifericoSchema),
+  perifericosH.create
+);
+serviciosRoutes.patch(
+  "/servicios-v2/perifericos/:id",
+  validateBody(updatePerifericoSchema),
+  perifericosH.update
+);
 
 // ─── Instancias ───────────────────────────────────────────────────────────────
 serviciosRoutes.get(

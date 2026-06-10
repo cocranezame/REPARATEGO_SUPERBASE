@@ -13,7 +13,8 @@ const h = createCategoriaHandlers(repo);
 
 export const categoriaRoutes = new Hono<{ Variables: HonoVariables }>();
 
-categoriaRoutes.use(authMiddleware);
+categoriaRoutes.use("/categorias", authMiddleware);
+categoriaRoutes.use("/categorias/*", authMiddleware);
 
 categoriaRoutes.get("/categorias", validateQuery(listCategoriasQuerySchema), h.list);
 categoriaRoutes.post("/categorias", validateBody(createCategoriaSchema), h.create);

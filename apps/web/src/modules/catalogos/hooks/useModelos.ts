@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../../shared/lib/api-client";
 import type { ModeloResponse, ModelosListResponse, ModelosParams } from "../types/modelo";
 
-function buildQueryString(params: ModelosParams): string {
+function buildQueryString(params: Omit<ModelosParams, "enabled">): string {
   const q = new URLSearchParams();
   if (params.search !== undefined && params.search !== "") q.set("search", params.search);
   if (params.activo !== undefined) q.set("activo", String(params.activo));
@@ -15,9 +15,11 @@ function buildQueryString(params: ModelosParams): string {
 }
 
 export function useModelos(params: ModelosParams = {}) {
+  const { enabled = true, ...rest } = params;
   return useQuery<ModelosListResponse>({
-    queryKey: ["modelos", params],
-    queryFn: () => apiClient.get<ModelosListResponse>(`/modelos${buildQueryString(params)}`),
+    queryKey: ["modelos", rest],
+    queryFn: () => apiClient.get<ModelosListResponse>(`/modelos${buildQueryString(rest)}`),
+    enabled,
   });
 }
 

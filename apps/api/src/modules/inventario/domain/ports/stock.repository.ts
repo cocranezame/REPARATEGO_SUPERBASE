@@ -99,9 +99,4 @@ export interface IStockRepository {
   listMovimientos(tenantId: string, params: ListMovimientosParams): Promise<ListMovimientosResult>;
   createMovimiento(tenantId: string, data: CreateMovimientoData): Promise<MovimientoInventario>;
   getProveedoresSugeridos(tenantId: string, productoId: string): Promise<ProveedoresSugeridos>;
-  getMensajeWhatsapp(
-    tenantId: string,
-    cotizacionId: string,
-    detalleId: string
-  ): Promise<{ url: string }>;
 }

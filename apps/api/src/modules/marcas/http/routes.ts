@@ -13,7 +13,8 @@ const h = createMarcaHandlers(repo);
 
 export const marcaRoutes = new Hono<{ Variables: HonoVariables }>();
 
-marcaRoutes.use(authMiddleware);
+marcaRoutes.use("/marcas", authMiddleware);
+marcaRoutes.use("/marcas/*", authMiddleware);
 
 marcaRoutes.get("/marcas", validateQuery(listMarcasQuerySchema), h.list);
 marcaRoutes.post("/marcas", validateBody(createMarcaSchema), h.create);

@@ -1,6 +1,7 @@
 # Schema Overview — ReparaTego
 
-> Mapa completo de las ~56 tablas, organizadas por módulo.
+> Mapa completo de las ~63 tablas, organizadas por módulo.
+> Agregado por C007: módulo asistencia y planilla con 7 tablas nuevas.
 > Todas las tablas llevan `tenant_id` con RLS: `WHERE tenant_id = auth.jwt() ->> 'tenant_id'`
 > PK: UUID con gen_random_uuid(). Timestamps: created_at, updated_at (TIMESTAMPTZ).
 
@@ -19,6 +20,7 @@
 | Domicilios | tarifa_distrito, visita_domicilio | db/modules/domicilios.md |
 | Pagos Prov. | pago_proveedor | db/modules/pagos-proveedores.md |
 | CRM | wa_cuenta, crm_etapa, crm_etapa_transicion, crm_etiqueta, crm_lead, crm_lead_etiqueta, crm_conversacion, crm_mensaje, crm_nota, crm_agente, crm_accion_agente, crm_plantilla, crm_bot, crm_evento, crm_mensaje_interno — *Actualizado por C005: campos UTM (C001) en crm_lead, webhook_verify_token en wa_cuenta, bot_id en crm_etapa, campos metadata y mensajes_sin_leer, asignado_por en crm_lead_etiqueta, prompt_base y max_mensajes_contexto en crm_agente, meta_template_name en crm_plantilla, codigo en crm_etiqueta y crm_bot* | db/modules/crm.md |
+| Asistencia | turno_trabajo, punto_control_wifi, trabajador_config, evento_asistencia, permiso_asistencia, planilla_mensual, planilla_detalle — *Agregado por C007* | db/modules/asistencia.md |
 
 ## Enums globales
 
@@ -78,6 +80,17 @@ CREATE TYPE estado_meta_plantilla AS ENUM ('PENDIENTE', 'APROBADA', 'RECHAZADA')
 CREATE TYPE origen_nota AS ENUM ('NICO', 'VENDEDOR');
 CREATE TYPE origen_evento AS ENUM ('SISTEMA', 'NICO', 'VENDEDOR', 'BOT');
 CREATE TYPE asignado_por_etiqueta AS ENUM ('NICO', 'VENDEDOR', 'SISTEMA');
+
+-- Asistencia (C007)
+CREATE TYPE tipo_evento_asistencia AS ENUM ('ENTRADA', 'SALIDA', 'BREAK_INICIO', 'BREAK_FIN');
+CREATE TYPE estado_evento_asistencia AS ENUM ('VALIDO', 'TARDANZA', 'FUERA_DE_ZONA', 'WIFI_NO_AUTORIZADO', 'MANUAL', 'ANULADO');
+CREATE TYPE tipo_contrato AS ENUM ('PLANILLA', 'HONORARIOS', 'PRACTICANTE');
+CREATE TYPE modalidad_pago AS ENUM ('MENSUAL', 'QUINCENAL', 'SEMANAL');
+CREATE TYPE descuento_tardanza AS ENUM ('POR_MINUTO', 'POR_RANGO', 'SIN_DESCUENTO');
+CREATE TYPE tipo_permiso AS ENUM ('MEDICO', 'PERSONAL', 'VACACIONES', 'CAPACITACION', 'LICENCIA', 'OTRO');
+CREATE TYPE estado_permiso AS ENUM ('PENDIENTE', 'APROBADO', 'RECHAZADO');
+CREATE TYPE estado_planilla AS ENUM ('BORRADOR', 'CALCULADO', 'APROBADO', 'PAGADO');
+CREATE TYPE estado_dia AS ENUM ('PRESENTE', 'FALTA', 'TARDANZA', 'PERMISO', 'VACACIONES', 'FERIADO', 'DESCANSO');
 ```
 
 ## Relaciones clave entre módulos

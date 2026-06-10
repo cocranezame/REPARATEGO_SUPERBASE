@@ -1,4 +1,8 @@
-import type { ListAccionesAgenteQuery, UpdateAgenteInput } from "@kallpasoft/validators";
+import type {
+  CreateAgenteInput,
+  ListAccionesAgenteQuery,
+  UpdateAgenteInput,
+} from "@kallpasoft/validators";
 import type { Context } from "hono";
 import { ApiError } from "../../../../middlewares/error-handler.js";
 import type { HonoVariables } from "../../../../types/context.js";
@@ -14,6 +18,13 @@ export class AgentesHandler {
     const tenantId = c.get("tenantId");
     const items = await this.repo.listAgentes(tenantId);
     return c.json({ success: true, data: items });
+  };
+
+  create = async (c: HonoCtx) => {
+    const tenantId = c.get("tenantId");
+    const body = c.req.valid("json") as CreateAgenteInput;
+    const agente = await this.repo.createAgente(tenantId, body);
+    return c.json({ success: true, data: agente }, 201);
   };
 
   update = async (c: HonoCtx) => {

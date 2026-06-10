@@ -21,7 +21,8 @@ const h = createClienteHandlers(clienteRepo, direccionRepo);
 
 export const clienteRoutes = new Hono<{ Variables: HonoVariables }>();
 
-clienteRoutes.use(authMiddleware);
+clienteRoutes.use("/clientes", authMiddleware);
+clienteRoutes.use("/clientes/*", authMiddleware);
 
 clienteRoutes.get(
   "/clientes/buscar-documento",

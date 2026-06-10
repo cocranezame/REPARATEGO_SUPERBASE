@@ -23,7 +23,12 @@ const visitasH = new VisitasHandler(repo);
 
 export const domicilioRoutes = new Hono<{ Variables: HonoVariables }>();
 
-domicilioRoutes.use(authMiddleware);
+domicilioRoutes.use("/tarifas-distrito", authMiddleware);
+domicilioRoutes.use("/tarifas-distrito/*", authMiddleware);
+domicilioRoutes.use("/tecnicos", authMiddleware);
+domicilioRoutes.use("/tecnicos/*", authMiddleware);
+domicilioRoutes.use("/visitas-domicilio", authMiddleware);
+domicilioRoutes.use("/visitas-domicilio/*", authMiddleware);
 
 // Tarifas
 domicilioRoutes.get(

@@ -21,7 +21,7 @@ portalRoutes.post("/portal/auth/login", validateBody(portalLoginSchema), h.login
 
 // ─── Rutas protegidas con token portal ────────────────────────────────────────
 const protected_ = new Hono<{ Variables: PortalVariables }>();
-protected_.use(portalAuthMiddleware);
+protected_.use("/portal/*", portalAuthMiddleware);
 
 protected_.get("/portal/mis-equipos", h.misEquipos);
 protected_.get("/portal/servicios/:id", h.getServicio);

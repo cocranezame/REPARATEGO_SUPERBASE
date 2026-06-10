@@ -13,7 +13,8 @@ const h = createComponenteHandlers(repo);
 
 export const componenteRoutes = new Hono<{ Variables: HonoVariables }>();
 
-componenteRoutes.use(authMiddleware);
+componenteRoutes.use("/componentes", authMiddleware);
+componenteRoutes.use("/componentes/*", authMiddleware);
 
 componenteRoutes.get("/componentes", validateQuery(listComponentesQuerySchema), h.list);
 componenteRoutes.post("/componentes", validateBody(createComponenteSchema), h.create);

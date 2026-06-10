@@ -1,63 +1,44 @@
 import { useCotizaciones } from "../hooks/useCotizaciones";
-import type { CotizacionDetalleDto, CotizacionDto } from "../types/cotizacion";
+import type { CotizacionDto } from "../types/cotizacion";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-type PrecioCell = {
-  precio: number | null;
-  detalle: CotizacionDetalleDto | null;
-};
 
 type ComparadorRow = {
   producto_id: string;
   producto_nombre: string;
-  por_proveedor: Record<string, PrecioCell>;
+  por_proveedor: Record<string, number | null>;
 };
 
 function buildComparadorData(cotizaciones: CotizacionDto[]): {
   rows: ComparadorRow[];
   proveedores: Array<{ id: string; nombre: string }>;
 } {
-  const cotizadas = cotizaciones.filter((c) => c.estado === "COTIZADA");
-
   const proveedorMap = new Map<string, string>();
-  for (const c of cotizadas) {
+  for (const c of cotizaciones) {
     proveedorMap.set(c.proveedor_id, c.proveedor_nombre ?? c.proveedor_id);
   }
 
   const productoMap = new Map<string, ComparadorRow>();
-
-  for (const c of cotizadas) {
-    for (const d of c.detalles ?? []) {
-      if (!productoMap.has(d.producto_id)) {
-        productoMap.set(d.producto_id, {
-          producto_id: d.producto_id,
-          producto_nombre: d.producto_nombre ?? d.producto_id,
-          por_proveedor: {},
-        });
-      }
-      const row = productoMap.get(d.producto_id) as ComparadorRow;
-      const precio = d.precio_unitario !== null ? Number(d.precio_unitario) : null;
-      const existing = row.por_proveedor[c.proveedor_id];
-      if (
-        !existing ||
-        (precio !== null && (existing.precio === null || precio < existing.precio))
-      ) {
-        row.por_proveedor[c.proveedor_id] = { precio, detalle: d };
-      }
+  for (const c of cotizaciones) {
+    if (!productoMap.has(c.producto_id)) {
+      productoMap.set(c.producto_id, {
+        producto_id: c.producto_id,
+        producto_nombre: c.producto_nombre ?? c.producto_id,
+        por_proveedor: {},
+      });
     }
+    const row = productoMap.get(c.producto_id) as ComparadorRow;
+    row.por_proveedor[c.proveedor_id] =
+      c.precio_unitario !== null ? Number(c.precio_unitario) : null;
   }
 
   const rows = Array.from(productoMap.values());
   const proveedores = Array.from(proveedorMap.entries()).map(([id, nombre]) => ({ id, nombre }));
-
   return { rows, proveedores };
 }
 
 function getBestPrice(row: ComparadorRow): number | null {
-  const precios = Object.values(row.por_proveedor)
-    .map((p) => p.precio)
-    .filter((p): p is number => p !== null);
+  const precios = Object.values(row.por_proveedor).filter((p): p is number => p !== null);
   return precios.length > 0 ? Math.min(...precios) : null;
 }
 
@@ -66,14 +47,14 @@ function getBestPrice(row: ComparadorRow): number | null {
 export function ComparadorPage() {
   const { data, isLoading, isError } = useCotizaciones({ pageSize: 200 });
 
-  const cotizaciones = data?.data ?? [];
+  const cotizaciones = (data?.data ?? []).filter((c) => c.precio_unitario !== null);
   const { rows, proveedores } = buildComparadorData(cotizaciones);
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-neutral-900">Comparador de precios</h1>
-        <span className="text-sm text-neutral-500">Solo cotizaciones en estado COTIZADA</span>
+        <span className="text-sm text-neutral-500">Solo cotizaciones con precio registrado</span>
       </div>
 
       {isLoading && (
@@ -88,7 +69,7 @@ export function ComparadorPage() {
 
       {!isLoading && !isError && rows.length === 0 && (
         <div className="rounded-xl border border-neutral-200 bg-white py-16 text-center text-neutral-500">
-          No hay cotizaciones en estado COTIZADA para comparar.
+          No hay cotizaciones con precio registrado para comparar.
         </div>
       )}
 
@@ -98,7 +79,7 @@ export function ComparadorPage() {
             <thead>
               <tr className="border-b border-neutral-200 bg-neutral-50">
                 <th className="sticky left-0 bg-neutral-50 px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-neutral-500">
-                  Producto
+                  Repuesto
                 </th>
                 {proveedores.map((prov) => (
                   <th
@@ -119,8 +100,7 @@ export function ComparadorPage() {
                       {row.producto_nombre}
                     </td>
                     {proveedores.map((prov) => {
-                      const cell = row.por_proveedor[prov.id];
-                      const precio = cell?.precio ?? null;
+                      const precio = row.por_proveedor[prov.id] ?? null;
                       const isBest = best !== null && precio !== null && precio === best;
                       return (
                         <td key={prov.id} className="px-4 py-3 text-center">
@@ -146,7 +126,7 @@ export function ComparadorPage() {
             </tbody>
           </table>
           <div className="border-t border-neutral-200 px-4 py-2 text-xs text-neutral-500">
-            ★ indica el mejor precio disponible por producto
+            ★ indica el mejor precio disponible por repuesto
           </div>
         </div>
       )}

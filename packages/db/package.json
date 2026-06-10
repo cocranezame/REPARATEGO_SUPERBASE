@@ -16,6 +16,7 @@
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
     "seed": "tsx src/seed.ts",
+    "set-admin-role": "tsx src/set-admin-role.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

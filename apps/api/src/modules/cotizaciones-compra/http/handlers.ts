@@ -2,14 +2,15 @@ import type { Context } from "hono";
 import { ApiError } from "../../../middlewares/error-handler.js";
 import type { HonoVariables } from "../../../types/context.js";
 import type { ICotizacionCompraRepository } from "../domain/ports/cotizacion-compra.repository.js";
-import { cotizarCotizacionCompra } from "../domain/use-cases/cotizar-cotizacion-compra.js";
 import { createCotizacionCompra } from "../domain/use-cases/create-cotizacion-compra.js";
+import { deleteCotizacionCompra } from "../domain/use-cases/delete-cotizacion-compra.js";
 import { getCotizacionCompraById } from "../domain/use-cases/get-cotizacion-compra-by-id.js";
 import { listCotizacionesCompra } from "../domain/use-cases/list-cotizaciones-compra.js";
+import { updateCotizacionCompra } from "../domain/use-cases/update-cotizacion-compra.js";
 import type {
-  CotizarCotizacionHttpInput,
   CreateCotizacionCompraHttpInput,
   ListCotizacionesQuery,
+  UpdateCotizacionCompraHttpInput,
 } from "./validators.js";
 
 // biome-ignore lint/suspicious/noExplicitAny: Hono's Input generic doesn't compose well with separately-defined handlers
@@ -24,7 +25,7 @@ export function createCotizacionCompraHandlers(repo: ICotizacionCompraRepository
       page: query.page,
       pageSize: query.pageSize,
       ...(query.proveedor_id !== undefined ? { proveedor_id: query.proveedor_id } : {}),
-      ...(query.estado !== undefined ? { estado: query.estado } : {}),
+      ...(query.producto_id !== undefined ? { producto_id: query.producto_id } : {}),
     });
 
     return c.json({
@@ -42,19 +43,26 @@ export function createCotizacionCompraHandlers(repo: ICotizacionCompraRepository
   async function create(c: HonoCtx) {
     const body = c.req.valid("json") as CreateCotizacionCompraHttpInput;
     const tenantId = c.get("tenantId");
-    const usuarioId = c.get("userId");
 
-    const cotizacion = await createCotizacionCompra(repo, tenantId, {
-      proveedor_id: body.proveedor_id,
-      usuario_id: usuarioId,
-      items: body.items,
-      ...(body.fecha_vencimiento !== undefined
-        ? { fecha_vencimiento: body.fecha_vencimiento }
-        : {}),
-      ...(body.notas !== undefined ? { notas: body.notas } : {}),
-    });
-
-    return c.json({ success: true, data: cotizacion }, 201);
+    try {
+      const cotizacion = await createCotizacionCompra(repo, tenantId, {
+        proveedor_id: body.proveedor_id,
+        producto_id: body.producto_id,
+        ...(body.precio_unitario !== undefined ? { precio_unitario: body.precio_unitario } : {}),
+        ...(body.notas !== undefined ? { notas: body.notas } : {}),
+      });
+      return c.json({ success: true, data: cotizacion }, 201);
+    } catch (err) {
+      const code = (err as { code?: string }).code;
+      if (code === "23505") {
+        throw new ApiError(
+          "COTIZACION_DUPLICATE",
+          "Ya existe una cotización para este proveedor y repuesto",
+          409
+        );
+      }
+      throw err;
+    }
   }
 
   async function getById(c: HonoCtx) {
@@ -65,20 +73,41 @@ export function createCotizacionCompraHandlers(repo: ICotizacionCompraRepository
     return c.json({ success: true, data: cotizacion });
   }
 
-  async function cotizar(c: HonoCtx) {
+  async function update(c: HonoCtx) {
     const id = c.req.param("id") as string;
-    const body = c.req.valid("json") as CotizarCotizacionHttpInput;
+    const body = c.req.valid("json") as UpdateCotizacionCompraHttpInput;
     const tenantId = c.get("tenantId");
 
-    const cotizacion = await cotizarCotizacionCompra(repo, tenantId, id, body.items);
-    if (!cotizacion)
-      throw new ApiError(
-        "COTIZACION_NOT_FOUND",
-        "Cotización no encontrada o no está en estado PENDIENTE",
-        404
-      );
+    const cotizacion = await updateCotizacionCompra(repo, tenantId, id, {
+      ...(body.precio_unitario !== undefined ? { precio_unitario: body.precio_unitario } : {}),
+      ...(body.notas !== undefined ? { notas: body.notas } : {}),
+    });
+    if (!cotizacion) throw new ApiError("COTIZACION_NOT_FOUND", "Cotización no encontrada", 404);
     return c.json({ success: true, data: cotizacion });
   }
 
-  return { list, create, getById, cotizar };
+  async function remove(c: HonoCtx) {
+    const id = c.req.param("id") as string;
+    const tenantId = c.get("tenantId");
+    const deleted = await deleteCotizacionCompra(repo, tenantId, id);
+    if (!deleted) throw new ApiError("COTIZACION_NOT_FOUND", "Cotización no encontrada", 404);
+    return c.json({ success: true, data: null });
+  }
+
+  async function getWhatsapp(c: HonoCtx) {
+    const id = c.req.param("id") as string;
+    const tenantId = c.get("tenantId");
+    try {
+      const result = await repo.getWhatsapp(tenantId, id);
+      return c.json({ success: true, data: result });
+    } catch (err) {
+      const msg = (err as Error).message;
+      if (msg.includes("no encontrada") || msg.includes("no tiene teléfono")) {
+        throw new ApiError("WHATSAPP_ERROR", msg, 422);
+      }
+      throw err;
+    }
+  }
+
+  return { list, create, getById, update, remove, getWhatsapp };
 }

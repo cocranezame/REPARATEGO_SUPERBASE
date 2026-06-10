@@ -11,3 +11,4 @@
 | E4.7 | Web: Pantalla de productos (filtros por categoría, componente, tipo) | ✅ DONE |
 | E4.8 | Web: Formulario de producto con compatibilidades | ✅ DONE |
 | E4.9 | Web: Gestión de tasas de precio | ✅ DONE |
+| E4.10 | C026 — AlcanceRepuesto full-stack: migración 0022, enum, campo `alcance` en producto, `buscarPresupuesto` reescrito, formulario web + badge + filtro | ✅ DONE |

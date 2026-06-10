@@ -1,6 +1,5 @@
 import type { DbClient } from "@kallpasoft/db";
 import { clienteDireccion as clienteDireccionTable, cliente as clienteTable } from "@kallpasoft/db";
-import type { SQL } from "drizzle-orm";
 import { and, count, eq, ilike, or, sql } from "drizzle-orm";
 import type { Cliente } from "../../domain/entities/cliente.js";
 import type { ClienteDireccion } from "../../domain/entities/cliente-direccion.js";
@@ -14,11 +13,7 @@ import type {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-interface TxLike {
-  execute(query: SQL<unknown>): Promise<unknown>;
-}
-
-// biome-ignore lint/suspicious/noExplicitAny: Drizzle PgTransaction type is deeply generic; structural interface above ensures type safety
+// biome-ignore lint/suspicious/noExplicitAny: Drizzle PgTransaction type is deeply generic
 async function setTenantLocal(tx: any, tenantId: string): Promise<void> {
   if (UUID_RE.test(tenantId)) {
     await tx.execute(sql`SET LOCAL app.tenant_id = '${sql.raw(tenantId)}'`);
@@ -145,6 +140,8 @@ export class ClienteDrizzleRepository implements IClienteRepository {
           telefono: data.telefono ?? null,
           telefono_secundario: data.telefono_secundario ?? null,
           notas: data.notas ?? null,
+          distrito: data.distrito ?? null,
+          nivel: (data.nivel ?? "NORMAL") as (typeof clienteTable.nivel)["_"]["data"],
         })
         .returning();
     });
@@ -169,6 +166,9 @@ export class ClienteDrizzleRepository implements IClienteRepository {
       if (data.telefono_secundario !== undefined)
         setValues.telefono_secundario = data.telefono_secundario;
       if (data.notas !== undefined) setValues.notas = data.notas;
+      if (data.distrito !== undefined) setValues.distrito = data.distrito;
+      if (data.nivel !== undefined)
+        setValues.nivel = data.nivel as (typeof clienteTable.nivel)["_"]["data"];
       if (data.activo !== undefined) setValues.activo = data.activo;
 
       return tx

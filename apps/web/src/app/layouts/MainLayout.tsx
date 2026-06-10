@@ -9,6 +9,7 @@ import {
   Calendar,
   ChevronDown,
   ClipboardList,
+  Clock,
   CreditCard,
   Flag,
   GitBranch,
@@ -29,6 +30,7 @@ import {
   ShoppingCart,
   Tag,
   Truck,
+  UserCheck,
   UserRound,
   Users,
   Wallet,
@@ -123,7 +125,7 @@ const NAV_GROUPS: NavGroup[] = [
     activePrefix: "/inventario",
     items: [
       { label: "Dashboard", to: "/inventario", icon: <Package className="h-5 w-5" />, end: true },
-      { label: "Productos", to: "/inventario/productos", icon: <Package className="h-5 w-5" /> },
+      { label: "Repuestos", to: "/inventario/productos", icon: <Package className="h-5 w-5" /> },
       {
         label: "Stock y alertas",
         to: "/inventario/stock",
@@ -144,6 +146,11 @@ const NAV_GROUPS: NavGroup[] = [
         label: "Métodos de pago",
         to: "/inventario/metodos-pago",
         icon: <CreditCard className="h-5 w-5" />,
+      },
+      {
+        label: "Registro completo",
+        to: "/inventario/registro",
+        icon: <ClipboardList className="h-5 w-5" />,
       },
     ],
   },
@@ -266,6 +273,33 @@ const NAV_GROUPS: NavGroup[] = [
       },
     ],
   },
+  {
+    id: "asistencia",
+    label: "Asistencia",
+    icon: <UserCheck className="h-5 w-5" />,
+    primaryTo: "/asistencia/hoy",
+    activePrefix: "/asistencia",
+    roles: ["ADMIN"] as RolUsuario[],
+    items: [
+      { label: "Hoy", to: "/asistencia/hoy", icon: <Clock className="h-5 w-5" /> },
+      {
+        label: "Trabajadores",
+        to: "/asistencia/trabajadores",
+        icon: <Users className="h-5 w-5" />,
+      },
+      { label: "Planilla", to: "/asistencia/planilla", icon: <Receipt className="h-5 w-5" /> },
+      {
+        label: "Permisos",
+        to: "/asistencia/permisos",
+        icon: <ClipboardList className="h-5 w-5" />,
+      },
+      {
+        label: "Configuración",
+        to: "/asistencia/configuracion",
+        icon: <Settings className="h-5 w-5" />,
+      },
+    ],
+  },
 ];
 
 const SEGMENT_LABELS: Record<string, string> = {
@@ -278,7 +312,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   clientes: "Clientes",
   proveedores: "Proveedores",
   inventario: "Inventario",
-  productos: "Productos",
+  productos: "Repuestos",
   compras: "Compras",
   cotizaciones: "Cotizaciones",
   comparar: "Comparador",
@@ -313,6 +347,12 @@ const SEGMENT_LABELS: Record<string, string> = {
   etiquetas: "Etiquetas",
   plantillas: "Plantillas",
   bots: "Bots",
+  asistencia: "Asistencia",
+  hoy: "Hoy",
+  trabajadores: "Trabajadores",
+  planilla: "Planilla",
+  permisos: "Permisos",
+  configuracion: "Configuración",
 };
 
 function breadcrumbsFromPath(pathname: string): string[] {

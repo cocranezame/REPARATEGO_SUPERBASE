@@ -90,6 +90,7 @@ export const createOrdenServicioSchema = z.object({
   costo_revision: z.number().min(0),
   visita_domicilio_id: uuidSchema.optional(),
   lead_id: uuidSchema.optional(),
+  perifericos: z.array(z.string().uuid()).optional(),
 });
 export type CreateOrdenServicioInput = z.infer<typeof createOrdenServicioSchema>;
 

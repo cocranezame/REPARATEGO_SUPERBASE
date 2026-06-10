@@ -1,4 +1,5 @@
 import {
+  AlcanceRepuesto,
   NivelTasaPrecio,
   TasaTipo,
   TipoMovimiento,
@@ -10,14 +11,17 @@ import { uuidSchema } from "./common.js";
 
 export const createProductoSchema = z.object({
   tipo: z.nativeEnum(TipoProducto),
+  alcance: z.nativeEnum(AlcanceRepuesto).optional(),
   nombre: z.string().min(1).max(200),
   descripcion: z.string().optional(),
-  categoria_id: uuidSchema,
+  categoria_id: uuidSchema.optional(),
   componente_id: uuidSchema.optional(),
   marca_id: uuidSchema.optional(),
+  modelo_id: uuidSchema.optional(),
+  tipo_repuesto_id: uuidSchema.optional(),
   unidad_medida: z.string().max(10).optional(),
-  precio_compra: z.number().positive().optional(),
-  precio_venta: z.number().positive(),
+  // precio_compra: set by ingreso movement — NOT sent from product form
+  // precio_venta: set by Tasas % system — NOT sent from product form (defaults to 0 on DB)
   stock_minimo: z.number().int().min(0).optional(),
   imagen_url: z.string().url().optional(),
 });
@@ -32,6 +36,16 @@ export const syncCompatibilidadesSchema = z.object({
   modelo_ids: z.array(uuidSchema),
 });
 export type SyncCompatibilidadesInput = z.infer<typeof syncCompatibilidadesSchema>;
+
+export const syncCategoriasProductoSchema = z.object({
+  pares: z.array(
+    z.object({
+      categoria_id: uuidSchema,
+      componente_id: uuidSchema.optional(),
+    })
+  ),
+});
+export type SyncCategoriasProductoInput = z.infer<typeof syncCategoriasProductoSchema>;
 
 export const createTasaPrecioSchema = z
   .object({

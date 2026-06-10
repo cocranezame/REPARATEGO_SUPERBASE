@@ -1,19 +1,17 @@
 import type { DbClient } from "@kallpasoft/db";
 import {
-  cotizacionCompraDetalle as cotizacionCompraDetalleTable,
   cotizacionCompra as cotizacionCompraTable,
   lote as loteTable,
   movimientoInventario as movimientoInventarioTable,
   ordenCompra as ordenCompraTable,
   producto as productoTable,
-  proveedorContacto as proveedorContactoTable,
   proveedorLinea as proveedorLineaTable,
   proveedor as proveedorTable,
   solicitudCompra as solicitudCompraTable,
   sucursal as sucursalTable,
   tasaPrecio as tasaPrecioTable,
 } from "@kallpasoft/db";
-import { and, count, eq, gte, isNotNull, lte, sql, sum } from "drizzle-orm";
+import { and, count, eq, gte, isNotNull, isNull, lte, sql, sum } from "drizzle-orm";
 import type { DashboardInventario } from "../../domain/entities/dashboard-inventario.js";
 import type { Lote } from "../../domain/entities/lote.js";
 import type { MovimientoInventario } from "../../domain/entities/movimiento-inventario.js";
@@ -107,8 +105,7 @@ export class StockDrizzleRepository implements IStockRepository {
           .where(
             and(
               eq(cotizacionCompraTable.tenant_id, tenantId),
-              eq(cotizacionCompraTable.estado, "PENDIENTE"),
-              eq(cotizacionCompraTable.activo, true)
+              isNull(cotizacionCompraTable.precio_unitario)
             )
           ),
         tx.execute(
@@ -969,7 +966,7 @@ export class StockDrizzleRepository implements IStockRepository {
         .where(
           and(
             eq(proveedorLineaTable.tenant_id, tenantId),
-            eq(proveedorLineaTable.categoria_id, prod.categoria_id),
+            prod.categoria_id ? eq(proveedorLineaTable.categoria_id, prod.categoria_id) : sql`true`,
             prod.componente_id
               ? eq(proveedorLineaTable.componente_id, prod.componente_id)
               : isNotNull(proveedorLineaTable.componente_id),
@@ -1000,7 +997,7 @@ export class StockDrizzleRepository implements IStockRepository {
         .where(
           and(
             eq(proveedorLineaTable.tenant_id, tenantId),
-            eq(proveedorLineaTable.categoria_id, prod.categoria_id),
+            prod.categoria_id ? eq(proveedorLineaTable.categoria_id, prod.categoria_id) : sql`true`,
             eq(proveedorTable.activo, true)
           )
         )
@@ -1030,65 +1027,6 @@ export class StockDrizzleRepository implements IStockRepository {
             telefono: r.telefono,
           })),
       };
-    });
-  }
-
-  // ── GRUPO 5: Mensaje WhatsApp (I10) ──────────────────────────────────────────
-
-  async getMensajeWhatsapp(
-    tenantId: string,
-    cotizacionId: string,
-    detalleId: string
-  ): Promise<{ url: string }> {
-    return this.db.transaction(async (tx) => {
-      await setTenantLocal(tx, tenantId);
-
-      // Obtener detalle + producto + proveedor + contacto principal
-      const rows = await tx
-        .select({
-          producto_nombre: productoTable.nombre,
-          proveedor_id: cotizacionCompraTable.proveedor_id,
-          proveedor_razon_social: proveedorTable.razon_social,
-          proveedor_telefono: proveedorTable.telefono,
-          contacto_nombre: proveedorContactoTable.nombre,
-          contacto_telefono: proveedorContactoTable.telefono,
-        })
-        .from(cotizacionCompraDetalleTable)
-        .innerJoin(
-          cotizacionCompraTable,
-          eq(cotizacionCompraDetalleTable.cotizacion_compra_id, cotizacionCompraTable.id)
-        )
-        .innerJoin(productoTable, eq(cotizacionCompraDetalleTable.producto_id, productoTable.id))
-        .innerJoin(proveedorTable, eq(cotizacionCompraTable.proveedor_id, proveedorTable.id))
-        .leftJoin(
-          proveedorContactoTable,
-          and(
-            eq(proveedorContactoTable.proveedor_id, cotizacionCompraTable.proveedor_id),
-            eq(proveedorContactoTable.es_principal, true)
-          )
-        )
-        .where(
-          and(
-            eq(cotizacionCompraDetalleTable.id, detalleId),
-            eq(cotizacionCompraDetalleTable.cotizacion_compra_id, cotizacionId),
-            eq(cotizacionCompraTable.tenant_id, tenantId)
-          )
-        )
-        .limit(1);
-
-      const row = rows[0];
-      if (!row) throw new Error("Detalle de cotización no encontrado");
-
-      const nombreContacto = row.contacto_nombre ?? row.proveedor_razon_social;
-      const telefonoRaw = row.contacto_telefono ?? row.proveedor_telefono;
-
-      if (!telefonoRaw) throw new Error("El proveedor no tiene teléfono registrado");
-
-      const numero = telefonoRaw.replace(/\D/g, "");
-      const mensaje = `Estimado ${nombreContacto}, quería consultar sobre el costo de ${row.producto_nombre}.`;
-      const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;
-
-      return { url };
     });
   }
 }

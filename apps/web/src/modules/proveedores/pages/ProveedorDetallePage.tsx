@@ -37,12 +37,17 @@ const proveedorEditSchema = z.object({
   ruc: z.string().length(11, "RUC debe tener 11 dígitos").regex(/^\d+$/, "Solo números"),
   razon_social: z.string().min(1, "Requerido").max(200),
   nombre_comercial: z.string().max(200).optional(),
-  direccion: z.string().max(255).optional(),
-  distrito: z.string().max(100).optional(),
-  email: z.union([z.string().email("Email inválido"), z.literal("")]).optional(),
+  contacto_nombre: z.string().max(100).optional(),
   telefono: z.string().max(20).optional(),
+  telefono2: z.string().max(20).optional(),
+  telefono3: z.string().max(20).optional(),
+  email: z.union([z.string().email("Email inválido"), z.literal("")]).optional(),
+  direccion: z.string().max(255).optional(),
+  departamento: z.string().max(100).optional(),
+  distrito: z.string().max(100).optional(),
   web: z.union([z.string().url("URL inválida"), z.literal("")]).optional(),
   notas: z.string().optional(),
+  observaciones: z.string().optional(),
   calificacion: z.string().optional(),
 });
 type ProveedorEditValues = z.infer<typeof proveedorEditSchema>;
@@ -57,6 +62,7 @@ const contactoFormSchema = z.object({
 type ContactoFormValues = z.infer<typeof contactoFormSchema>;
 
 const metodoPagoFormSchema = z.object({
+  tipo_cuenta: z.enum(["banco", "monedero", ""] as const).optional(),
   tipo: z.string().min(1, "Requerido").max(30),
   banco: z.string().max(50).optional(),
   numero_cuenta: z.string().max(30).optional(),
@@ -190,12 +196,17 @@ function ProveedorEditModal({
       ruc: proveedor.ruc,
       razon_social: proveedor.razon_social,
       nombre_comercial: proveedor.nombre_comercial ?? "",
-      direccion: proveedor.direccion ?? "",
-      distrito: proveedor.distrito ?? "",
-      email: proveedor.email ?? "",
+      contacto_nombre: proveedor.contacto_nombre ?? "",
       telefono: proveedor.telefono ?? "",
+      telefono2: proveedor.telefono2 ?? "",
+      telefono3: proveedor.telefono3 ?? "",
+      email: proveedor.email ?? "",
+      direccion: proveedor.direccion ?? "",
+      departamento: proveedor.departamento ?? "",
+      distrito: proveedor.distrito ?? "",
       web: proveedor.web ?? "",
       notas: proveedor.notas ?? "",
+      observaciones: proveedor.observaciones ?? "",
       calificacion: proveedor.calificacion !== null ? String(proveedor.calificacion) : "",
     },
   });
@@ -208,12 +219,17 @@ function ProveedorEditModal({
         ruc: values.ruc,
         razon_social: values.razon_social,
         ...(values.nombre_comercial ? { nombre_comercial: values.nombre_comercial } : {}),
-        ...(values.direccion ? { direccion: values.direccion } : {}),
-        ...(values.distrito ? { distrito: values.distrito } : {}),
-        ...(values.email && values.email !== "" ? { email: values.email } : {}),
+        ...(values.contacto_nombre ? { contacto_nombre: values.contacto_nombre } : {}),
         ...(values.telefono ? { telefono: values.telefono } : {}),
+        ...(values.telefono2 ? { telefono2: values.telefono2 } : {}),
+        ...(values.telefono3 ? { telefono3: values.telefono3 } : {}),
+        ...(values.email && values.email !== "" ? { email: values.email } : {}),
+        ...(values.direccion ? { direccion: values.direccion } : {}),
+        ...(values.departamento ? { departamento: values.departamento } : {}),
+        ...(values.distrito ? { distrito: values.distrito } : {}),
         ...(values.web && values.web !== "" ? { web: values.web } : {}),
         ...(values.notas ? { notas: values.notas } : {}),
+        ...(values.observaciones ? { observaciones: values.observaciones } : {}),
         ...(values.calificacion ? { calificacion: Number.parseInt(values.calificacion, 10) } : {}),
       },
       { onSuccess: onClose, onError: (err) => setServerError(err.message) }
@@ -284,6 +300,36 @@ function ProveedorEditModal({
                   {...register("nombre_comercial")}
                 />
               </div>
+              <div className="col-span-2 flex flex-col gap-1">
+                <label htmlFor="pe-contacto" className="text-xs font-medium text-neutral-700">
+                  Contacto principal{" "}
+                  <span className="font-normal text-neutral-400">(opcional)</span>
+                </label>
+                <input
+                  id="pe-contacto"
+                  type="text"
+                  className={INPUT}
+                  {...register("contacto_nombre")}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="pe-telefono" className="text-xs font-medium text-neutral-700">
+                  Teléfono 1 <span className="font-normal text-neutral-400">(opcional)</span>
+                </label>
+                <input id="pe-telefono" type="tel" className={INPUT} {...register("telefono")} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="pe-telefono2" className="text-xs font-medium text-neutral-700">
+                  Teléfono 2 <span className="font-normal text-neutral-400">(opcional)</span>
+                </label>
+                <input id="pe-telefono2" type="tel" className={INPUT} {...register("telefono2")} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="pe-telefono3" className="text-xs font-medium text-neutral-700">
+                  Teléfono 3 <span className="font-normal text-neutral-400">(opcional)</span>
+                </label>
+                <input id="pe-telefono3" type="tel" className={INPUT} {...register("telefono3")} />
+              </div>
               <div className="flex flex-col gap-1">
                 <label htmlFor="pe-email" className="text-xs font-medium text-neutral-700">
                   Email <span className="font-normal text-neutral-400">(opcional)</span>
@@ -294,12 +340,6 @@ function ProveedorEditModal({
                 )}
               </div>
               <div className="flex flex-col gap-1">
-                <label htmlFor="pe-telefono" className="text-xs font-medium text-neutral-700">
-                  Teléfono <span className="font-normal text-neutral-400">(opcional)</span>
-                </label>
-                <input id="pe-telefono" type="tel" className={INPUT} {...register("telefono")} />
-              </div>
-              <div className="flex flex-col gap-1">
                 <label htmlFor="pe-web" className="text-xs font-medium text-neutral-700">
                   Web <span className="font-normal text-neutral-400">(opcional)</span>
                 </label>
@@ -307,6 +347,17 @@ function ProveedorEditModal({
                 {errors.web && (
                   <span className="text-xs text-danger-600">{errors.web.message}</span>
                 )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="pe-departamento" className="text-xs font-medium text-neutral-700">
+                  Departamento <span className="font-normal text-neutral-400">(opcional)</span>
+                </label>
+                <input
+                  id="pe-departamento"
+                  type="text"
+                  className={INPUT}
+                  {...register("departamento")}
+                />
               </div>
               <div className="flex flex-col gap-1">
                 <label htmlFor="pe-distrito" className="text-xs font-medium text-neutral-700">
@@ -325,6 +376,17 @@ function ProveedorEditModal({
                   Notas <span className="font-normal text-neutral-400">(opcional)</span>
                 </label>
                 <input id="pe-notas" type="text" className={INPUT} {...register("notas")} />
+              </div>
+              <div className="col-span-2 flex flex-col gap-1">
+                <label htmlFor="pe-observaciones" className="text-xs font-medium text-neutral-700">
+                  Observaciones <span className="font-normal text-neutral-400">(opcional)</span>
+                </label>
+                <input
+                  id="pe-observaciones"
+                  type="text"
+                  className={INPUT}
+                  {...register("observaciones")}
+                />
               </div>
             </div>
           </div>
@@ -552,6 +614,7 @@ function MetodoPagoModal({
   } = useForm<MetodoPagoFormValues>({
     resolver: zodResolver(metodoPagoFormSchema),
     defaultValues: {
+      tipo_cuenta: (metodo?.tipo_cuenta as "banco" | "monedero" | "" | undefined) ?? "",
       tipo: metodo?.tipo ?? "",
       banco: metodo?.banco ?? "",
       numero_cuenta: metodo?.numero_cuenta ?? "",
@@ -564,6 +627,7 @@ function MetodoPagoModal({
     setServerError(null);
     const base = {
       proveedorId,
+      ...(values.tipo_cuenta ? { tipo_cuenta: values.tipo_cuenta } : {}),
       tipo: values.tipo,
       ...(values.banco ? { banco: values.banco } : {}),
       ...(values.numero_cuenta ? { numero_cuenta: values.numero_cuenta } : {}),
@@ -603,7 +667,17 @@ function MetodoPagoModal({
         </div>
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <div className="grid grid-cols-2 gap-4 px-6 py-4">
-            <div className="col-span-2 flex flex-col gap-1">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="mp-tipo-cuenta" className="text-xs font-medium text-neutral-700">
+                Grupo <span className="font-normal text-neutral-400">(opcional)</span>
+              </label>
+              <select id="mp-tipo-cuenta" className={SELECT} {...register("tipo_cuenta")}>
+                <option value="">Sin grupo</option>
+                <option value="banco">Banco</option>
+                <option value="monedero">Monedero digital</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
               <label htmlFor="mp-tipo" className="text-xs font-medium text-neutral-700">
                 Tipo
               </label>
@@ -1064,9 +1138,22 @@ function MetodosPagoTab({ proveedorId }: { proveedorId: string }) {
               {(data?.data ?? []).map((m) => (
                 <tr key={m.id} className="hover:bg-neutral-50">
                   <td className="px-4 py-3">
-                    <span className="inline-flex items-center rounded bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-700">
-                      {m.tipo}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="inline-flex items-center rounded bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-700">
+                        {m.tipo}
+                      </span>
+                      {m.tipo_cuenta && (
+                        <span
+                          className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${
+                            m.tipo_cuenta === "banco"
+                              ? "bg-blue-50 text-blue-700"
+                              : "bg-purple-50 text-purple-700"
+                          }`}
+                        >
+                          {m.tipo_cuenta === "banco" ? "Banco" : "Monedero digital"}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="hidden px-4 py-3 text-neutral-500 md:table-cell">
                     {m.banco ?? "—"}
@@ -1269,16 +1356,16 @@ function LineasTab({ proveedorId }: { proveedorId: string }) {
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 const TABS = [
+  { id: "lineas" as const, label: "Líneas que abastecen" },
   { id: "contactos" as const, label: "Contactos" },
   { id: "metodos-pago" as const, label: "Métodos de pago" },
-  { id: "lineas" as const, label: "Líneas" },
 ];
 type TabId = (typeof TABS)[number]["id"];
 
 export function ProveedorDetallePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabId>("contactos");
+  const [activeTab, setActiveTab] = useState<TabId>("lineas");
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -1376,13 +1463,27 @@ export function ProveedorDetallePage() {
       <div className="rounded-xl border border-neutral-200 bg-white p-6">
         <h2 className="mb-4 text-sm font-semibold text-neutral-900">Datos generales</h2>
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm lg:grid-cols-3">
+          {proveedor.contacto_nombre && (
+            <div className="col-span-2 lg:col-span-3">
+              <dt className="text-xs font-medium text-neutral-500">Contacto principal</dt>
+              <dd className="mt-0.5 font-medium text-neutral-900">{proveedor.contacto_nombre}</dd>
+            </div>
+          )}
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">Teléfono 1</dt>
+            <dd className="mt-0.5 text-neutral-900">{proveedor.telefono ?? "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">Teléfono 2</dt>
+            <dd className="mt-0.5 text-neutral-900">{proveedor.telefono2 ?? "—"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs font-medium text-neutral-500">Teléfono 3</dt>
+            <dd className="mt-0.5 text-neutral-900">{proveedor.telefono3 ?? "—"}</dd>
+          </div>
           <div>
             <dt className="text-xs font-medium text-neutral-500">Email</dt>
             <dd className="mt-0.5 text-neutral-900">{proveedor.email ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-xs font-medium text-neutral-500">Teléfono</dt>
-            <dd className="mt-0.5 text-neutral-900">{proveedor.telefono ?? "—"}</dd>
           </div>
           <div>
             <dt className="text-xs font-medium text-neutral-500">Web</dt>
@@ -1402,6 +1503,10 @@ export function ProveedorDetallePage() {
             </dd>
           </div>
           <div>
+            <dt className="text-xs font-medium text-neutral-500">Departamento</dt>
+            <dd className="mt-0.5 text-neutral-900">{proveedor.departamento ?? "—"}</dd>
+          </div>
+          <div>
             <dt className="text-xs font-medium text-neutral-500">Distrito</dt>
             <dd className="mt-0.5 text-neutral-900">{proveedor.distrito ?? "—"}</dd>
           </div>
@@ -1409,10 +1514,18 @@ export function ProveedorDetallePage() {
             <dt className="text-xs font-medium text-neutral-500">Dirección</dt>
             <dd className="mt-0.5 text-neutral-900">{proveedor.direccion ?? "—"}</dd>
           </div>
-          <div className="col-span-2 lg:col-span-3">
-            <dt className="text-xs font-medium text-neutral-500">Notas</dt>
-            <dd className="mt-0.5 text-neutral-900">{proveedor.notas ?? "—"}</dd>
-          </div>
+          {proveedor.notas && (
+            <div className="col-span-2 lg:col-span-3">
+              <dt className="text-xs font-medium text-neutral-500">Notas</dt>
+              <dd className="mt-0.5 text-neutral-900">{proveedor.notas}</dd>
+            </div>
+          )}
+          {proveedor.observaciones && (
+            <div className="col-span-2 lg:col-span-3">
+              <dt className="text-xs font-medium text-neutral-500">Observaciones</dt>
+              <dd className="mt-0.5 text-neutral-900">{proveedor.observaciones}</dd>
+            </div>
+          )}
         </dl>
       </div>
 
@@ -1435,9 +1548,9 @@ export function ProveedorDetallePage() {
           ))}
         </div>
 
+        {activeTab === "lineas" && <LineasTab proveedorId={proveedorId} />}
         {activeTab === "contactos" && <ContactosTab proveedorId={proveedorId} />}
         {activeTab === "metodos-pago" && <MetodosPagoTab proveedorId={proveedorId} />}
-        {activeTab === "lineas" && <LineasTab proveedorId={proveedorId} />}
       </div>
 
       {/* Edit modal */}

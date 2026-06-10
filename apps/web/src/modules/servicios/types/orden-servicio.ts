@@ -49,6 +49,13 @@ export type CostoRevision = {
   activo: boolean;
 };
 
+export type Periferico = {
+  id: string;
+  categoria_id: string;
+  nombre: string;
+  activo: boolean;
+};
+
 export type ComponenteOrden = {
   id: string;
   orden_servicio_id: string;
@@ -157,6 +164,7 @@ export type OrdenServicioResumen = {
   cliente_nombre?: string;
   producto_id: string;
   producto_nombre?: string;
+  categoria_id?: string;
   numero_serie?: string;
   sucursal_id?: string;
   canal: "TIENDA" | "DOMICILIO";
@@ -240,6 +248,7 @@ export type ListInstanciasParams = {
   producto_id?: string;
   page?: number;
   pageSize?: number;
+  enabled?: boolean;
 };
 
 export type BuscarPresupuestoParams = {

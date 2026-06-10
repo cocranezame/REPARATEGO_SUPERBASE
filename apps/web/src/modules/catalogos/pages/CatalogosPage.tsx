@@ -14,11 +14,18 @@ import {
   createComponenteSchema,
   createMarcaSchema,
   createModeloSchema,
+  createPerifericoSchema,
 } from "@kallpasoft/validators";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import {
+  useCreatePeriferico,
+  usePerifericos,
+  useUpdatePeriferico,
+} from "../../servicios/hooks/useOrdenesServicio";
+import type { Periferico } from "../../servicios/types/orden-servicio";
 import {
   useCategorias,
   useCreateCategoria,
@@ -63,6 +70,11 @@ const modeloFormSchema = createModeloSchema.extend({
   categoria_id: z.string().min(1, "Selecciona una categoría"),
 });
 type ModeloFormValues = z.infer<typeof modeloFormSchema>;
+
+const perifericoFormSchema = createPerifericoSchema.extend({
+  categoria_id: z.string().min(1, "Selecciona una categoría"),
+});
+type PerifericoFormValues = z.infer<typeof perifericoFormSchema>;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1487,6 +1499,272 @@ function ModelosTab() {
   );
 }
 
+// ─── Periféricos ─────────────────────────────────────────────────────────────
+
+function PerifericoModal({
+  periferico,
+  onClose,
+}: {
+  periferico: Periferico | null;
+  onClose: () => void;
+}) {
+  const isEdit = periferico !== null;
+  const [serverError, setServerError] = useState<string | null>(null);
+  const createMutation = useCreatePeriferico();
+  const updateMutation = useUpdatePeriferico();
+  const allCatsQuery = useCategorias({ pageSize: 100 });
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<PerifericoFormValues>({
+    resolver: zodResolver(perifericoFormSchema),
+    defaultValues: {
+      nombre: periferico?.nombre ?? "",
+      categoria_id: periferico?.categoria_id ?? "",
+    },
+  });
+
+  async function onSubmit(values: PerifericoFormValues) {
+    setServerError(null);
+    if (isEdit) {
+      updateMutation.mutate(
+        { id: periferico.id, nombre: values.nombre },
+        { onSuccess: onClose, onError: (err) => setServerError(err.message) }
+      );
+    } else {
+      createMutation.mutate(
+        { categoria_id: values.categoria_id, nombre: values.nombre },
+        { onSuccess: onClose, onError: (err) => setServerError(err.message) }
+      );
+    }
+  }
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
+          <h2 className="text-base font-semibold text-neutral-900">
+            {isEdit ? "Editar periférico" : "Nuevo periférico"}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <div className="flex flex-col gap-4 px-6 py-4">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="pf-nombre" className="text-xs font-medium text-neutral-700">
+                Nombre
+              </label>
+              <input
+                id="pf-nombre"
+                type="text"
+                placeholder="Cargador"
+                className={INPUT}
+                {...register("nombre")}
+              />
+              {errors.nombre && (
+                <span className="text-xs text-danger-600">{errors.nombre.message}</span>
+              )}
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="pf-categoria" className="text-xs font-medium text-neutral-700">
+                Categoría
+              </label>
+              <select
+                id="pf-categoria"
+                className={SELECT}
+                disabled={isEdit}
+                {...register("categoria_id")}
+              >
+                <option value="">Selecciona una categoría</option>
+                {(allCatsQuery.data?.data ?? []).map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </select>
+              {errors.categoria_id && (
+                <span className="text-xs text-danger-600">{errors.categoria_id.message}</span>
+              )}
+              {isEdit && (
+                <p className="text-xs text-neutral-400">La categoría no puede cambiarse.</p>
+              )}
+            </div>
+          </div>
+          {serverError !== null && (
+            <div className="mx-6 mb-2 rounded-lg bg-red-50 px-4 py-2 text-sm text-danger-600">
+              {serverError}
+            </div>
+          )}
+          <div className="flex justify-end gap-3 border-t border-neutral-200 px-6 py-4">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isPending || isSubmitting}
+              className="rounded-lg border border-neutral-300 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-60"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={isPending || isSubmitting}
+              className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-60"
+            >
+              {isPending || isSubmitting ? "Guardando..." : "Guardar"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function PerifericosTab() {
+  const [filterCategoriaId, setFilterCategoriaId] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [editPeriferico, setEditPeriferico] = useState<Periferico | null>(null);
+
+  const { data, isLoading, isError } = usePerifericos(filterCategoriaId || undefined);
+  const allCatsQuery = useCategorias({ pageSize: 100 });
+  const categoriaNombreMap = new Map(allCatsQuery.data?.data.map((c) => [c.id, c.nombre]) ?? []);
+  const toggleMutation = useUpdatePeriferico();
+
+  function openCreate() {
+    setEditPeriferico(null);
+    setShowModal(true);
+  }
+  function openEdit(p: Periferico) {
+    setEditPeriferico(p);
+    setShowModal(true);
+  }
+  function closeModal() {
+    setShowModal(false);
+  }
+  function handleToggleActivo(p: Periferico) {
+    toggleMutation.mutate({ id: p.id, activo: !p.activo });
+  }
+
+  const perifericos = data?.data ?? [];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <select
+          value={filterCategoriaId}
+          onChange={(e) => setFilterCategoriaId(e.target.value)}
+          className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
+        >
+          <option value="">Todas las categorías</option>
+          {(allCatsQuery.data?.data ?? []).map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nombre}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={openCreate}
+          className="flex shrink-0 items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+        >
+          <Plus className="h-4 w-4" />
+          Nuevo
+        </button>
+      </div>
+
+      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
+          </div>
+        )}
+        {isError && (
+          <p className="py-8 text-center text-sm text-danger-600">
+            Error al cargar periféricos. Intenta recargar la página.
+          </p>
+        )}
+        {!isLoading && !isError && (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-neutral-200 bg-neutral-50">
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  Nombre
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  Categoría
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  Estado
+                </th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-100">
+              {perifericos.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="py-10 text-center text-neutral-500">
+                    No se encontraron periféricos.
+                  </td>
+                </tr>
+              )}
+              {perifericos.map((p) => (
+                <tr key={p.id} className="hover:bg-neutral-50">
+                  <td className="px-4 py-3 font-medium text-neutral-900">{p.nombre}</td>
+                  <td className="px-4 py-3 text-neutral-500">
+                    {categoriaNombreMap.get(p.categoria_id) ?? `${p.categoria_id.slice(0, 8)}…`}
+                  </td>
+                  <td className="px-4 py-3">
+                    <EstadoBadge activo={p.activo} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(p)}
+                        title="Editar nombre"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleActivo(p)}
+                        title={p.activo ? "Desactivar" : "Activar"}
+                        disabled={toggleMutation.isPending}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-danger-600 disabled:opacity-40"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {perifericos.length > 0 && (
+        <p className="text-sm text-neutral-500">
+          {perifericos.length} periférico{perifericos.length !== 1 ? "s" : ""}
+        </p>
+      )}
+
+      {showModal && <PerifericoModal periferico={editPeriferico} onClose={closeModal} />}
+    </div>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 const TABS = [
@@ -1494,6 +1772,7 @@ const TABS = [
   { id: "componentes" as const, label: "Componentes" },
   { id: "marcas" as const, label: "Marcas" },
   { id: "modelos" as const, label: "Modelos" },
+  { id: "perifericos" as const, label: "Periféricos" },
 ];
 type TabId = (typeof TABS)[number]["id"];
 
@@ -1526,6 +1805,7 @@ export function CatalogosPage() {
         {activeTab === "componentes" && <ComponentesTab />}
         {activeTab === "marcas" && <MarcasTab />}
         {activeTab === "modelos" && <ModelosTab />}
+        {activeTab === "perifericos" && <PerifericosTab />}
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import {
   asignarVendedorConvSchema,
   asignarVendedorLeadSchema,
   cambiarModoSchema,
+  createAgenteSchema,
   createEtapaSchema,
   createEtiquetaSchema,
   createMensajeInternoSchema,
@@ -52,7 +53,7 @@ import { WebhookHandler } from "./handlers/webhook.handler.js";
 
 const db = getDb();
 const repo = new CrmDrizzleRepository(db);
-const metaSender = new MetaSenderService(db);
+const metaSender = new MetaSenderService(repo);
 
 const agentEngine = new AgentEngine(repo, metaSender);
 const botEngine = new BotEngine(repo, metaSender);
@@ -236,6 +237,12 @@ crmRoutes.post("/crm/bots/recordatorio/ejecutar", authorize("ADMIN"), botsH.ejec
 
 // ─── Agentes ──────────────────────────────────────────────────────────────────
 crmRoutes.get("/crm/agentes", authorize("ADMIN"), agentesH.list);
+crmRoutes.post(
+  "/crm/agentes",
+  authorize("ADMIN"),
+  validateBody(createAgenteSchema),
+  agentesH.create
+);
 crmRoutes.put(
   "/crm/agentes/:id",
   authorize("ADMIN"),

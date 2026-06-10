@@ -26,6 +26,8 @@ import {
   modelo,
   movimientoInventario,
   ordenServicio,
+  periferico,
+  producto,
   proveedor,
   sucursal,
   tarifaDistrito,
@@ -318,6 +320,107 @@ async function main() {
     ])
     .onConflictDoNothing();
   console.log("  [ok] componentes (8 celulares, 7 laptops, 5 tablets)");
+
+  // ── Periféricos ───────────────────────────────────────────────────────────────
+  await db
+    .insert(periferico)
+    .values([
+      // Celulares
+      {
+        id: "b0000000-0000-0000-0000-000000000001",
+        tenant_id: TENANT_ID,
+        categoria_id: CAT_CEL,
+        nombre: "Cargador",
+      },
+      {
+        id: "b0000000-0000-0000-0000-000000000002",
+        tenant_id: TENANT_ID,
+        categoria_id: CAT_CEL,
+        nombre: "Audífonos",
+      },
+      {
+        id: "b0000000-0000-0000-0000-000000000003",
+        tenant_id: TENANT_ID,
+        categoria_id: CAT_CEL,
+        nombre: "Funda / Case",
+      },
+      {
+        id: "b0000000-0000-0000-0000-000000000004",
+        tenant_id: TENANT_ID,
+        categoria_id: CAT_CEL,
+        nombre: "Memoria SD",
+      },
+      {
+        id: "b0000000-0000-0000-0000-000000000005",
+        tenant_id: TENANT_ID,
+        categoria_id: CAT_CEL,
+        nombre: "Cable USB",
+      },
+      // Laptops
+      {
+        id: "b0000000-0000-0000-0000-000000000011",
+        tenant_id: TENANT_ID,
+        categoria_id: CAT_LAP,
+        nombre: "Cargador",
+      },
+      {
+        id: "b0000000-0000-0000-0000-000000000012",
+        tenant_id: TENANT_ID,
+        categoria_id: CAT_LAP,
+        nombre: "Mouse",
+      },
+      {
+        id: "b0000000-0000-0000-0000-000000000013",
+        tenant_id: TENANT_ID,
+        categoria_id: CAT_LAP,
+        nombre: "Maletín / Bolso",
+      },
+      {
+        id: "b0000000-0000-0000-0000-000000000014",
+        tenant_id: TENANT_ID,
+        categoria_id: CAT_LAP,
+        nombre: "Cable HDMI",
+      },
+      {
+        id: "b0000000-0000-0000-0000-000000000015",
+        tenant_id: TENANT_ID,
+        categoria_id: CAT_LAP,
+        nombre: "Memoria USB",
+      },
+      // Tablets
+      {
+        id: "b0000000-0000-0000-0000-000000000021",
+        tenant_id: TENANT_ID,
+        categoria_id: CAT_TAB,
+        nombre: "Cargador",
+      },
+      {
+        id: "b0000000-0000-0000-0000-000000000022",
+        tenant_id: TENANT_ID,
+        categoria_id: CAT_TAB,
+        nombre: "Funda / Case",
+      },
+      {
+        id: "b0000000-0000-0000-0000-000000000023",
+        tenant_id: TENANT_ID,
+        categoria_id: CAT_TAB,
+        nombre: "Teclado externo",
+      },
+      {
+        id: "b0000000-0000-0000-0000-000000000024",
+        tenant_id: TENANT_ID,
+        categoria_id: CAT_TAB,
+        nombre: "Lapicero / Stylus",
+      },
+      {
+        id: "b0000000-0000-0000-0000-000000000025",
+        tenant_id: TENANT_ID,
+        categoria_id: CAT_TAB,
+        nombre: "Memoria SD",
+      },
+    ])
+    .onConflictDoNothing();
+  console.log("  [ok] perifericos (5 celulares, 5 laptops, 5 tablets)");
 
   // ── Marcas ────────────────────────────────────────────────────────────────────
   await db

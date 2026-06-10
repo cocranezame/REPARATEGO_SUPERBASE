@@ -3,11 +3,14 @@ export type ProductoDto = {
   tenant_id: string;
   codigo: string;
   tipo: "PRODUCTO" | "SERVICIO";
+  alcance: "GLOBAL" | "CATEGORIA" | "MARCA" | "COMPATIBILIDAD" | null;
   nombre: string;
   descripcion: string | null;
-  categoria_id: string;
+  categoria_id: string | null;
   componente_id: string | null;
   marca_id: string | null;
+  modelo_id: string | null;
+  tipo_repuesto_id: string | null;
   unidad_medida: string;
   precio_compra: string | null;
   precio_venta: string;
@@ -69,6 +72,20 @@ export type CompatibilidadesListResponse = {
   data: ProductoCompatibilidadDto[];
 };
 
+export type ProductoCategoriaDto = {
+  id: string;
+  tenant_id: string;
+  producto_id: string;
+  categoria_id: string;
+  componente_id: string | null;
+  created_at: string;
+};
+
+export type CategoriasProductoListResponse = {
+  success: true;
+  data: ProductoCategoriaDto[];
+};
+
 export type TasasPrecioListResponse = {
   success: true;
   data: TasaPrecioDto[];
@@ -96,6 +113,9 @@ export type ProductosParams = {
   marca_id?: string;
   search?: string;
   activo?: boolean;
+  con_imagen?: boolean;
+  sin_cotizacion?: boolean;
+  sin_tasa?: boolean;
   page?: number;
   pageSize?: number;
 };

@@ -14,7 +14,8 @@ const h = createFeatureFlagHandlers(repo);
 
 export const featureFlagRoutes = new Hono<{ Variables: HonoVariables }>();
 
-featureFlagRoutes.use(authMiddleware, authorize(RolUsuario.ADMIN));
+featureFlagRoutes.use("/feature-flags", authMiddleware, authorize(RolUsuario.ADMIN));
+featureFlagRoutes.use("/feature-flags/*", authMiddleware, authorize(RolUsuario.ADMIN));
 
 featureFlagRoutes.get("/feature-flags", h.list);
 featureFlagRoutes.put("/feature-flags/:clave", validateBody(upsertFeatureFlagSchema), h.upsert);

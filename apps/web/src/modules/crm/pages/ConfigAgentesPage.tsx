@@ -1,8 +1,75 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuthStore } from "../../../shared/stores/auth-store";
-import { useAccionesAgente, useAgentes, useUpdateAgente } from "../hooks/useCrm";
+import { useAccionesAgente, useAgentes, useCreateAgente, useUpdateAgente } from "../hooks/useCrm";
 import type { AgenteDto } from "../types/crm";
+
+// ─── Modelos Claude disponibles ───────────────────────────────────────────────
+
+const CLAUDE_MODELS = [
+  {
+    id: "claude-haiku-4-5-20251001",
+    label: "Haiku 4.5",
+    cost: "$1 / $5 por 1M tokens",
+    badge: "Más económico",
+    badgeClass: "bg-green-100 text-green-700",
+  },
+  {
+    id: "claude-sonnet-4-6",
+    label: "Sonnet 4.6",
+    cost: "$3 / $15 por 1M tokens",
+    badge: "Balanceado",
+    badgeClass: "bg-blue-100 text-blue-700",
+  },
+  {
+    id: "claude-opus-4-8",
+    label: "Opus 4.8",
+    cost: "$5 / $25 por 1M tokens",
+    badge: "Más capaz",
+    badgeClass: "bg-purple-100 text-purple-700",
+  },
+] as const;
+
+type ClaudeModelId = (typeof CLAUDE_MODELS)[number]["id"];
+
+function ModelIaSelect({
+  value,
+  onChange,
+  id,
+}: {
+  value: string;
+  onChange: (v: ClaudeModelId) => void;
+  id?: string;
+}) {
+  return (
+    <div className="mt-1 space-y-1">
+      {CLAUDE_MODELS.map((m) => (
+        <label
+          key={m.id}
+          className={`flex items-center justify-between gap-3 border rounded-lg px-3 py-2 cursor-pointer transition-colors ${
+            value === m.id
+              ? "border-primary-500 bg-primary-50"
+              : "border-neutral-200 hover:bg-neutral-50"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <input
+              type="radio"
+              name={id ?? "modelo_ia"}
+              value={m.id}
+              checked={value === m.id}
+              onChange={() => onChange(m.id)}
+              className="accent-primary-600"
+            />
+            <span className="text-sm font-medium">{m.label}</span>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${m.badgeClass}`}>{m.badge}</span>
+          </div>
+          <span className="text-xs text-neutral-500 font-mono">{m.cost}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -43,6 +110,125 @@ function JsonViewer({ data }: { data: unknown }) {
   );
 }
 
+// ─── NuevoAgenteModal ─────────────────────────────────────────────────────────
+
+function NuevoAgenteModal({ onClose }: { onClose: () => void }) {
+  const { mutate: create, isPending } = useCreateAgente();
+  const [form, setForm] = useState({
+    nombre: "",
+    modelo_ia: "claude-haiku-4-5-20251001",
+    tono: "",
+    prompt_base: "",
+    max_mensajes_contexto: 20,
+  });
+
+  const canSubmit = !isPending && form.nombre.trim() && form.modelo_ia.trim();
+
+  function handleSubmit() {
+    create(
+      {
+        nombre: form.nombre,
+        modelo_ia: form.modelo_ia,
+        canal: "WHATSAPP",
+        ...(form.tono ? { tono: form.tono } : {}),
+        ...(form.prompt_base ? { prompt_base: form.prompt_base } : {}),
+        max_mensajes_contexto: form.max_mensajes_contexto,
+      },
+      { onSuccess: onClose }
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 space-y-4">
+        <h3 className="text-base font-semibold">Nuevo agente IA</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="col-span-2">
+            <label htmlFor="nuevo-agente-nombre" className="text-xs font-medium text-neutral-600">
+              Nombre *
+            </label>
+            <input
+              id="nuevo-agente-nombre"
+              type="text"
+              className="w-full mt-1 border border-neutral-200 rounded-lg px-3 py-2 text-sm"
+              value={form.nombre}
+              onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
+              placeholder="Ej: Nico"
+            />
+          </div>
+          <div className="col-span-2">
+            <p className="text-xs font-medium text-neutral-600">Modelo IA *</p>
+            <ModelIaSelect
+              id="nuevo-agente-modelo"
+              value={form.modelo_ia}
+              onChange={(v) => setForm((f) => ({ ...f, modelo_ia: v }))}
+            />
+          </div>
+          <div className="col-span-2 sm:col-span-1">
+            <label htmlFor="nuevo-agente-max" className="text-xs font-medium text-neutral-600">
+              Max mensajes contexto
+            </label>
+            <input
+              id="nuevo-agente-max"
+              type="number"
+              min={5}
+              max={100}
+              className="w-full mt-1 border border-neutral-200 rounded-lg px-3 py-2 text-sm"
+              value={form.max_mensajes_contexto}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, max_mensajes_contexto: Number(e.target.value) }))
+              }
+            />
+          </div>
+          <div className="col-span-2">
+            <label htmlFor="nuevo-agente-tono" className="text-xs font-medium text-neutral-600">
+              Tono
+            </label>
+            <textarea
+              id="nuevo-agente-tono"
+              rows={2}
+              className="w-full mt-1 border border-neutral-200 rounded-lg px-3 py-2 text-sm resize-y"
+              value={form.tono}
+              onChange={(e) => setForm((f) => ({ ...f, tono: e.target.value }))}
+              placeholder="Amigable, directo..."
+            />
+          </div>
+          <div className="col-span-2">
+            <label htmlFor="nuevo-agente-prompt" className="text-xs font-medium text-neutral-600">
+              Prompt base
+            </label>
+            <textarea
+              id="nuevo-agente-prompt"
+              rows={4}
+              className="w-full mt-1 border border-neutral-200 rounded-lg px-3 py-2 text-sm font-mono resize-y"
+              value={form.prompt_base}
+              onChange={(e) => setForm((f) => ({ ...f, prompt_base: e.target.value }))}
+              placeholder="Instrucciones generales para el agente..."
+            />
+          </div>
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 border border-neutral-200 rounded-lg py-2 text-sm"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            disabled={!canSubmit}
+            onClick={handleSubmit}
+            className="flex-1 bg-primary-600 text-white rounded-lg py-2 text-sm disabled:opacity-50"
+          >
+            {isPending ? "Creando..." : "Crear agente"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── AgenteDetail ─────────────────────────────────────────────────────────────
 
 function AgenteDetail({ agente }: { agente: AgenteDto }) {
@@ -70,6 +256,7 @@ function AgenteDetail({ agente }: { agente: AgenteDto }) {
     update({
       id: agente.id,
       data: {
+        modelo_ia: form.modelo_ia,
         tono: form.tono || undefined,
         prompt_base: form.prompt_base || undefined,
         max_mensajes_contexto: form.max_mensajes_contexto,
@@ -106,16 +293,12 @@ function AgenteDetail({ agente }: { agente: AgenteDto }) {
               </span>
             </div>
           </div>
-          <div>
-            <label htmlFor="agente-modelo" className="text-xs font-medium text-neutral-600">
-              Modelo IA
-            </label>
-            <input
+          <div className="sm:col-span-2">
+            <p className="text-xs font-medium text-neutral-600">Modelo IA</p>
+            <ModelIaSelect
               id="agente-modelo"
-              type="text"
-              className="w-full mt-1 border border-neutral-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               value={form.modelo_ia}
-              onChange={(e) => setForm((f) => ({ ...f, modelo_ia: e.target.value }))}
+              onChange={(v) => setForm((f) => ({ ...f, modelo_ia: v }))}
             />
           </div>
           <div>
@@ -318,6 +501,7 @@ export function ConfigAgentesPage() {
   const user = useAuthStore((s) => s.user);
   const { data, isLoading } = useAgentes();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   if (user?.rol !== "ADMIN") return <Navigate to="/crm/inbox" replace />;
 
@@ -330,7 +514,16 @@ export function ConfigAgentesPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold text-neutral-900">Configuración de agentes</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-neutral-900">Configuración de agentes</h1>
+        <button
+          type="button"
+          onClick={() => setShowCreate(true)}
+          className="bg-primary-600 text-white rounded-lg px-4 py-2 text-sm hover:bg-primary-700"
+        >
+          + Nuevo agente
+        </button>
+      </div>
 
       {/* Lista */}
       <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden">
@@ -382,6 +575,8 @@ export function ConfigAgentesPage() {
       </div>
 
       {selected && <AgenteDetail agente={selected} />}
+
+      {showCreate && <NuevoAgenteModal onClose={() => setShowCreate(false)} />}
     </div>
   );
 }

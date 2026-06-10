@@ -6,15 +6,17 @@
 ## Pantallas
 
 ### Productos (`/inventario/productos`)
-- Tabla con: código, nombre, tipo, categoría, precio venta, stock actual, estado
-- Filtros: tipo (PRODUCTO/SERVICIO), categoría, componente, búsqueda
+- Tabla con: código, nombre, tipo, **alcance** (badge coloreado), precio venta, stock actual, estado
+- Filtros: tipo (PRODUCTO/SERVICIO), **alcance** (GLOBAL/CATEGORIA/MARCA/COMPATIBILIDAD — visible si tipo=PRODUCTO o sin filtro de tipo), categoría, componente, búsqueda
 - Indicador visual si stock < stock_minimo (rojo)
+- `AlcanceBadge`: GLOBAL=gris, CATEGORIA=azul, MARCA=ámbar, COMPATIBILIDAD=verde
 
 ### Formulario de producto (`/inventario/productos/nuevo`, `/inventario/productos/:id`)
 - Campos según tipo (PRODUCTO vs SERVICIO)
+- **Selector de alcance** (solo visible si tipo=PRODUCTO): GLOBAL / Por categoría / Por marca / Por compatibilidad (modelo)
 - Selector de categoría → componente (cascada)
 - Selector de marca
-- **Sección compatibilidades:** multiselect de modelos (agrupados por marca)
+- **Sección compatibilidades:** multiselect de modelos (agrupados por marca) — especialmente relevante para alcance=COMPATIBILIDAD
 - Upload de imagen
 
 ### Tasas de precio (`/inventario/tasas-precio`)

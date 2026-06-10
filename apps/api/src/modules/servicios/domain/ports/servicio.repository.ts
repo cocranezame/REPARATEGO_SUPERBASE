@@ -80,6 +80,7 @@ export type CreateOrdenData = {
   falla_ingreso: string;
   visita_domicilio_id?: string | undefined;
   lead_id?: string | undefined;
+  perifericos?: string[] | undefined;
 };
 
 export type UpdateOrdenData = {

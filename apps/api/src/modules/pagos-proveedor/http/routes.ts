@@ -12,7 +12,8 @@ const h = createPagoProveedorHandlers(repo);
 
 export const pagoProveedorRoutes = new Hono<{ Variables: HonoVariables }>();
 
-pagoProveedorRoutes.use(authMiddleware);
+pagoProveedorRoutes.use("/pagos-proveedor", authMiddleware);
+pagoProveedorRoutes.use("/pagos-proveedor/*", authMiddleware);
 
 pagoProveedorRoutes.get("/pagos-proveedor", validateQuery(listPagosProveedorQuerySchema), h.list);
 pagoProveedorRoutes.post("/pagos-proveedor", validateBody(createPagoProveedorSchema), h.create);

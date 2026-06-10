@@ -218,7 +218,7 @@ function CatalogoPanel({
                   : "text-neutral-600 hover:bg-neutral-50"
               }`}
             >
-              {t === "TODOS" ? "Todos" : t === "PRODUCTO" ? "Productos" : "Servicios"}
+              {t === "TODOS" ? "Todos" : t === "PRODUCTO" ? "Repuestos" : "Servicios"}
             </button>
           ))}
         </div>
@@ -988,7 +988,7 @@ function CarritoPanel({
       <div className="rounded-xl border border-neutral-200 bg-white p-3 text-sm space-y-1">
         {subtotalProductos > 0 && (
           <div className="flex justify-between text-neutral-600">
-            <span>Productos</span>
+            <span>Repuestos</span>
             <span>{fmtPEN(subtotalProductos)}</span>
           </div>
         )}

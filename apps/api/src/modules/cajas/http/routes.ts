@@ -13,7 +13,7 @@ const h = createCajaHandlers(repo);
 
 export const cajaRoutes = new Hono<{ Variables: HonoVariables }>();
 
-cajaRoutes.use(authMiddleware);
+cajaRoutes.use("/ventas/*", authMiddleware);
 
 // GET /ventas/caja/activa — exempt from requireCajaAbierta (returns null if no caja)
 cajaRoutes.get("/ventas/caja/activa", authorize("VENDEDOR", "ADMIN"), h.activa);

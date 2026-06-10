@@ -1,30 +1,40 @@
-import type { TipoProducto } from "@kallpasoft/shared";
+import type { AlcanceRepuesto, TipoProducto } from "@kallpasoft/shared";
 import type { Producto } from "../entities/producto.js";
+import type { ProductoCategoria } from "../entities/producto-categoria.js";
 import type { ProductoCompatibilidad } from "../entities/producto-compatibilidad.js";
 
 export type CreateProductoData = {
   tipo: TipoProducto;
+  alcance?: AlcanceRepuesto;
   nombre: string;
   descripcion?: string;
-  categoria_id: string;
+  categoria_id?: string;
   componente_id?: string;
   marca_id?: string;
+  modelo_id?: string;
+  tipo_repuesto_id?: string;
   unidad_medida?: string;
-  precio_compra?: number;
-  precio_venta: number;
+  // precio_compra: set by ingreso movements (from cotización linked to ingreso)
+  // precio_venta: set by Tasas % system (calculated from ultimo_costo + tasa)
   stock_minimo?: number;
   imagen_url?: string;
 };
 
 export type UpdateProductoData = {
+  alcance?: AlcanceRepuesto | null;
   nombre?: string;
   descripcion?: string | null;
-  categoria_id?: string;
+  categoria_id?: string | null;
   componente_id?: string | null;
   marca_id?: string | null;
+  modelo_id?: string | null;
+  tipo_repuesto_id?: string | null;
   unidad_medida?: string;
-  precio_compra?: number | null;
-  precio_venta?: number;
+  // precio_compra: updated by ingreso movements, not from product form
+  // precio_venta: updated by Tasas % system, not from product form
+  // Internal-only update path (e.g. ingreso service):
+  _precio_compra?: number | null;
+  _precio_venta?: number;
   stock_minimo?: number;
   imagen_url?: string | null;
   activo?: boolean;
@@ -35,8 +45,12 @@ export type ListProductosParams = {
   categoria_id?: string;
   componente_id?: string;
   marca_id?: string;
+  modelo_id?: string;
   search?: string;
   activo?: boolean;
+  con_imagen?: boolean;
+  sin_cotizacion?: boolean;
+  sin_tasa?: boolean;
   page: number;
   pageSize: number;
 };
@@ -52,10 +66,21 @@ export interface IProductoRepository {
   create(tenantId: string, data: CreateProductoData): Promise<Producto>;
   update(tenantId: string, id: string, data: UpdateProductoData): Promise<Producto | null>;
   softDelete(tenantId: string, id: string): Promise<boolean>;
+  hardDelete(tenantId: string, id: string): Promise<boolean>;
+  hasDependencies(
+    tenantId: string,
+    id: string
+  ): Promise<{ hasCotizaciones: boolean; hasLotes: boolean }>;
   listCompatibilidades(tenantId: string, productoId: string): Promise<ProductoCompatibilidad[]>;
   syncCompatibilidades(
     tenantId: string,
     productoId: string,
     modeloIds: string[]
   ): Promise<ProductoCompatibilidad[]>;
+  listCategorias(tenantId: string, productoId: string): Promise<ProductoCategoria[]>;
+  syncCategorias(
+    tenantId: string,
+    productoId: string,
+    pares: { categoria_id: string; componente_id?: string | undefined }[]
+  ): Promise<ProductoCategoria[]>;
 }

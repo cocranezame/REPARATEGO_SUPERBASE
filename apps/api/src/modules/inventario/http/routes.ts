@@ -25,6 +25,7 @@ import {
   listProductosQuerySchema,
   listSimpleQuerySchema,
   listStockQuerySchema,
+  syncCategoriasProductoSchema,
   syncCompatibilidadesSchema,
   updateProductoHttpSchema,
 } from "./validators.js";
@@ -37,7 +38,22 @@ const h = createInventarioHandlers(productoRepo, tasaPrecioRepo, metodoPagoRepo,
 
 export const inventarioRoutes = new Hono<{ Variables: HonoVariables }>();
 
-inventarioRoutes.use(authMiddleware);
+inventarioRoutes.use("/inventario", authMiddleware);
+inventarioRoutes.use("/inventario/*", authMiddleware);
+inventarioRoutes.use("/productos", authMiddleware);
+inventarioRoutes.use("/productos/*", authMiddleware);
+inventarioRoutes.use("/stock", authMiddleware);
+inventarioRoutes.use("/stock/*", authMiddleware);
+inventarioRoutes.use("/lotes", authMiddleware);
+inventarioRoutes.use("/lotes/*", authMiddleware);
+inventarioRoutes.use("/movimientos", authMiddleware);
+inventarioRoutes.use("/movimientos/*", authMiddleware);
+inventarioRoutes.use("/metodos-pago", authMiddleware);
+inventarioRoutes.use("/metodos-pago/*", authMiddleware);
+inventarioRoutes.use("/tasas-precio", authMiddleware);
+inventarioRoutes.use("/tasas-precio/*", authMiddleware);
+inventarioRoutes.use("/ingreso-oc", authMiddleware);
+inventarioRoutes.use("/ingreso-oc/*", authMiddleware);
 
 // ── GRUPO 1: Dashboard (I24, I25) ────────────────────────────────────────────
 inventarioRoutes.get("/inventario/dashboard", authorize("ADMIN", "ALMACEN"), h.getDashboard);
@@ -82,6 +98,19 @@ inventarioRoutes.post(
   authorize("ADMIN"),
   validateBody(syncCompatibilidadesSchema),
   h.syncCompatibilidades
+);
+
+// ── Categorías (alcance CATEGORIA) ────────────────────────────────────────────
+inventarioRoutes.get(
+  "/productos/:id/categorias",
+  authorize("ADMIN", "ALMACEN", "VENDEDOR"),
+  h.listCategoriasProducto
+);
+inventarioRoutes.post(
+  "/productos/:id/categorias",
+  authorize("ADMIN"),
+  validateBody(syncCategoriasProductoSchema),
+  h.syncCategoriasProducto
 );
 
 // ── GRUPO 3: Tasas de precio (jerarquía) (I24, I25) ──────────────────────────
@@ -173,11 +202,4 @@ inventarioRoutes.get(
   "/inventario/cotizaciones/proveedores-sugeridos/:productoId",
   authorize("ADMIN", "ALMACEN"),
   h.getProveedoresSugeridos
-);
-
-// ── GRUPO 5: Mensaje WhatsApp (I10) ───────────────────────────────────────────
-inventarioRoutes.get(
-  "/inventario/cotizaciones/:id/mensaje-whatsapp/:detalleId",
-  authorize("ADMIN", "ALMACEN"),
-  h.getMensajeWhatsapp
 );

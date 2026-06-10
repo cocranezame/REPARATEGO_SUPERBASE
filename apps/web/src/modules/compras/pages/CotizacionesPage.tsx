@@ -1,639 +1,297 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import type { CreateCotizacionCompraInput } from "@kallpasoft/validators";
-import { Eye, MessageCircle, Plus, Shield, Trash2, X } from "lucide-react";
+import { MessageCircle, Pencil, Plus, Search, Star, Trash2, X } from "lucide-react";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { apiClient } from "../../../shared/lib/api-client";
 import { useProductos, useProveedoresSugeridos } from "../../inventario/hooks/useInventario";
-import type { MensajeWhatsappResponse } from "../../inventario/types/inventario";
-import { useProveedores } from "../../proveedores/hooks/useProveedores";
+import type { ProveedorSugeridoDto } from "../../inventario/types/inventario";
 import {
-  useCotizacion,
   useCotizaciones,
-  useCotizarCotizacion,
   useCreateCotizacion,
+  useDeleteCotizacion,
+  useUpdateCotizacion,
 } from "../hooks/useCotizaciones";
-import type { CotizacionDetalleDto, CotizacionDto, CotizacionesParams } from "../types/cotizacion";
+import type { CotizacionDto } from "../types/cotizacion";
 
-// ─── Constantes ───────────────────────────────────────────────────────────────
-
-const PAGE_SIZE = 20;
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const INPUT =
   "w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100";
 
-const SELECT =
-  "w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100";
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function EstadoBadge({ estado }: { estado: string }) {
-  const map: Record<string, string> = {
-    PENDIENTE: "bg-yellow-100 text-yellow-700",
-    COTIZADA: "bg-green-100 text-green-700",
-    VENCIDA: "bg-red-100 text-red-700",
-  };
+function fmtPEN(val: string | null | undefined) {
+  if (!val) return "—";
+  const n = Number.parseFloat(val);
+  return Number.isNaN(n) ? "—" : `S/ ${n.toFixed(2)}`;
+}
+
+function buildWhatsApp(proveedor: ProveedorSugeridoDto, productoNombre: string): string {
+  if (!proveedor.telefono) return "";
+  const numero = proveedor.telefono.replace(/\D/g, "");
+  if (!numero) return "";
+  const nombre = proveedor.razon_social;
+  const msg = `Estimado ${nombre}, quería consultar el precio de ${productoNombre}. ¿Cuál es el costo por unidad?`;
+  return `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
+}
+
+function StarRating({ value }: { value: number | null }) {
+  if (value === null) return <span className="text-xs text-neutral-400">—</span>;
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${map[estado] ?? "bg-neutral-100 text-neutral-700"}`}
-    >
-      {estado}
+    <span className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          className={`h-3 w-3 ${n <= value ? "fill-amber-400 text-amber-400" : "text-neutral-200"}`}
+        />
+      ))}
     </span>
   );
 }
 
-// ─── Modal Crear ──────────────────────────────────────────────────────────────
+// ─── Modal: Registrar / Editar precio ─────────────────────────────────────────
 
-const cotizacionFormSchema = z.object({
-  proveedor_id: z.string().min(1, "Selecciona un proveedor"),
-  fecha_vencimiento: z.string().optional(),
-  notas: z.string().optional(),
-});
-type CotizacionFormValues = z.infer<typeof cotizacionFormSchema>;
-
-type ItemRow = { producto_id: string; cantidad: number };
-
-function CrearCotizacionModal({ onClose }: { onClose: () => void }) {
-  const [items, setItems] = useState<ItemRow[]>([{ producto_id: "", cantidad: 1 }]);
-  const [serverError, setServerError] = useState<string | null>(null);
-
-  const { data: proveedoresData } = useProveedores({ activo: true, pageSize: 200 });
-  const { data: productosData } = useProductos({ activo: true, pageSize: 200 });
-
-  const createMutation = useCreateCotizacion();
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<CotizacionFormValues>({
-    resolver: zodResolver(cotizacionFormSchema),
-    defaultValues: { proveedor_id: "", fecha_vencimiento: "", notas: "" },
-  });
-
-  function addItem() {
-    setItems((prev) => [...prev, { producto_id: "", cantidad: 1 }]);
-  }
-
-  function removeItem(idx: number) {
-    setItems((prev) => prev.filter((_, i) => i !== idx));
-  }
-
-  function updateItem(idx: number, field: keyof ItemRow, value: string | number) {
-    setItems((prev) => prev.map((item, i) => (i === idx ? { ...item, [field]: value } : item)));
-  }
-
-  async function onSubmit(values: CotizacionFormValues) {
-    setServerError(null);
-    const validItems = items.filter((it) => it.producto_id !== "");
-    if (validItems.length === 0) {
-      setServerError("Agrega al menos un producto");
-      return;
-    }
-
-    const body: CreateCotizacionCompraInput = {
-      proveedor_id: values.proveedor_id,
-      items: validItems.map((it) => ({ producto_id: it.producto_id, cantidad: it.cantidad })),
-      ...(values.fecha_vencimiento ? { fecha_vencimiento: values.fecha_vencimiento } : {}),
-      ...(values.notas ? { notas: values.notas } : {}),
-    };
-
-    createMutation.mutate(body, {
-      onSuccess: onClose,
-      onError: (err) => setServerError(err.message),
-    });
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-xl rounded-xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
-          <h2 className="text-base font-semibold text-neutral-900">Nueva cotización de compra</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
-          <div className="max-h-[65vh] overflow-y-auto px-6 py-4 space-y-4">
-            {/* Proveedor */}
-            <div className="flex flex-col gap-1">
-              <label htmlFor="cf-proveedor" className="text-xs font-medium text-neutral-700">
-                Proveedor
-              </label>
-              <select id="cf-proveedor" className={SELECT} {...register("proveedor_id")}>
-                <option value="">Seleccionar...</option>
-                {proveedoresData?.data.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.razon_social}
-                  </option>
-                ))}
-              </select>
-              {errors.proveedor_id && (
-                <span className="text-xs text-danger-600">{errors.proveedor_id.message}</span>
-              )}
-            </div>
-
-            {/* Fecha vencimiento */}
-            <div className="flex flex-col gap-1">
-              <label htmlFor="cf-venc" className="text-xs font-medium text-neutral-700">
-                Fecha de vencimiento{" "}
-                <span className="font-normal text-neutral-400">(opcional)</span>
-              </label>
-              <input
-                id="cf-venc"
-                type="date"
-                className={INPUT}
-                {...register("fecha_vencimiento")}
-              />
-            </div>
-
-            {/* Notas */}
-            <div className="flex flex-col gap-1">
-              <label htmlFor="cf-notas" className="text-xs font-medium text-neutral-700">
-                Notas <span className="font-normal text-neutral-400">(opcional)</span>
-              </label>
-              <input
-                id="cf-notas"
-                type="text"
-                placeholder="Observaciones"
-                className={INPUT}
-                {...register("notas")}
-              />
-            </div>
-
-            {/* Items */}
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-medium text-neutral-700">Productos a cotizar</span>
-                <button
-                  type="button"
-                  onClick={addItem}
-                  className="flex items-center gap-1 rounded-lg border border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:bg-neutral-50"
-                >
-                  <Plus className="h-3 w-3" />
-                  Agregar
-                </button>
-              </div>
-              <div className="space-y-2">
-                {items.map((item, idx) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: form items with stable index
-                  <div key={idx} className="flex items-center gap-2">
-                    <select
-                      value={item.producto_id}
-                      onChange={(e) => updateItem(idx, "producto_id", e.target.value)}
-                      className="flex-1 rounded-lg border border-neutral-300 bg-white px-2 py-1.5 text-sm focus:border-primary-500 focus:outline-none"
-                    >
-                      <option value="">Producto...</option>
-                      {productosData?.data.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.nombre}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      min={1}
-                      value={item.cantidad}
-                      onChange={(e) => updateItem(idx, "cantidad", Number(e.target.value))}
-                      className="w-20 rounded-lg border border-neutral-300 px-2 py-1.5 text-sm focus:border-primary-500 focus:outline-none"
-                      placeholder="Qty"
-                    />
-                    {items.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeItem(idx)}
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-danger-600"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {serverError !== null && (
-              <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-danger-600">
-                {serverError}
-              </div>
-            )}
-          </div>
-
-          <div className="flex justify-end gap-3 border-t border-neutral-200 px-6 py-4">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={createMutation.isPending || isSubmitting}
-              className="rounded-lg border border-neutral-300 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-60"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={createMutation.isPending || isSubmitting}
-              className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-60"
-            >
-              {createMutation.isPending || isSubmitting ? "Creando..." : "Crear cotización"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// ─── Proveedores sugeridos ────────────────────────────────────────────────────
-
-function ProveedoresSugeridosSection({
-  cotizacionId,
-  detalles,
+function PrecioModal({
+  cotizacion,
+  proveedorId,
+  proveedorNombre,
+  productoId,
+  productoNombre,
+  onClose,
 }: {
-  cotizacionId: string;
-  detalles: CotizacionDetalleDto[];
+  cotizacion?: CotizacionDto;
+  proveedorId?: string;
+  proveedorNombre?: string;
+  productoId?: string;
+  productoNombre?: string;
+  onClose: () => void;
 }) {
-  const [selectedDetalleId, setSelectedDetalleId] = useState(detalles[0]?.id ?? "");
-  const selectedDetalle = detalles.find((d) => d.id === selectedDetalleId);
-  const productoId = selectedDetalle?.producto_id ?? "";
+  const isEdit = cotizacion !== undefined;
+  const createMutation = useCreateCotizacion();
+  const updateMutation = useUpdateCotizacion();
 
-  const { data, isLoading } = useProveedoresSugeridos(productoId);
-  const proveedores = data?.data;
-
-  async function handleWhatsApp(detalleId: string, telefono: string | null) {
-    try {
-      const res = await apiClient.get<MensajeWhatsappResponse>(
-        `/inventario/cotizaciones/${cotizacionId}/mensaje-whatsapp/${detalleId}`
-      );
-      window.open(res.data.url, "_blank", "noopener,noreferrer");
-    } catch {
-      if (telefono) {
-        window.open(
-          `https://wa.me/${telefono.replace(/\D/g, "")}`,
-          "_blank",
-          "noopener,noreferrer"
-        );
-      }
-    }
-  }
-
-  if (detalles.length === 0) {
-    return <p className="text-sm text-neutral-400">Sin productos en esta cotización.</p>;
-  }
-
-  return (
-    <div className="space-y-3">
-      {/* Selector de producto */}
-      <div className="flex flex-col gap-1">
-        <label htmlFor="ps-producto" className="text-xs font-medium text-neutral-600">
-          Producto
-        </label>
-        <select
-          id="ps-producto"
-          value={selectedDetalleId}
-          onChange={(e) => setSelectedDetalleId(e.target.value)}
-          className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
-        >
-          {detalles.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.producto_nombre ?? d.producto_id}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {isLoading && (
-        <div className="flex justify-center py-4">
-          <div className="h-5 w-5 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
-        </div>
-      )}
-
-      {!isLoading && proveedores && (
-        <div className="space-y-2">
-          {/* SEGUROS */}
-          {proveedores.seguros.length > 0 && (
-            <div>
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                Seguros
-              </p>
-              <div className="space-y-2">
-                {proveedores.seguros.map((p) => (
-                  <div
-                    key={p.proveedor_id}
-                    className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 px-3 py-2"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-3.5 w-3.5 text-green-600" />
-                        <span className="text-sm font-medium text-neutral-900">
-                          {p.razon_social}
-                        </span>
-                        <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                          Seguro
-                        </span>
-                      </div>
-                      <p className="mt-0.5 text-xs text-neutral-500">
-                        {p.ruc}
-                        {p.telefono !== null ? ` · ${p.telefono}` : ""}
-                      </p>
-                    </div>
-                    {p.telefono !== null && (
-                      <button
-                        type="button"
-                        onClick={() => void handleWhatsApp(selectedDetalleId, p.telefono)}
-                        className="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
-                      >
-                        <MessageCircle className="h-3.5 w-3.5" />
-                        WhatsApp
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* POSIBLES */}
-          {proveedores.posibles.length > 0 && (
-            <div>
-              <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                Posibles
-              </p>
-              <div className="space-y-2">
-                {proveedores.posibles.map((p) => (
-                  <div
-                    key={p.proveedor_id}
-                    className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-3 py-2"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-neutral-900">
-                          {p.razon_social}
-                        </span>
-                        <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
-                          Posible
-                        </span>
-                      </div>
-                      <p className="mt-0.5 text-xs text-neutral-500">
-                        {p.ruc}
-                        {p.telefono !== null ? ` · ${p.telefono}` : ""}
-                      </p>
-                    </div>
-                    {p.telefono !== null && (
-                      <button
-                        type="button"
-                        onClick={() => void handleWhatsApp(selectedDetalleId, p.telefono)}
-                        className="flex items-center gap-1.5 rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50"
-                      >
-                        <MessageCircle className="h-3.5 w-3.5" />
-                        WhatsApp
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {proveedores.seguros.length === 0 && proveedores.posibles.length === 0 && (
-            <p className="py-4 text-center text-sm text-neutral-400">
-              No hay proveedores sugeridos para este producto.
-            </p>
-          )}
-        </div>
-      )}
-    </div>
+  const [precio, setPrecio] = useState(
+    isEdit && cotizacion.precio_unitario ? cotizacion.precio_unitario : ""
   );
-}
+  const [notas, setNotas] = useState(cotizacion?.notas ?? "");
+  const [error, setError] = useState<string | null>(null);
 
-// ─── Modal Detalle + Cotizar ──────────────────────────────────────────────────
+  const displayProveedorNombre = isEdit
+    ? (cotizacion.proveedor_nombre ?? "—")
+    : (proveedorNombre ?? "—");
+  const displayProductoNombre = isEdit
+    ? (cotizacion.producto_nombre ?? "—")
+    : (productoNombre ?? "—");
 
-function DetalleModal({ cotizacionId, onClose }: { cotizacionId: string; onClose: () => void }) {
-  const { data, isLoading } = useCotizacion(cotizacionId);
-  const cotizacion = data?.data;
-
-  const cotizarMutation = useCotizarCotizacion();
-  const [precios, setPrecios] = useState<Record<string, string>>({});
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [showCotizar, setShowCotizar] = useState(false);
-  const [tab, setTab] = useState<"detalle" | "proveedores">("detalle");
-
-  function handlePrecioChange(detalleId: string, value: string) {
-    setPrecios((prev) => ({ ...prev, [detalleId]: value }));
-  }
-
-  function submitCotizar() {
-    if (!cotizacion) return;
-    setServerError(null);
-    const items = (cotizacion.detalles ?? [])
-      .filter((d) => precios[d.id] && Number(precios[d.id]) > 0)
-      .map((d) => ({ detalle_id: d.id, precio_unitario: Number(precios[d.id]) }));
-
-    if (items.length === 0) {
-      setServerError("Ingresa al menos un precio mayor a 0");
+  function handleSubmit() {
+    const num = Number.parseFloat(precio);
+    if (precio !== "" && (Number.isNaN(num) || num <= 0)) {
+      setError("Ingresa un precio válido mayor a 0");
       return;
     }
 
-    cotizarMutation.mutate(
-      { id: cotizacionId, items },
-      {
-        onSuccess: () => {
-          setShowCotizar(false);
-          setPrecios({});
-        },
-        onError: (err) => setServerError(err.message),
-      }
-    );
+    setError(null);
+
+    if (isEdit) {
+      const body: { id: string; precio_unitario?: number; notas?: string } = { id: cotizacion.id };
+      if (precio !== "") body.precio_unitario = num;
+      if (notas !== "") body.notas = notas;
+      updateMutation.mutate(body, { onSuccess: onClose, onError: (e) => setError(e.message) });
+    } else {
+      const body: {
+        proveedor_id: string;
+        producto_id: string;
+        precio_unitario?: number;
+        notas?: string;
+      } = {
+        proveedor_id: proveedorId ?? "",
+        producto_id: productoId ?? "",
+      };
+      if (precio !== "") body.precio_unitario = num;
+      if (notas !== "") body.notas = notas;
+      createMutation.mutate(body, { onSuccess: onClose, onError: (e) => setError(e.message) });
+    }
   }
 
+  const isPending = createMutation.isPending || updateMutation.isPending;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-2xl rounded-xl bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+        <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-neutral-900">
-            {cotizacion ? `Detalle — ${cotizacion.codigo}` : "Cargando..."}
+            {isEdit ? "Editar precio" : "Registrar precio"}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+            className="text-neutral-400 hover:text-neutral-600"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 border-b border-neutral-200 px-6">
-          <button
-            type="button"
-            onClick={() => setTab("detalle")}
-            className={`px-3 py-2 text-sm font-medium transition-colors ${
-              tab === "detalle"
-                ? "border-b-2 border-primary-600 text-primary-600"
-                : "text-neutral-500 hover:text-neutral-700"
-            }`}
-          >
-            Detalle
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("proveedores")}
-            className={`px-3 py-2 text-sm font-medium transition-colors ${
-              tab === "proveedores"
-                ? "border-b-2 border-primary-600 text-primary-600"
-                : "text-neutral-500 hover:text-neutral-700"
-            }`}
-          >
-            Proveedores sugeridos
-          </button>
+        <div className="mb-4 rounded-lg bg-neutral-50 p-3 text-sm">
+          <p>
+            <span className="text-neutral-500">Proveedor:</span>{" "}
+            <span className="font-medium">{displayProveedorNombre}</span>
+          </p>
+          <p className="mt-1">
+            <span className="text-neutral-500">Repuesto:</span>{" "}
+            <span className="font-medium">{displayProductoNombre}</span>
+          </p>
         </div>
 
-        <div className="max-h-[55vh] overflow-y-auto px-6 py-4">
-          {isLoading && (
-            <div className="flex justify-center py-8">
-              <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
-            </div>
-          )}
-
-          {cotizacion && tab === "detalle" && (
-            <div className="space-y-4">
-              {/* Info */}
-              <div className="grid grid-cols-2 gap-3 rounded-lg bg-neutral-50 p-3 text-sm">
-                <div>
-                  <span className="text-neutral-500">Proveedor:</span>{" "}
-                  <span className="font-medium">{cotizacion.proveedor_nombre ?? "—"}</span>
-                </div>
-                <div>
-                  <span className="text-neutral-500">Estado:</span>{" "}
-                  <EstadoBadge estado={cotizacion.estado} />
-                </div>
-                <div>
-                  <span className="text-neutral-500">Solicitud:</span>{" "}
-                  <span>{cotizacion.fecha_solicitud}</span>
-                </div>
-                <div>
-                  <span className="text-neutral-500">Vencimiento:</span>{" "}
-                  <span>{cotizacion.fecha_vencimiento ?? "—"}</span>
-                </div>
-                {cotizacion.notas && (
-                  <div className="col-span-2">
-                    <span className="text-neutral-500">Notas:</span> <span>{cotizacion.notas}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Items table */}
-              <div className="overflow-x-auto rounded-lg border border-neutral-200">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-neutral-200 bg-neutral-50">
-                      <th className="px-3 py-2 text-left text-xs font-medium uppercase text-neutral-500">
-                        Producto
-                      </th>
-                      <th className="px-3 py-2 text-right text-xs font-medium uppercase text-neutral-500">
-                        Cant.
-                      </th>
-                      <th className="px-3 py-2 text-right text-xs font-medium uppercase text-neutral-500">
-                        Precio unit.
-                      </th>
-                      <th className="px-3 py-2 text-right text-xs font-medium uppercase text-neutral-500">
-                        Subtotal
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-100">
-                    {(cotizacion.detalles ?? []).map((d: CotizacionDetalleDto) => (
-                      <tr key={d.id}>
-                        <td className="px-3 py-2 font-medium text-neutral-900">
-                          {d.producto_nombre ?? d.producto_id}
-                        </td>
-                        <td className="px-3 py-2 text-right text-neutral-600">{d.cantidad}</td>
-                        <td className="px-3 py-2 text-right text-neutral-600">
-                          {showCotizar && cotizacion.estado === "PENDIENTE" ? (
-                            <input
-                              type="number"
-                              min={0}
-                              step={0.01}
-                              value={precios[d.id] ?? ""}
-                              onChange={(e) => handlePrecioChange(d.id, e.target.value)}
-                              className="w-24 rounded border border-neutral-300 px-2 py-0.5 text-right text-sm focus:border-primary-500 focus:outline-none"
-                              placeholder="0.00"
-                            />
-                          ) : (
-                            <span>
-                              {d.precio_unitario !== null
-                                ? `S/ ${Number(d.precio_unitario).toFixed(2)}`
-                                : "—"}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2 text-right text-neutral-600">
-                          {d.subtotal !== null ? `S/ ${Number(d.subtotal).toFixed(2)}` : "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {serverError !== null && (
-                <div className="rounded-lg bg-red-50 px-4 py-2 text-sm text-danger-600">
-                  {serverError}
-                </div>
-              )}
-            </div>
-          )}
-
-          {cotizacion && tab === "proveedores" && (
-            <ProveedoresSugeridosSection
-              cotizacionId={cotizacionId}
-              detalles={cotizacion.detalles ?? []}
+        <div className="space-y-3">
+          <div>
+            <label htmlFor="precio-input" className="text-xs font-medium text-neutral-700">
+              Precio unitario (S/) <span className="font-normal text-neutral-400">(opcional)</span>
+            </label>
+            <input
+              id="precio-input"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              value={precio}
+              onChange={(e) => setPrecio(e.target.value)}
+              className={INPUT}
             />
-          )}
+          </div>
+          <div>
+            <label htmlFor="notas-input" className="text-xs font-medium text-neutral-700">
+              Notas <span className="font-normal text-neutral-400">(opcional)</span>
+            </label>
+            <textarea
+              id="notas-input"
+              rows={2}
+              placeholder="Condiciones, tiempo de entrega..."
+              value={notas}
+              onChange={(e) => setNotas(e.target.value)}
+              className={`${INPUT} resize-none`}
+            />
+          </div>
         </div>
 
-        <div className="flex justify-end gap-3 border-t border-neutral-200 px-6 py-4">
+        {error !== null && <p className="mt-2 text-sm text-danger-600">{error}</p>}
+
+        <div className="mt-4 flex justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
+            disabled={isPending}
             className="rounded-lg border border-neutral-300 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
           >
-            Cerrar
+            Cancelar
           </button>
-          {cotizacion?.estado === "PENDIENTE" && !showCotizar && (
-            <button
-              type="button"
-              onClick={() => setShowCotizar(true)}
-              className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
-            >
-              Ingresar precios
-            </button>
-          )}
-          {cotizacion?.estado === "PENDIENTE" && showCotizar && (
-            <>
-              <button
-                type="button"
-                onClick={() => setShowCotizar(false)}
-                className="rounded-lg border border-neutral-300 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={submitCotizar}
-                disabled={cotizarMutation.isPending}
-                className="rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-60"
-              >
-                {cotizarMutation.isPending ? "Guardando..." : "Marcar cotizada"}
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isPending}
+            className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-60"
+          >
+            {isPending ? "Guardando..." : "Guardar"}
+          </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Panel: Proveedores sugeridos para un producto ────────────────────────────
+
+function ProveedoresSugeridosPanel({
+  productoId,
+  productoNombre,
+  onRegistrarPrecio,
+}: {
+  productoId: string;
+  productoNombre: string;
+  onRegistrarPrecio: (proveedor: ProveedorSugeridoDto) => void;
+}) {
+  const { data, isLoading, isError } = useProveedoresSugeridos(productoId);
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-6">
+        <div className="h-5 w-5 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return <p className="text-sm text-danger-600">Error al cargar proveedores</p>;
+  }
+
+  const seguros = data?.data.seguros ?? [];
+  const posibles = data?.data.posibles ?? [];
+
+  if (seguros.length === 0 && posibles.length === 0) {
+    return (
+      <div className="rounded-lg bg-amber-50 p-4 text-sm text-amber-700">
+        No hay proveedores con líneas que coincidan con la categoría/componente de este repuesto.
+        Configura las líneas en la sección de Proveedores.
+      </div>
+    );
+  }
+
+  function ProveedorRow({
+    prov,
+    label,
+  }: {
+    prov: ProveedorSugeridoDto;
+    label: "Seguro" | "Posible";
+  }) {
+    const waUrl = buildWhatsApp(prov, productoNombre);
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white p-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                label === "Seguro" ? "bg-emerald-100 text-emerald-700" : "bg-sky-100 text-sky-700"
+              }`}
+            >
+              {label}
+            </span>
+            <p className="truncate text-sm font-medium text-neutral-900">{prov.razon_social}</p>
+          </div>
+          <div className="mt-0.5 flex items-center gap-3">
+            <span className="text-xs text-neutral-400">{prov.ruc}</span>
+            <StarRating value={prov.calificacion} />
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {waUrl !== "" && (
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Consultar precio por WhatsApp"
+              className="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              WhatsApp
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={() => onRegistrarPrecio(prov)}
+            className="flex items-center gap-1.5 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-700"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Registrar precio
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {seguros.map((p) => (
+        <ProveedorRow key={p.proveedor_id} prov={p} label="Seguro" />
+      ))}
+      {posibles.map((p) => (
+        <ProveedorRow key={p.proveedor_id} prov={p} label="Posible" />
+      ))}
     </div>
   );
 }
@@ -641,31 +299,78 @@ function DetalleModal({ cotizacionId, onClose }: { cotizacionId: string; onClose
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export function CotizacionesPage() {
-  const [page, setPage] = useState(1);
-  const [filterEstado, setFilterEstado] = useState("");
-  const [showCrear, setShowCrear] = useState(false);
-  const [detalleId, setDetalleId] = useState<string | null>(null);
+  const { data: cotizacionesData, isLoading: loadingList } = useCotizaciones({ pageSize: 100 });
+  const { data: productosData } = useProductos({ tipo: "PRODUCTO", activo: true, pageSize: 200 });
 
-  const estadoFilter =
-    filterEstado !== "" ? (filterEstado as NonNullable<CotizacionesParams["estado"]>) : undefined;
+  const deleteMutation = useDeleteCotizacion();
 
-  const params: CotizacionesParams = {
-    page,
-    pageSize: PAGE_SIZE,
-    ...(estadoFilter !== undefined ? { estado: estadoFilter } : {}),
-  };
+  // Nueva cotización: flujo de 2 pasos
+  const [showNueva, setShowNueva] = useState(false);
+  const [selectedProductoId, setSelectedProductoId] = useState("");
+  const [selectedProductoNombre, setSelectedProductoNombre] = useState("");
+  const [productoSearch, setProductoSearch] = useState("");
 
-  const { data, isLoading, isError } = useCotizaciones(params);
-  const meta = data?.meta;
+  // Modal precio (crear desde sugeridos)
+  const [precioModal, setPrecioModal] = useState<{
+    proveedorId: string;
+    proveedorNombre: string;
+    productoId: string;
+    productoNombre: string;
+  } | null>(null);
+
+  // Modal editar cotización existente
+  const [editCotizacion, setEditCotizacion] = useState<CotizacionDto | null>(null);
+
+  // Confirmar eliminar
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const cotizaciones = cotizacionesData?.data ?? [];
+  const productos = productosData?.data ?? [];
+
+  const productosFiltrados = productoSearch.trim()
+    ? productos.filter(
+        (p) =>
+          p.nombre.toLowerCase().includes(productoSearch.toLowerCase()) ||
+          p.codigo.toLowerCase().includes(productoSearch.toLowerCase())
+      )
+    : productos;
+
+  function handleSelectProducto(id: string, nombre: string) {
+    setSelectedProductoId(id);
+    setSelectedProductoNombre(nombre);
+    setProductoSearch("");
+  }
+
+  function handleRegistrarPrecio(prov: ProveedorSugeridoDto) {
+    setPrecioModal({
+      proveedorId: prov.proveedor_id,
+      proveedorNombre: prov.razon_social,
+      productoId: selectedProductoId,
+      productoNombre: selectedProductoNombre,
+    });
+  }
+
+  function handleDelete(id: string) {
+    deleteMutation.mutate(id, { onSuccess: () => setDeleteId(null) });
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-neutral-900">Cotizaciones de compra</h1>
+        <div>
+          <h1 className="text-xl font-semibold text-neutral-900">Cotizaciones</h1>
+          <p className="text-sm text-neutral-500">
+            Precios de repuestos por proveedor · consulta y registra cotizaciones
+          </p>
+        </div>
         <button
           type="button"
-          onClick={() => setShowCrear(true)}
+          onClick={() => {
+            setShowNueva(true);
+            setSelectedProductoId("");
+            setSelectedProductoNombre("");
+          }}
           className="flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
         >
           <Plus className="h-4 w-4" />
@@ -673,146 +378,229 @@ export function CotizacionesPage() {
         </button>
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap items-center gap-3">
-        <select
-          value={filterEstado}
-          onChange={(e) => {
-            setFilterEstado(e.target.value);
-            setPage(1);
-          }}
-          className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-700 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100"
-        >
-          <option value="">Todos los estados</option>
-          <option value="PENDIENTE">Pendiente</option>
-          <option value="COTIZADA">Cotizada</option>
-          <option value="VENCIDA">Vencida</option>
-        </select>
-        {filterEstado !== "" && (
-          <button
-            type="button"
-            onClick={() => {
-              setFilterEstado("");
-              setPage(1);
-            }}
-            className="rounded-lg border border-neutral-300 px-3 py-2 text-sm text-neutral-500 hover:bg-neutral-50"
-          >
-            Limpiar
-          </button>
-        )}
-      </div>
-
-      {/* Tabla */}
-      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
-        {isLoading && (
-          <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
-          </div>
-        )}
-        {isError && (
-          <p className="py-8 text-center text-sm text-danger-600">Error al cargar cotizaciones.</p>
-        )}
-        {!isLoading && !isError && (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-neutral-200 bg-neutral-50">
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-neutral-500">
-                  Código
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-neutral-500">
-                  Proveedor
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-neutral-500">
-                  Estado
-                </th>
-                <th className="hidden px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 md:table-cell">
-                  Solicitud
-                </th>
-                <th className="hidden px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-neutral-500 lg:table-cell">
-                  Vencimiento
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-neutral-500">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-100">
-              {data?.data.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="py-10 text-center text-neutral-500">
-                    No se encontraron cotizaciones.
-                  </td>
-                </tr>
-              )}
-              {data?.data.map((c: CotizacionDto) => (
-                <tr key={c.id} className="hover:bg-neutral-50">
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-sm font-medium text-neutral-900">
-                      {c.codigo}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-neutral-900">{c.proveedor_nombre ?? "—"}</td>
-                  <td className="px-4 py-3">
-                    <EstadoBadge estado={c.estado} />
-                  </td>
-                  <td className="hidden px-4 py-3 text-neutral-500 md:table-cell">
-                    {c.fecha_solicitud}
-                  </td>
-                  <td className="hidden px-4 py-3 text-neutral-500 lg:table-cell">
-                    {c.fecha_vencimiento ?? "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setDetalleId(c.id)}
-                        title="Ver detalle"
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Paginación */}
-      {meta !== undefined && meta.total > 0 && (
-        <div className="flex items-center justify-between text-sm text-neutral-500">
-          <span>
-            {meta.total} cotización{meta.total !== 1 ? "es" : ""}
-          </span>
-          <div className="flex items-center gap-2">
+      {/* Panel: Nueva cotización */}
+      {showNueva && (
+        <div className="rounded-xl border border-primary-200 bg-primary-50 p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-primary-900">
+              Nueva cotización — selecciona el repuesto
+            </h2>
             <button
               type="button"
-              onClick={() => setPage((p) => p - 1)}
-              disabled={page <= 1}
-              className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+              onClick={() => {
+                setShowNueva(false);
+                setSelectedProductoId("");
+                setSelectedProductoNombre("");
+              }}
+              className="text-neutral-400 hover:text-neutral-600"
             >
-              ← Anterior
-            </button>
-            <span className="text-xs">
-              {page} / {meta.totalPages}
-            </span>
-            <button
-              type="button"
-              onClick={() => setPage((p) => p + 1)}
-              disabled={page >= meta.totalPages}
-              className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Siguiente →
+              <X className="h-4 w-4" />
             </button>
           </div>
+
+          {/* Paso 1: Selección de producto */}
+          <div className="mb-4">
+            <label htmlFor="buscar-repuesto" className="text-xs font-medium text-neutral-700">
+              Buscar repuesto
+            </label>
+            <div className="relative mt-1">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-neutral-400" />
+              <input
+                id="buscar-repuesto"
+                type="text"
+                placeholder="Nombre o código..."
+                value={selectedProductoId ? selectedProductoNombre : productoSearch}
+                onChange={(e) => {
+                  if (selectedProductoId) {
+                    setSelectedProductoId("");
+                    setSelectedProductoNombre("");
+                  }
+                  setProductoSearch(e.target.value);
+                }}
+                className={`${INPUT} pl-9`}
+              />
+            </div>
+
+            {/* Dropdown de resultados */}
+            {selectedProductoId === "" && productoSearch.trim() !== "" && (
+              <div className="mt-1 max-h-48 overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-md">
+                {productosFiltrados.length === 0 ? (
+                  <p className="p-3 text-sm text-neutral-400">Sin resultados</p>
+                ) : (
+                  productosFiltrados.slice(0, 10).map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => handleSelectProducto(p.id, p.nombre)}
+                      className="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-neutral-50"
+                    >
+                      <span className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-xs text-neutral-500">
+                        {p.codigo}
+                      </span>
+                      <span className="text-sm text-neutral-900">{p.nombre}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Paso 2: Proveedores sugeridos */}
+          {selectedProductoId !== "" && (
+            <div>
+              <p className="mb-2 text-xs font-medium text-neutral-600">
+                Proveedores que atienden{" "}
+                <span className="font-semibold text-neutral-900">{selectedProductoNombre}</span>
+              </p>
+              <ProveedoresSugeridosPanel
+                productoId={selectedProductoId}
+                productoNombre={selectedProductoNombre}
+                onRegistrarPrecio={handleRegistrarPrecio}
+              />
+            </div>
+          )}
         </div>
       )}
 
-      {showCrear && <CrearCotizacionModal onClose={() => setShowCrear(false)} />}
-      {detalleId !== null && (
-        <DetalleModal cotizacionId={detalleId} onClose={() => setDetalleId(null)} />
+      {/* Lista de cotizaciones */}
+      <div className="rounded-xl border border-neutral-200 bg-white">
+        <div className="border-b border-neutral-200 px-6 py-4">
+          <h2 className="text-sm font-semibold text-neutral-900">
+            Cotizaciones registradas
+            <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-500">
+              {cotizaciones.length}
+            </span>
+          </h2>
+        </div>
+
+        {loadingList ? (
+          <div className="flex justify-center py-12">
+            <div className="h-5 w-5 animate-spin rounded-full border-4 border-primary-600 border-t-transparent" />
+          </div>
+        ) : cotizaciones.length === 0 ? (
+          <div className="px-6 py-12 text-center">
+            <p className="text-sm text-neutral-500">
+              Sin cotizaciones aún. Crea una usando el botón de arriba.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b border-neutral-200 bg-neutral-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-neutral-500">
+                    Repuesto
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-neutral-500">
+                    Proveedor
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-neutral-500">
+                    Precio unitario
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-neutral-500">
+                    Notas
+                  </th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-100">
+                {cotizaciones.map((c) => (
+                  <tr key={c.id} className="hover:bg-neutral-50">
+                    <td className="px-4 py-3 font-medium text-neutral-900">
+                      {c.producto_nombre ?? c.producto_id}
+                    </td>
+                    <td className="px-4 py-3 text-neutral-600">
+                      {c.proveedor_nombre ?? c.proveedor_id}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {c.precio_unitario !== null ? (
+                        <span className="font-semibold text-neutral-900">
+                          {fmtPEN(c.precio_unitario)}
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
+                          Sin precio
+                        </span>
+                      )}
+                    </td>
+                    <td className="max-w-[200px] truncate px-4 py-3 text-neutral-500">
+                      {c.notas ?? "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          title="Editar precio"
+                          onClick={() => setEditCotizacion(c)}
+                          className="rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          title="Eliminar"
+                          onClick={() => setDeleteId(c.id)}
+                          className="rounded p-1 text-neutral-400 hover:bg-red-50 hover:text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Modal: Registrar precio desde sugeridos */}
+      {precioModal !== null && (
+        <PrecioModal
+          proveedorId={precioModal.proveedorId}
+          proveedorNombre={precioModal.proveedorNombre}
+          productoId={precioModal.productoId}
+          productoNombre={precioModal.productoNombre}
+          onClose={() => {
+            setPrecioModal(null);
+            setShowNueva(false);
+            setSelectedProductoId("");
+            setSelectedProductoNombre("");
+          }}
+        />
+      )}
+
+      {/* Modal: Editar cotización existente */}
+      {editCotizacion !== null && (
+        <PrecioModal cotizacion={editCotizacion} onClose={() => setEditCotizacion(null)} />
+      )}
+
+      {/* Modal: Confirmar eliminar */}
+      {deleteId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="mx-4 w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+            <p className="text-sm text-neutral-900">
+              ¿Eliminar esta cotización? No se puede deshacer.
+            </p>
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteId(null)}
+                className="rounded-lg border border-neutral-300 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(deleteId)}
+                disabled={deleteMutation.isPending}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                {deleteMutation.isPending ? "Eliminando..." : "Eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

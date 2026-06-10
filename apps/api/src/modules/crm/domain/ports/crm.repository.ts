@@ -32,6 +32,8 @@ export type CreateWaCuentaData = {
 
 export type UpdateWaCuentaData = {
   negocio_nombre?: string | undefined;
+  phone_number_id?: string | undefined;
+  waba_id?: string | undefined;
   access_token?: string | undefined;
   webhook_verify_token?: string | undefined;
   nombre?: string | undefined;
@@ -267,6 +269,7 @@ export interface ICrmRepository {
 
   // Agentes
   listAgentes(tenantId: string): Promise<CrmAgente[]>;
+  createAgente(tenantId: string, data: CreateAgenteData): Promise<CrmAgente>;
   updateAgente(tenantId: string, id: string, data: UpdateAgenteData): Promise<CrmAgente | null>;
   listAccionesAgente(
     tenantId: string,
@@ -452,7 +455,17 @@ export type UpdateBotData = {
   nombre?: string | undefined;
 };
 
+export type CreateAgenteData = {
+  nombre: string;
+  canal?: string | undefined;
+  modelo_ia: string;
+  tono?: string | undefined;
+  prompt_base?: string | undefined;
+  max_mensajes_contexto?: number | undefined;
+};
+
 export type UpdateAgenteData = {
+  modelo_ia?: string | undefined;
   tono?: string | undefined;
   prompt_base?: string | undefined;
   max_mensajes_contexto?: number | undefined;

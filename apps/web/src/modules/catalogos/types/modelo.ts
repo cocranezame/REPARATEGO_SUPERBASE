@@ -32,4 +32,5 @@ export type ModelosParams = {
   categoria_id?: string;
   page?: number;
   pageSize?: number;
+  enabled?: boolean;
 };

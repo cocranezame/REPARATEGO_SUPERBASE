@@ -4,6 +4,7 @@ import type {
   AsignarVendedorConvInput,
   AsignarVendedorLeadInput,
   CambiarModoInput,
+  CreateAgenteInput,
   CreateEtapaInput,
   CreateEtiquetaInput,
   CreateMensajeInternoInput,
@@ -385,6 +386,16 @@ export function useAgentes() {
   return useQuery<AgenteListResponse>({
     queryKey: ["crm-agentes"],
     queryFn: () => apiClient.get<AgenteListResponse>("/crm/agentes"),
+  });
+}
+
+export function useCreateAgente() {
+  const qc = useQueryClient();
+  return useMutation<AgenteResponse, Error, CreateAgenteInput>({
+    mutationFn: (body) => apiClient.post<AgenteResponse>("/crm/agentes", body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["crm-agentes"] });
+    },
   });
 }
 

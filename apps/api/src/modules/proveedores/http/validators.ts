@@ -1,8 +1,10 @@
 import {
+  createCondicionPagoSchema,
   createProveedorContactoSchema,
   createProveedorLineaSchema,
   createProveedorMetodoPagoSchema,
   createProveedorSchema,
+  updateCondicionPagoSchema,
   updateProveedorContactoSchema,
   updateProveedorMetodoPagoSchema,
   updateProveedorSchema,
@@ -19,6 +21,10 @@ export const listProveedoresQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
 export type ListProveedoresQuery = z.infer<typeof listProveedoresQuerySchema>;
+
+export { createCondicionPagoSchema, updateCondicionPagoSchema };
+export type CreateCondicionPagoHttpInput = z.infer<typeof createCondicionPagoSchema>;
+export type UpdateCondicionPagoHttpInput = z.infer<typeof updateCondicionPagoSchema>;
 
 export { createProveedorSchema, updateProveedorSchema };
 export type CreateProveedorHttpInput = z.infer<typeof createProveedorSchema>;

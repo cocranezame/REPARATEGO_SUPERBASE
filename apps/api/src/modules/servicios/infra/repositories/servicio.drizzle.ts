@@ -74,6 +74,7 @@ import type {
   UpdateRequerimientoEstadoData,
   UpsertComponentesData,
 } from "../../domain/ports/servicio.repository.js";
+import { emitServiceNotification } from "../../services/notifications.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -1027,7 +1028,7 @@ export class ServicioDrizzleRepository implements IServicioRepository {
     id: string,
     data: UpdateEstadoOrdenData
   ): Promise<UpdateEstadoResult> {
-    return this.db.transaction(async (tx) => {
+    const result = await this.db.transaction(async (tx) => {
       await setTenantLocal(tx, tenantId);
 
       // Get current OS
@@ -1155,6 +1156,17 @@ export class ServicioDrizzleRepository implements IServicioRepository {
           : {}),
       };
     });
+
+    // [C009-E] Notificaciones no bloqueantes — fire-and-forget post-commit
+    if (result.estado_nuevo === "COTIZADO") {
+      emitServiceNotification("PRESUPUESTO_LISTO", { orden_servicio_id: id }).catch(console.error);
+    } else if (result.estado_nuevo === "AVISADO") {
+      emitServiceNotification("EQUIPO_LISTO", { orden_servicio_id: id }).catch(console.error);
+    } else if (result.estado_nuevo === "ENTREGADO") {
+      emitServiceNotification("ENTREGA_CONFIRMADA", { orden_servicio_id: id }).catch(console.error);
+    }
+
+    return result;
   }
 
   private async _autoCrearVenta(

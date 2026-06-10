@@ -164,6 +164,7 @@ export type OrdenServicioResumen = {
   cliente_nombre?: string;
   producto_id: string;
   producto_nombre?: string;
+  categoria_id?: string;
   numero_serie?: string;
   sucursal_id?: string;
   canal: "TIENDA" | "DOMICILIO";

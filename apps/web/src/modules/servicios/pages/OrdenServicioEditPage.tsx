@@ -419,7 +419,11 @@ function SeccionComponentes({ os }: { os: OrdenServicioDetalle }) {
   const editable = true;
   const hasData = os.componentes.length > 0;
 
-  const { data: compData } = useComponentes({ activo: true, pageSize: 200 });
+  const { data: compData } = useComponentes({
+    activo: true,
+    pageSize: 200,
+    ...(os.categoria_id ? { categoria_id: os.categoria_id } : {}),
+  });
   const allComps = compData?.data ?? [];
 
   const [etapa, setEtapa] = useState<"PRELIMINAR" | "FINAL">("FINAL");

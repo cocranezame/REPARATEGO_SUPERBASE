@@ -14,7 +14,7 @@ export type Instancia = {
   cliente_nombre?: string | undefined;
   producto_id: string;
   producto_nombre?: string | undefined;
-  categoria_id?: string | undefined;
+  categoria_id?: string | null | undefined;
   numero_serie?: string | undefined;
   activo: boolean;
   imagenes: InstanciaImagen[];
@@ -51,6 +51,7 @@ export type OrdenServicioResumen = {
   cliente_nombre?: string | undefined;
   producto_id: string;
   producto_nombre?: string | undefined;
+  categoria_id?: string | undefined;
   numero_serie?: string | undefined;
   sucursal_id?: string | undefined;
   canal: string;
@@ -198,7 +199,7 @@ export type PresupuestoItem = {
   codigo: string;
   nombre: string;
   tipo: string;
-  categoria_id: string;
+  categoria_id: string | null;
   componente_id?: string | undefined;
   componente_nombre?: string | undefined;
   precio_venta: string;

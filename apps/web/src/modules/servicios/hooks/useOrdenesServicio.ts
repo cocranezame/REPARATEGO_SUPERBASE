@@ -87,6 +87,16 @@ export function usePerifericosPorCategoria(categoriaId: string | undefined) {
   });
 }
 
+export function useCreatePeriferico() {
+  const qc = useQueryClient();
+  return useMutation<ApiOk<Periferico>, Error, { categoria_id: string; nombre: string }>({
+    mutationFn: (body) => apiClient.post<ApiOk<Periferico>>(`${BASE}/perifericos`, body),
+    onSuccess: (_d, vars) => {
+      void qc.invalidateQueries({ queryKey: ["perifericos", vars.categoria_id] });
+    },
+  });
+}
+
 // ─── Costos de revisión ───────────────────────────────────────────────────────
 
 export function useCostosRevision() {

@@ -9,6 +9,7 @@ import {
   createCostoRevisionSchema,
   createInstanciaSchema,
   createOrdenServicioSchema,
+  createPerifericoSchema,
   createRequerimientoSchema,
   listInstanciasQuerySchema,
   listOrdenesServicioQuerySchema,
@@ -61,6 +62,11 @@ serviciosRoutes.get(
   "/servicios-v2/perifericos",
   validateQuery(listPerifericosQuerySchema),
   perifericosH.list
+);
+serviciosRoutes.post(
+  "/servicios-v2/perifericos",
+  validateBody(createPerifericoSchema),
+  perifericosH.create
 );
 
 // ─── Instancias ───────────────────────────────────────────────────────────────

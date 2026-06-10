@@ -1,4 +1,4 @@
-import type { ListPerifericosQuery } from "@kallpasoft/validators";
+import type { CreatePerifericoInput, ListPerifericosQuery } from "@kallpasoft/validators";
 import type { Context } from "hono";
 import type { HonoVariables } from "../../../../types/context.js";
 import type { IServicioRepository } from "../../domain/ports/servicio.repository.js";
@@ -17,5 +17,15 @@ export class PerifericosHandler {
       ...(query.activo !== undefined ? { activo: query.activo } : {}),
     });
     return c.json({ success: true, data: perifericos });
+  };
+
+  create = async (c: HonoCtx) => {
+    const tenantId = c.get("tenantId");
+    const body = c.req.valid("json") as CreatePerifericoInput;
+    const periferico = await this.repo.createPeriferico(tenantId, {
+      categoria_id: body.categoria_id,
+      nombre: body.nombre,
+    });
+    return c.json({ success: true, data: periferico }, 201);
   };
 }

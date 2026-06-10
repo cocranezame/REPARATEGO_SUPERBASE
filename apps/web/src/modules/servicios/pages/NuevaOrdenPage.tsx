@@ -10,6 +10,7 @@ import {
   useCostosRevision,
   useCreateInstancia,
   useCreateOrden,
+  useCreatePeriferico,
   useInstancias,
   usePerifericosPorCategoria,
 } from "../hooks/useOrdenesServicio";
@@ -122,6 +123,8 @@ export function NuevaOrdenPage() {
 
   // Step 2 — Periféricos
   const [selectedPerifericoIds, setSelectedPerifericoIds] = useState<string[]>([]);
+  const [showNuevoPeriferico, setShowNuevoPeriferico] = useState(false);
+  const [nuevoPerifericoNombre, setNuevoPerifericoNombre] = useState("");
 
   // Step 3 — Orden
   const [fallaIngreso, setFallaIngreso] = useState("");
@@ -160,6 +163,7 @@ export function NuevaOrdenPage() {
   const createCliente = useCreateCliente();
   const createProducto = useCreateProducto();
   const createInstancia = useCreateInstancia();
+  const createPeriferico = useCreatePeriferico();
   const createOrden = useCreateOrden();
 
   const instancias = instanciasData?.data ?? [];
@@ -322,6 +326,22 @@ export function NuevaOrdenPage() {
       setNewMarcaId("");
       setSelectedModeloId("");
       setNewNumeroSerie("");
+    } catch (err) {
+      setServerError((err as Error).message);
+    }
+  }
+
+  async function handleGuardarPeriferico() {
+    if (!nuevoPerifericoNombre.trim() || !instancia?.categoria_id) return;
+    setServerError(null);
+    try {
+      const result = await createPeriferico.mutateAsync({
+        categoria_id: instancia.categoria_id,
+        nombre: nuevoPerifericoNombre.trim(),
+      });
+      setSelectedPerifericoIds((prev) => [...prev, result.data.id]);
+      setShowNuevoPeriferico(false);
+      setNuevoPerifericoNombre("");
     } catch (err) {
       setServerError((err as Error).message);
     }
@@ -1035,6 +1055,55 @@ export function NuevaOrdenPage() {
                 ? "Ningún periférico seleccionado"
                 : `${selectedPerifericoIds.length} periférico${selectedPerifericoIds.length > 1 ? "s" : ""} seleccionado${selectedPerifericoIds.length > 1 ? "s" : ""}`}
             </p>
+
+            {/* Registrar nuevo periférico inline */}
+            {instancia?.categoria_id &&
+              (!showNuevoPeriferico ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNuevoPeriferico(true);
+                    setServerError(null);
+                  }}
+                  className="flex items-center gap-1 text-xs text-primary-600 hover:underline"
+                >
+                  <Plus className="h-3 w-3" />
+                  Registrar nuevo periférico
+                </button>
+              ) : (
+                <div className="rounded-lg border border-neutral-200 p-3 space-y-2">
+                  <p className="text-xs font-medium text-neutral-700">Nuevo periférico</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={nuevoPerifericoNombre}
+                      onChange={(e) => setNuevoPerifericoNombre(e.target.value)}
+                      placeholder="Ej: Cargador, Mouse, Funda..."
+                      className={INPUT}
+                    />
+                    <button
+                      type="button"
+                      disabled={createPeriferico.isPending || !nuevoPerifericoNombre.trim()}
+                      onClick={handleGuardarPeriferico}
+                      className={BTN_SAVE}
+                    >
+                      {createPeriferico.isPending ? "..." : "Guardar"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowNuevoPeriferico(false);
+                        setNuevoPerifericoNombre("");
+                        setServerError(null);
+                      }}
+                      className={BTN_CANCEL}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                  {serverError && <p className="text-xs text-red-600">{serverError}</p>}
+                </div>
+              ))}
           </>
         )}
 

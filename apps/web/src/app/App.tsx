@@ -37,6 +37,7 @@ import { MetodosPagoPage } from "../modules/inventario/pages/MetodosPagoPage";
 import { MovimientosPage } from "../modules/inventario/pages/MovimientosPage";
 import { ProductoFormPage } from "../modules/inventario/pages/ProductoFormPage";
 import { ProductosPage } from "../modules/inventario/pages/ProductosPage";
+import { RegistroCompletoPage } from "../modules/inventario/pages/RegistroCompletoPage";
 import { StockPage } from "../modules/inventario/pages/StockPage";
 import { TasasPrecioPage } from "../modules/inventario/pages/TasasPrecioPage";
 import { PortalGuard } from "../modules/portal/components/PortalGuard";
@@ -54,6 +55,7 @@ import { KanbanRequerimientosPage } from "../modules/servicios/pages/KanbanReque
 import { KanbanServiciosPage } from "../modules/servicios/pages/KanbanServiciosPage";
 import { NuevaOrdenPage } from "../modules/servicios/pages/NuevaOrdenPage";
 import { OrdenServicioDetallePage } from "../modules/servicios/pages/OrdenServicioDetallePage";
+import { OrdenServicioEditPage } from "../modules/servicios/pages/OrdenServicioEditPage";
 import { ServiciosPage } from "../modules/servicios/pages/ServiciosPage";
 import { SucursalesPage } from "../modules/sucursales/pages/SucursalesPage";
 import { UsuariosPage } from "../modules/usuarios/pages/UsuariosPage";
@@ -122,6 +124,7 @@ export function App() {
             <Route path="/inventario/metodos-pago" element={<MetodosPagoPage />} />
             <Route path="/inventario/lotes" element={<LotesPage />} />
             <Route path="/inventario/movimientos" element={<MovimientosPage />} />
+            <Route path="/inventario/registro" element={<RegistroCompletoPage />} />
             <Route path="/compras/cotizaciones" element={<CotizacionesPage />} />
             <Route path="/compras/cotizaciones/comparar" element={<ComparadorPage />} />
             <Route path="/compras/solicitudes" element={<SolicitudesPage />} />
@@ -133,6 +136,7 @@ export function App() {
             <Route path="/servicios/requerimientos" element={<KanbanRequerimientosPage />} />
             <Route path="/servicios/nuevo" element={<NuevaOrdenPage />} />
             <Route path="/servicios/:id" element={<OrdenServicioDetallePage />} />
+            <Route path="/servicios/:id/editar" element={<OrdenServicioEditPage />} />
             <Route path="/ventas" element={<VentasListaPage />} />
             <Route path="/ventas/caja" element={<CajaPage />} />
             <Route path="/ventas/cotizaciones" element={<CotizacionesVentaPage />} />

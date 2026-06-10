@@ -11,6 +11,7 @@ import {
   useCreateInstancia,
   useCreateOrden,
   useInstancias,
+  usePerifericosPorCategoria,
 } from "../hooks/useOrdenesServicio";
 import type { Instancia } from "../types/orden-servicio";
 
@@ -25,7 +26,7 @@ const BTN_SAVE =
 const BTN_CANCEL =
   "shrink-0 rounded-lg border border-neutral-300 px-3 py-1.5 text-xs text-neutral-700";
 
-const PASOS = ["Cliente", "Instancia", "Orden", "Confirmar"];
+const PASOS = ["Cliente", "Instancia", "Periféricos", "Orden", "Confirmar"];
 
 const DISTRITOS_LIMA = [
   {
@@ -119,7 +120,10 @@ export function NuevaOrdenPage() {
   const [nuevaMarcaNombre, setNuevaMarcaNombre] = useState("");
   const [nuevoModeloNombre, setNuevoModeloNombre] = useState("");
 
-  // Step 2 — Orden
+  // Step 2 — Periféricos
+  const [selectedPerifericoIds, setSelectedPerifericoIds] = useState<string[]>([]);
+
+  // Step 3 — Orden
   const [fallaIngreso, setFallaIngreso] = useState("");
   const [canal, setCanal] = useState<Canal>("TIENDA");
 
@@ -148,6 +152,7 @@ export function NuevaOrdenPage() {
     pageSize: 10,
     enabled: selectedModeloId !== "",
   });
+  const { data: perifericos } = usePerifericosPorCategoria(instancia?.categoria_id);
   const { data: costosData } = useCostosRevision();
   const createCategoria = useCreateCategoria();
   const createMarca = useCreateMarca();
@@ -172,7 +177,8 @@ export function NuevaOrdenPage() {
   function canAdvance(): boolean {
     if (paso === 0) return clienteId !== "";
     if (paso === 1) return instancia !== null;
-    if (paso === 2) return fallaIngreso.trim() !== "";
+    if (paso === 2) return true; // periféricos es opcional
+    if (paso === 3) return fallaIngreso.trim() !== "";
     return true;
   }
 
@@ -330,6 +336,7 @@ export function NuevaOrdenPage() {
         canal,
         falla_ingreso: fallaIngreso,
         costo_revision: parseFloat(costoRevision),
+        ...(selectedPerifericoIds.length > 0 ? { perifericos: selectedPerifericoIds } : {}),
       });
       navigate(`/servicios/${result.data.id}`);
     } catch (err) {
@@ -980,8 +987,58 @@ export function NuevaOrdenPage() {
           </>
         )}
 
-        {/* Step 2 — Orden */}
+        {/* Step 2 — Periféricos */}
         {paso === 2 && (
+          <>
+            <h2 className="text-base font-semibold text-neutral-900">Periféricos del equipo</h2>
+            <p className="text-xs text-neutral-500">
+              Selecciona los periféricos que el cliente entrega junto con su equipo.
+            </p>
+
+            {!instancia?.categoria_id ? (
+              <p className="text-sm text-neutral-400">
+                No se encontró categoría del equipo para filtrar periféricos.
+              </p>
+            ) : (perifericos?.data ?? []).length === 0 ? (
+              <p className="text-sm text-neutral-400">
+                No hay periféricos registrados para esta categoría.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {(perifericos?.data ?? []).map((p) => {
+                  const selected = selectedPerifericoIds.includes(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() =>
+                        setSelectedPerifericoIds((prev) =>
+                          selected ? prev.filter((id) => id !== p.id) : [...prev, p.id]
+                        )
+                      }
+                      className={`relative flex items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition-colors ${
+                        selected
+                          ? "border-primary-500 bg-primary-50 text-primary-800"
+                          : "border-neutral-200 bg-neutral-50 text-neutral-700 hover:border-neutral-300 hover:bg-neutral-100"
+                      }`}
+                    >
+                      <span className="font-medium">{p.nombre}</span>
+                      {selected && <Check className="h-4 w-4 shrink-0 text-primary-600" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <p className="text-xs text-neutral-400">
+              {selectedPerifericoIds.length === 0
+                ? "Ningún periférico seleccionado"
+                : `${selectedPerifericoIds.length} periférico${selectedPerifericoIds.length > 1 ? "s" : ""} seleccionado${selectedPerifericoIds.length > 1 ? "s" : ""}`}
+            </p>
+          </>
+        )}
+
+        {paso === 3 && (
           <>
             <h2 className="text-base font-semibold text-neutral-900">Datos de la orden</h2>
             <div className="flex flex-col gap-1">
@@ -1025,8 +1082,8 @@ export function NuevaOrdenPage() {
           </>
         )}
 
-        {/* Step 3 — Confirmar */}
-        {paso === 3 && (
+        {/* Step 4 — Confirmar */}
+        {paso === 4 && (
           <>
             <h2 className="text-base font-semibold text-neutral-900">Confirmar recepción</h2>
             <div className="rounded-lg bg-neutral-50 p-4 text-sm space-y-2">
@@ -1043,6 +1100,17 @@ export function NuevaOrdenPage() {
                   <span className="text-right font-medium text-neutral-800">{value}</span>
                 </div>
               ))}
+              <div className="flex justify-between gap-4">
+                <span className="text-neutral-500">Periféricos</span>
+                <span className="text-right font-medium text-neutral-800">
+                  {selectedPerifericoIds.length === 0
+                    ? "—"
+                    : (perifericos?.data ?? [])
+                        .filter((p) => selectedPerifericoIds.includes(p.id))
+                        .map((p) => p.nombre)
+                        .join(", ")}
+                </span>
+              </div>
             </div>
             <p className="text-xs text-neutral-500">
               Se creará la OS en estado <strong>VALIDACIÓN</strong>.

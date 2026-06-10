@@ -13,6 +13,7 @@ import type {
   ObservacionOrden,
   OrdenServicioDetalle,
   OrdenServicioResumen,
+  Periferico,
   PresupuestoBusquedaResult,
   RequerimientoOrden,
   SkuAsignadoOrden,
@@ -73,6 +74,19 @@ export function useAddInstanciaImagen() {
   });
 }
 
+// ─── Periféricos ─────────────────────────────────────────────────────────────
+
+export function usePerifericosPorCategoria(categoriaId: string | undefined) {
+  return useQuery<ApiOk<Periferico[]>>({
+    queryKey: ["perifericos", categoriaId],
+    queryFn: () =>
+      apiClient.get<ApiOk<Periferico[]>>(
+        `${BASE}/perifericos${qs({ categoria_id: categoriaId, activo: true })}`
+      ),
+    enabled: !!categoriaId,
+  });
+}
+
 // ─── Costos de revisión ───────────────────────────────────────────────────────
 
 export function useCostosRevision() {
@@ -114,6 +128,7 @@ export function useCreateOrden() {
       falla_ingreso: string;
       costo_revision: number;
       sucursal_id?: string | undefined;
+      perifericos?: string[] | undefined;
     }
   >({
     mutationFn: (body) => apiClient.post<ApiOk<OrdenServicioResumen>>(`${BASE}/ordenes`, body),

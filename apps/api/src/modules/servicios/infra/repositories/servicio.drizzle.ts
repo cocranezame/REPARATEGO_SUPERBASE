@@ -14,6 +14,7 @@ import {
   ordenServicioEvidencia as osEvidenciaTable,
   ordenServicioHistorial as osHistorialTable,
   ordenServicioObservacion as osObservacionTable,
+  ordenServicioPeriferico as osPerifericoTable,
   ordenServicioRequerimiento as osRequerimientoTable,
   ordenServicioSkuAsignado as osSkuTable,
   ordenServicio as osTable,
@@ -541,6 +542,16 @@ export class ServicioDrizzleRepository implements IServicioRepository {
         .returning();
 
       const os = inserted as typeof osTable.$inferSelect;
+
+      if (data.perifericos?.length) {
+        await tx.insert(osPerifericoTable).values(
+          data.perifericos.map((pid) => ({
+            tenant_id: tenantId,
+            orden_servicio_id: os.id,
+            periferico_id: pid,
+          }))
+        );
+      }
 
       // Get cliente info via instancia
       const clienteRows = await tx

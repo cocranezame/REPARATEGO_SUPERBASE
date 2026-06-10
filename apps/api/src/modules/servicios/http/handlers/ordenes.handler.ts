@@ -55,6 +55,7 @@ export class OrdenesHandler {
           ? { visita_domicilio_id: body.visita_domicilio_id }
           : {}),
         ...(body.lead_id !== undefined ? { lead_id: body.lead_id } : {}),
+        ...(body.perifericos !== undefined ? { perifericos: body.perifericos } : {}),
       },
       userId
     );

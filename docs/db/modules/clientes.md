@@ -21,6 +21,8 @@
 | telefono | VARCHAR(20) | SI | | |
 | telefono_secundario | VARCHAR(20) | SI | | |
 | notas | TEXT | SI | | Notas internas |
+| distrito | VARCHAR(100) | SI | | Distrito del cliente |
+| nivel | VARCHAR(10) | NO | 'NORMAL' | ALTO, NORMAL, BAJO |
 | activo | BOOLEAN | NO | true | |
 | created_at | TIMESTAMPTZ | NO | now() | |
 | updated_at | TIMESTAMPTZ | NO | now() | |

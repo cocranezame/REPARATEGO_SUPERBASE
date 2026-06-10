@@ -29,6 +29,8 @@ export const cliente = pgTable(
     telefono: varchar("telefono", { length: 20 }),
     telefono_secundario: varchar("telefono_secundario", { length: 20 }),
     notas: text("notas"),
+    distrito: varchar("distrito", { length: 100 }),
+    nivel: varchar("nivel", { length: 10 }).notNull().default("NORMAL"),
     activo: boolean("activo").notNull().default(true),
     created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

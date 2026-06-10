@@ -13,6 +13,8 @@ export interface UpdateClienteInput {
   telefono?: string;
   telefono_secundario?: string;
   notas?: string;
+  distrito?: string | null;
+  nivel?: string;
   activo?: boolean;
 }
 
@@ -35,6 +37,8 @@ export async function updateCliente(
       ? { telefono_secundario: input.telefono_secundario }
       : {}),
     ...(input.notas !== undefined ? { notas: input.notas } : {}),
+    ...(input.distrito !== undefined ? { distrito: input.distrito } : {}),
+    ...(input.nivel !== undefined ? { nivel: input.nivel } : {}),
     ...(input.activo !== undefined ? { activo: input.activo } : {}),
   };
   return repo.update(tenantId, id, data);

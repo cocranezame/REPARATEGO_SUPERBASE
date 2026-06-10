@@ -1,10 +1,11 @@
-import { AlertTriangle, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, Pencil, Plus, Power, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ApiRequestError } from "../../../shared/lib/api-client";
 import { useAuthStore } from "../../../shared/stores/auth-store";
 import { useCategorias } from "../../catalogos/hooks/useCategorias";
 import { useComponentes } from "../../catalogos/hooks/useComponentes";
-import { useDeleteProducto, useProductos } from "../hooks/useInventario";
+import { useDeleteProducto, useProductos, useUpdateProducto } from "../hooks/useInventario";
 import type { ProductoDto, ProductosParams } from "../types/inventario";
 
 const PAGE_SIZE = 20;
@@ -63,7 +64,7 @@ function EstadoBadge({ activo }: { activo: boolean }) {
   );
 }
 
-function ConfirmModal({
+function ConfirmDeleteModal({
   nombre,
   onConfirm,
   onCancel,
@@ -77,8 +78,9 @@ function ConfirmModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="mx-4 w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
-        <p className="text-sm text-neutral-900">
-          ¿Eliminar <strong>{nombre}</strong>? Esta acción lo desactivará.
+        <h3 className="font-semibold text-neutral-900">Eliminar repuesto</h3>
+        <p className="mt-2 text-sm text-neutral-600">
+          ¿Estás seguro de eliminar <strong>{nombre}</strong>? Esta acción no se puede deshacer.
         </p>
         <div className="mt-4 flex justify-end gap-3">
           <button
@@ -103,6 +105,66 @@ function ConfirmModal({
   );
 }
 
+function BlockedDeleteModal({
+  nombre,
+  activo,
+  onDeactivate,
+  onCancel,
+  isLoading,
+}: {
+  nombre: string;
+  activo: boolean;
+  onDeactivate: () => void;
+  onCancel: () => void;
+  isLoading: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="mx-4 w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100">
+            <AlertTriangle className="h-5 w-5 text-amber-600" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-neutral-900">No se puede eliminar</h3>
+            <p className="mt-1 text-sm text-neutral-600">
+              <strong>{nombre}</strong> tiene cotizaciones o movimientos de inventario asociados y
+              no puede eliminarse.
+            </p>
+            {!activo ? (
+              <p className="mt-2 text-sm text-neutral-500">El repuesto ya está desactivado.</p>
+            ) : (
+              <p className="mt-2 text-sm text-neutral-600">
+                Puedes desactivarlo para que no aparezca en ventas ni compras.
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="mt-5 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="rounded-lg border border-neutral-300 px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 disabled:opacity-60"
+          >
+            Cancelar
+          </button>
+          {activo && (
+            <button
+              type="button"
+              onClick={onDeactivate}
+              disabled={isLoading}
+              className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-500 disabled:opacity-60"
+            >
+              {isLoading ? "Desactivando..." : "Desactivar"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ProductosPage() {
   const navigate = useNavigate();
   const rol = useAuthStore((s) => s.user?.rol);
@@ -115,7 +177,9 @@ export function ProductosPage() {
   const [filterComponente, setFilterComponente] = useState("");
   const [filterActivo, setFilterActivo] = useState("");
   const [page, setPage] = useState(1);
+
   const [pendingDelete, setPendingDelete] = useState<ProductoDto | null>(null);
+  const [blockedDelete, setBlockedDelete] = useState<ProductoDto | null>(null);
 
   const params: ProductosParams = {
     page,
@@ -129,6 +193,7 @@ export function ProductosPage() {
 
   const { data, isLoading, isError } = useProductos(params);
   const deleteMutation = useDeleteProducto();
+  const updateMutation = useUpdateProducto();
 
   const { data: categoriasData } = useCategorias({ activo: true, pageSize: 200 });
   const { data: componentesData } = useComponentes({
@@ -159,6 +224,32 @@ export function ProductosPage() {
     filterActivo !== "";
 
   const meta = data?.meta;
+
+  function handleToggleActivo(p: ProductoDto) {
+    updateMutation.mutate({ id: p.id, activo: !p.activo });
+  }
+
+  function handleConfirmDelete() {
+    if (pendingDelete === null) return;
+    deleteMutation.mutate(pendingDelete.id, {
+      onSuccess: () => setPendingDelete(null),
+      onError: (err) => {
+        if (err instanceof ApiRequestError && err.code === "PRODUCTO_HAS_DEPENDENCIES") {
+          const producto = pendingDelete;
+          setPendingDelete(null);
+          setBlockedDelete(producto);
+        }
+      },
+    });
+  }
+
+  function handleDeactivateBlocked() {
+    if (blockedDelete === null) return;
+    updateMutation.mutate(
+      { id: blockedDelete.id, activo: false },
+      { onSuccess: () => setBlockedDelete(null) }
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -311,9 +402,11 @@ export function ProductosPage() {
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-neutral-500">
                   Estado
                 </th>
-                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-neutral-500">
-                  Acciones
-                </th>
+                {puedeEscribir && (
+                  <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-neutral-500">
+                    Acciones
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
@@ -327,6 +420,8 @@ export function ProductosPage() {
               {data?.data.map((p) => {
                 const stockActual = 0;
                 const bajStock = stockActual < p.stock_minimo && p.tipo === "PRODUCTO";
+                const isToggling =
+                  updateMutation.isPending && updateMutation.variables?.id === p.id;
                 return (
                   <tr key={p.id} className="hover:bg-neutral-50">
                     <td className="px-4 py-3">
@@ -367,6 +462,19 @@ export function ProductosPage() {
                             className="flex h-7 w-7 items-center justify-center rounded-lg text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
                           >
                             <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleActivo(p)}
+                            disabled={isToggling}
+                            title={p.activo ? "Desactivar" : "Activar"}
+                            className={`flex h-7 w-7 items-center justify-center rounded-lg disabled:opacity-40 ${
+                              p.activo
+                                ? "text-green-500 hover:bg-green-50 hover:text-green-700"
+                                : "text-neutral-400 hover:bg-neutral-100 hover:text-neutral-600"
+                            }`}
+                          >
+                            <Power className="h-3.5 w-3.5" />
                           </button>
                           <button
                             type="button"
@@ -417,19 +525,24 @@ export function ProductosPage() {
         </div>
       )}
 
-      {/* Delete confirm */}
+      {/* Confirm delete modal */}
       {pendingDelete !== null && (
-        <ConfirmModal
+        <ConfirmDeleteModal
           nombre={pendingDelete.nombre}
-          onConfirm={() => {
-            if (pendingDelete !== null) {
-              deleteMutation.mutate(pendingDelete.id, {
-                onSuccess: () => setPendingDelete(null),
-              });
-            }
-          }}
+          onConfirm={handleConfirmDelete}
           onCancel={() => setPendingDelete(null)}
           isLoading={deleteMutation.isPending}
+        />
+      )}
+
+      {/* Blocked delete modal (has dependencies) */}
+      {blockedDelete !== null && (
+        <BlockedDeleteModal
+          nombre={blockedDelete.nombre}
+          activo={blockedDelete.activo}
+          onDeactivate={handleDeactivateBlocked}
+          onCancel={() => setBlockedDelete(null)}
+          isLoading={updateMutation.isPending}
         />
       )}
     </div>

@@ -13,6 +13,8 @@ export type Cliente = {
   telefono: string | null;
   telefono_secundario: string | null;
   notas: string | null;
+  distrito: string | null;
+  nivel: string;
   activo: boolean;
   created_at: Date;
   updated_at: Date;

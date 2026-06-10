@@ -2,11 +2,15 @@ import { TipoDocumento } from "@kallpasoft/shared";
 import { z } from "zod";
 import { uuidSchema } from "./common.js";
 
+const nivelClienteSchema = z.enum(["ALTO", "NORMAL", "BAJO"] as const);
+
 const clienteBaseSchema = z.object({
   email: z.string().email().optional(),
   telefono: z.string().max(20).optional(),
   telefono_secundario: z.string().max(20).optional(),
   notas: z.string().optional(),
+  distrito: z.string().max(100).optional(),
+  nivel: nivelClienteSchema.default("NORMAL"),
 });
 
 const clienteNaturalSchema = clienteBaseSchema.extend({
@@ -41,6 +45,8 @@ export const updateClienteSchema = z.object({
   telefono: z.string().max(20).optional(),
   telefono_secundario: z.string().max(20).optional(),
   notas: z.string().optional(),
+  distrito: z.string().max(100).optional(),
+  nivel: nivelClienteSchema.optional(),
 });
 export type UpdateClienteInput = z.infer<typeof updateClienteSchema>;
 

@@ -1,5 +1,6 @@
 import type { CreateComponenteInput } from "@kallpasoft/validators";
 import type { Context } from "hono";
+import { isDuplicateKeyError } from "../../../lib/db-errors.js";
 import { ApiError } from "../../../middlewares/error-handler.js";
 import type { HonoVariables } from "../../../types/context.js";
 import type {
@@ -16,10 +17,6 @@ import type { ListComponentesQuery, UpdateComponenteHttpInput } from "./validato
 
 // biome-ignore lint/suspicious/noExplicitAny: Hono's Input generic doesn't compose well with separately-defined handlers
 type HonoCtx = Context<{ Variables: HonoVariables }, string, any>;
-
-function isDuplicateKeyError(err: unknown): boolean {
-  return (err as { code?: string })?.code === "23505";
-}
 
 export function createComponenteHandlers(repo: IComponenteRepository) {
   async function list(c: HonoCtx) {

@@ -19,12 +19,17 @@ const proveedorFormSchema = z.object({
   ruc: z.string().length(11, "RUC debe tener 11 dígitos").regex(/^\d+$/, "Solo números"),
   razon_social: z.string().min(1, "Requerido").max(200),
   nombre_comercial: z.string().max(200).optional(),
-  direccion: z.string().max(255).optional(),
-  distrito: z.string().max(100).optional(),
-  email: z.union([z.string().email("Email inválido"), z.literal("")]).optional(),
+  contacto_nombre: z.string().max(100).optional(),
   telefono: z.string().max(20).optional(),
+  telefono2: z.string().max(20).optional(),
+  telefono3: z.string().max(20).optional(),
+  email: z.union([z.string().email("Email inválido"), z.literal("")]).optional(),
+  direccion: z.string().max(255).optional(),
+  departamento: z.string().max(100).optional(),
+  distrito: z.string().max(100).optional(),
   web: z.union([z.string().url("URL inválida"), z.literal("")]).optional(),
   notas: z.string().optional(),
+  observaciones: z.string().optional(),
   calificacion: z.string().optional(),
 });
 
@@ -130,12 +135,17 @@ function ProveedorModal({
       ruc: proveedor?.ruc ?? "",
       razon_social: proveedor?.razon_social ?? "",
       nombre_comercial: proveedor?.nombre_comercial ?? "",
-      direccion: proveedor?.direccion ?? "",
-      distrito: proveedor?.distrito ?? "",
-      email: proveedor?.email ?? "",
+      contacto_nombre: proveedor?.contacto_nombre ?? "",
       telefono: proveedor?.telefono ?? "",
+      telefono2: proveedor?.telefono2 ?? "",
+      telefono3: proveedor?.telefono3 ?? "",
+      email: proveedor?.email ?? "",
+      direccion: proveedor?.direccion ?? "",
+      departamento: proveedor?.departamento ?? "",
+      distrito: proveedor?.distrito ?? "",
       web: proveedor?.web ?? "",
       notas: proveedor?.notas ?? "",
+      observaciones: proveedor?.observaciones ?? "",
       calificacion:
         proveedor?.calificacion !== null && proveedor?.calificacion !== undefined
           ? String(proveedor.calificacion)
@@ -148,12 +158,17 @@ function ProveedorModal({
       ruc: values.ruc,
       razon_social: values.razon_social,
       ...(values.nombre_comercial ? { nombre_comercial: values.nombre_comercial } : {}),
-      ...(values.direccion ? { direccion: values.direccion } : {}),
-      ...(values.distrito ? { distrito: values.distrito } : {}),
-      ...(values.email && values.email !== "" ? { email: values.email } : {}),
+      ...(values.contacto_nombre ? { contacto_nombre: values.contacto_nombre } : {}),
       ...(values.telefono ? { telefono: values.telefono } : {}),
+      ...(values.telefono2 ? { telefono2: values.telefono2 } : {}),
+      ...(values.telefono3 ? { telefono3: values.telefono3 } : {}),
+      ...(values.email && values.email !== "" ? { email: values.email } : {}),
+      ...(values.direccion ? { direccion: values.direccion } : {}),
+      ...(values.departamento ? { departamento: values.departamento } : {}),
+      ...(values.distrito ? { distrito: values.distrito } : {}),
       ...(values.web && values.web !== "" ? { web: values.web } : {}),
       ...(values.notas ? { notas: values.notas } : {}),
+      ...(values.observaciones ? { observaciones: values.observaciones } : {}),
       ...(values.calificacion ? { calificacion: Number.parseInt(values.calificacion, 10) } : {}),
     };
   }
@@ -260,6 +275,63 @@ function ProveedorModal({
                 />
               </div>
 
+              {/* contacto_nombre */}
+              <div className="col-span-2 flex flex-col gap-1">
+                <label htmlFor="pf-contacto" className="text-xs font-medium text-neutral-700">
+                  Contacto principal{" "}
+                  <span className="font-normal text-neutral-400">(opcional)</span>
+                </label>
+                <input
+                  id="pf-contacto"
+                  type="text"
+                  placeholder="Nombre del contacto"
+                  className={INPUT}
+                  {...register("contacto_nombre")}
+                />
+              </div>
+
+              {/* telefono */}
+              <div className="flex flex-col gap-1">
+                <label htmlFor="pf-telefono" className="text-xs font-medium text-neutral-700">
+                  Teléfono 1 <span className="font-normal text-neutral-400">(opcional)</span>
+                </label>
+                <input
+                  id="pf-telefono"
+                  type="tel"
+                  placeholder="01 234 5678"
+                  className={INPUT}
+                  {...register("telefono")}
+                />
+              </div>
+
+              {/* telefono2 */}
+              <div className="flex flex-col gap-1">
+                <label htmlFor="pf-telefono2" className="text-xs font-medium text-neutral-700">
+                  Teléfono 2 <span className="font-normal text-neutral-400">(opcional)</span>
+                </label>
+                <input
+                  id="pf-telefono2"
+                  type="tel"
+                  placeholder="987 654 321"
+                  className={INPUT}
+                  {...register("telefono2")}
+                />
+              </div>
+
+              {/* telefono3 */}
+              <div className="flex flex-col gap-1">
+                <label htmlFor="pf-telefono3" className="text-xs font-medium text-neutral-700">
+                  Teléfono 3 <span className="font-normal text-neutral-400">(opcional)</span>
+                </label>
+                <input
+                  id="pf-telefono3"
+                  type="tel"
+                  placeholder="987 000 111"
+                  className={INPUT}
+                  {...register("telefono3")}
+                />
+              </div>
+
               {/* email */}
               <div className="flex flex-col gap-1">
                 <label htmlFor="pf-email" className="text-xs font-medium text-neutral-700">
@@ -277,20 +349,6 @@ function ProveedorModal({
                 )}
               </div>
 
-              {/* telefono */}
-              <div className="flex flex-col gap-1">
-                <label htmlFor="pf-telefono" className="text-xs font-medium text-neutral-700">
-                  Teléfono <span className="font-normal text-neutral-400">(opcional)</span>
-                </label>
-                <input
-                  id="pf-telefono"
-                  type="tel"
-                  placeholder="01 234 5678"
-                  className={INPUT}
-                  {...register("telefono")}
-                />
-              </div>
-
               {/* web */}
               <div className="flex flex-col gap-1">
                 <label htmlFor="pf-web" className="text-xs font-medium text-neutral-700">
@@ -306,6 +364,20 @@ function ProveedorModal({
                 {errors.web && (
                   <span className="text-xs text-danger-600">{errors.web.message}</span>
                 )}
+              </div>
+
+              {/* departamento */}
+              <div className="flex flex-col gap-1">
+                <label htmlFor="pf-departamento" className="text-xs font-medium text-neutral-700">
+                  Departamento <span className="font-normal text-neutral-400">(opcional)</span>
+                </label>
+                <input
+                  id="pf-departamento"
+                  type="text"
+                  placeholder="Lima"
+                  className={INPUT}
+                  {...register("departamento")}
+                />
               </div>
 
               {/* distrito */}
@@ -344,9 +416,23 @@ function ProveedorModal({
                 <input
                   id="pf-notas"
                   type="text"
-                  placeholder="Observaciones"
+                  placeholder="Notas internas"
                   className={INPUT}
                   {...register("notas")}
+                />
+              </div>
+
+              {/* observaciones */}
+              <div className="col-span-2 flex flex-col gap-1">
+                <label htmlFor="pf-observaciones" className="text-xs font-medium text-neutral-700">
+                  Observaciones <span className="font-normal text-neutral-400">(opcional)</span>
+                </label>
+                <input
+                  id="pf-observaciones"
+                  type="text"
+                  placeholder="Observaciones adicionales"
+                  className={INPUT}
+                  {...register("observaciones")}
                 />
               </div>
             </div>

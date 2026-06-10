@@ -12,6 +12,8 @@ export type CreateClienteData = {
   telefono?: string;
   telefono_secundario?: string;
   notas?: string;
+  distrito?: string;
+  nivel?: string;
 };
 
 export type UpdateClienteData = {
@@ -25,6 +27,8 @@ export type UpdateClienteData = {
   telefono?: string | null;
   telefono_secundario?: string | null;
   notas?: string | null;
+  distrito?: string | null;
+  nivel?: string;
   activo?: boolean;
 };
 

@@ -966,7 +966,7 @@ export class StockDrizzleRepository implements IStockRepository {
         .where(
           and(
             eq(proveedorLineaTable.tenant_id, tenantId),
-            eq(proveedorLineaTable.categoria_id, prod.categoria_id),
+            prod.categoria_id ? eq(proveedorLineaTable.categoria_id, prod.categoria_id) : sql`true`,
             prod.componente_id
               ? eq(proveedorLineaTable.componente_id, prod.componente_id)
               : isNotNull(proveedorLineaTable.componente_id),
@@ -997,7 +997,7 @@ export class StockDrizzleRepository implements IStockRepository {
         .where(
           and(
             eq(proveedorLineaTable.tenant_id, tenantId),
-            eq(proveedorLineaTable.categoria_id, prod.categoria_id),
+            prod.categoria_id ? eq(proveedorLineaTable.categoria_id, prod.categoria_id) : sql`true`,
             eq(proveedorTable.activo, true)
           )
         )

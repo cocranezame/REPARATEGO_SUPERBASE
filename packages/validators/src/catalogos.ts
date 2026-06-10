@@ -31,6 +31,15 @@ export type CreateMarcaInput = z.infer<typeof createMarcaSchema>;
 export const updateMarcaSchema = createMarcaSchema.partial();
 export type UpdateMarcaInput = z.infer<typeof updateMarcaSchema>;
 
+export const createTipoRepuestoSchema = z.object({
+  componente_id: uuidSchema,
+  nombre: z.string().min(1).max(100),
+});
+export type CreateTipoRepuestoInput = z.infer<typeof createTipoRepuestoSchema>;
+
+export const updateTipoRepuestoSchema = createTipoRepuestoSchema.partial();
+export type UpdateTipoRepuestoInput = z.infer<typeof updateTipoRepuestoSchema>;
+
 export const createModeloSchema = z.object({
   marca_id: uuidSchema,
   categoria_id: uuidSchema,

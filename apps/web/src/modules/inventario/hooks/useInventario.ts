@@ -5,6 +5,7 @@ import type {
   CreateProductoInput,
   CreateTasaPrecioInput,
   IngresoManualInput,
+  SyncCategoriasProductoInput,
   SyncCompatibilidadesInput,
   UpdateMetodoPagoInput,
   UpdateProductoInput,
@@ -14,6 +15,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../../shared/lib/api-client";
 import type {
   AlertasStockResponse,
+  CategoriasProductoListResponse,
   CompatibilidadesListResponse,
   DashboardInventarioResponse,
   IngresoManualResponse,
@@ -43,6 +45,9 @@ function buildProductosQS(params: ProductosParams): string {
   if (params.marca_id) q.set("marca_id", params.marca_id);
   if (params.search) q.set("search", params.search);
   if (params.activo !== undefined) q.set("activo", String(params.activo));
+  if (params.con_imagen !== undefined) q.set("con_imagen", String(params.con_imagen));
+  if (params.sin_cotizacion !== undefined) q.set("sin_cotizacion", String(params.sin_cotizacion));
+  if (params.sin_tasa !== undefined) q.set("sin_tasa", String(params.sin_tasa));
   q.set("page", String(params.page ?? 1));
   q.set("pageSize", String(params.pageSize ?? 20));
   return `?${q.toString()}`;
@@ -123,6 +128,36 @@ export function useSyncCompatibilidades() {
         queryKey: ["productos", vars.productoId, "compatibilidades"],
       });
       void qc.invalidateQueries({ queryKey: ["productos", vars.productoId] });
+    },
+  });
+}
+
+// ─── Categorías producto (alcance CATEGORIA) ─────────────────────────────────
+
+export function useCategoriasProducto(productoId: string) {
+  return useQuery<CategoriasProductoListResponse>({
+    queryKey: ["productos", productoId, "categorias"],
+    queryFn: () =>
+      apiClient.get<CategoriasProductoListResponse>(`/productos/${productoId}/categorias`),
+    enabled: productoId !== "",
+  });
+}
+
+export function useSyncCategoriasProducto() {
+  const qc = useQueryClient();
+  return useMutation<
+    CategoriasProductoListResponse,
+    Error,
+    SyncCategoriasProductoInput & { productoId: string }
+  >({
+    mutationFn: ({ productoId, pares }) =>
+      apiClient.post<CategoriasProductoListResponse>(`/productos/${productoId}/categorias`, {
+        pares,
+      }),
+    onSuccess: (_data, vars) => {
+      void qc.invalidateQueries({
+        queryKey: ["productos", vars.productoId, "categorias"],
+      });
     },
   });
 }

@@ -6,11 +6,13 @@ import type { HonoVariables } from "../../../types/context.js";
 import { ProveedorDrizzleRepository } from "../infra/repositories/proveedor.drizzle.js";
 import { createProveedorHandlers } from "./handlers.js";
 import {
+  createCondicionPagoSchema,
   createProveedorContactoSchema,
   createProveedorLineaSchema,
   createProveedorMetodoPagoSchema,
   createProveedorSchema,
   listProveedoresQuerySchema,
+  updateCondicionPagoSchema,
   updateProveedorContactoSchema,
   updateProveedorMetodoPagoSchema,
   updateProveedorSchema,
@@ -23,6 +25,20 @@ export const proveedorRoutes = new Hono<{ Variables: HonoVariables }>();
 
 proveedorRoutes.use("/proveedores", authMiddleware);
 proveedorRoutes.use("/proveedores/*", authMiddleware);
+
+// Condiciones de pago
+proveedorRoutes.get("/proveedores/condiciones-pago", h.listCondiciones);
+proveedorRoutes.post(
+  "/proveedores/condiciones-pago",
+  validateBody(createCondicionPagoSchema),
+  h.createCondicion
+);
+proveedorRoutes.put(
+  "/proveedores/condiciones-pago/:id",
+  validateBody(updateCondicionPagoSchema),
+  h.updateCondicion
+);
+proveedorRoutes.delete("/proveedores/condiciones-pago/:id", h.removeCondicion);
 
 // Proveedores
 proveedorRoutes.get("/proveedores", validateQuery(listProveedoresQuerySchema), h.list);

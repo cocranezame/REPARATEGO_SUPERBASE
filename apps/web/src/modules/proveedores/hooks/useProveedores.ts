@@ -1,8 +1,10 @@
 import type {
+  CreateCondicionPagoInput,
   CreateProveedorContactoInput,
   CreateProveedorInput,
   CreateProveedorLineaInput,
   CreateProveedorMetodoPagoInput,
+  UpdateCondicionPagoInput,
   UpdateProveedorContactoInput,
   UpdateProveedorInput,
   UpdateProveedorMetodoPagoInput,
@@ -10,6 +12,8 @@ import type {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "../../../shared/lib/api-client";
 import type {
+  CondicionPagoListResponse,
+  CondicionPagoResponse,
   ProveedorContactoResponse,
   ProveedorContactosListResponse,
   ProveedoresListResponse,
@@ -72,6 +76,48 @@ export function useDeleteProveedor() {
     mutationFn: (id) => apiClient.delete<{ success: true; data: null }>(`/proveedores/${id}`),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["proveedores"] });
+    },
+  });
+}
+
+// ─── Condiciones de pago ─────────────────────────────────────────────────────
+
+export function useCondicionesPago() {
+  return useQuery<CondicionPagoListResponse>({
+    queryKey: ["condiciones-pago"],
+    queryFn: () => apiClient.get<CondicionPagoListResponse>("/proveedores/condiciones-pago"),
+  });
+}
+
+export function useCreateCondicionPago() {
+  const queryClient = useQueryClient();
+  return useMutation<CondicionPagoResponse, Error, CreateCondicionPagoInput>({
+    mutationFn: (body) =>
+      apiClient.post<CondicionPagoResponse>("/proveedores/condiciones-pago", body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["condiciones-pago"] });
+    },
+  });
+}
+
+export function useUpdateCondicionPago() {
+  const queryClient = useQueryClient();
+  return useMutation<CondicionPagoResponse, Error, { id: string } & UpdateCondicionPagoInput>({
+    mutationFn: ({ id, ...body }) =>
+      apiClient.put<CondicionPagoResponse>(`/proveedores/condiciones-pago/${id}`, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["condiciones-pago"] });
+    },
+  });
+}
+
+export function useDeleteCondicionPago() {
+  const queryClient = useQueryClient();
+  return useMutation<{ success: true; data: null }, Error, string>({
+    mutationFn: (id) =>
+      apiClient.delete<{ success: true; data: null }>(`/proveedores/condiciones-pago/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["condiciones-pago"] });
     },
   });
 }

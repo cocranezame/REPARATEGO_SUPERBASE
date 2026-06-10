@@ -11,6 +11,8 @@ export type ClienteDto = {
   telefono: string | null;
   telefono_secundario: string | null;
   notas: string | null;
+  distrito: string | null;
+  nivel: "ALTO" | "NORMAL" | "BAJO";
   activo: boolean;
   created_at: string;
   updated_at: string;

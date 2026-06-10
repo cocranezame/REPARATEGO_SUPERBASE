@@ -25,6 +25,7 @@ import {
   listProductosQuerySchema,
   listSimpleQuerySchema,
   listStockQuerySchema,
+  syncCategoriasProductoSchema,
   syncCompatibilidadesSchema,
   updateProductoHttpSchema,
 } from "./validators.js";
@@ -97,6 +98,19 @@ inventarioRoutes.post(
   authorize("ADMIN"),
   validateBody(syncCompatibilidadesSchema),
   h.syncCompatibilidades
+);
+
+// ── Categorías (alcance CATEGORIA) ────────────────────────────────────────────
+inventarioRoutes.get(
+  "/productos/:id/categorias",
+  authorize("ADMIN", "ALMACEN", "VENDEDOR"),
+  h.listCategoriasProducto
+);
+inventarioRoutes.post(
+  "/productos/:id/categorias",
+  authorize("ADMIN"),
+  validateBody(syncCategoriasProductoSchema),
+  h.syncCategoriasProducto
 );
 
 // ── GRUPO 3: Tasas de precio (jerarquía) (I24, I25) ──────────────────────────

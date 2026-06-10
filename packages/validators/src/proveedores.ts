@@ -1,16 +1,38 @@
 import { z } from "zod";
 import { uuidSchema } from "./common.js";
 
+// ─── Condición de pago ────────────────────────────────────────────────────────
+
+export const createCondicionPagoSchema = z.object({
+  nombre: z.string().min(1).max(100),
+  dias_credito: z.number().int().min(0).optional(),
+  es_default: z.boolean().optional(),
+});
+export type CreateCondicionPagoInput = z.infer<typeof createCondicionPagoSchema>;
+
+export const updateCondicionPagoSchema = createCondicionPagoSchema.partial().extend({
+  activo: z.boolean().optional(),
+});
+export type UpdateCondicionPagoInput = z.infer<typeof updateCondicionPagoSchema>;
+
+// ─── Proveedor ────────────────────────────────────────────────────────────────
+
 export const createProveedorSchema = z.object({
   ruc: z.string().length(11).regex(/^\d+$/),
   razon_social: z.string().min(1).max(200),
   nombre_comercial: z.string().max(200).optional(),
-  direccion: z.string().max(255).optional(),
-  distrito: z.string().max(100).optional(),
-  email: z.string().email().optional(),
+  contacto_nombre: z.string().max(100).optional(),
   telefono: z.string().max(20).optional(),
+  telefono2: z.string().max(20).optional(),
+  telefono3: z.string().max(20).optional(),
+  email: z.string().email().optional(),
+  direccion: z.string().max(255).optional(),
+  departamento: z.string().max(100).optional(),
+  distrito: z.string().max(100).optional(),
+  condicion_pago_id: uuidSchema.optional(),
   web: z.string().url().optional(),
   notas: z.string().optional(),
+  observaciones: z.string().optional(),
   calificacion: z.number().int().min(1).max(5).optional(),
 });
 export type CreateProveedorInput = z.infer<typeof createProveedorSchema>;
@@ -19,6 +41,8 @@ export const updateProveedorSchema = createProveedorSchema.partial().extend({
   activo: z.boolean().optional(),
 });
 export type UpdateProveedorInput = z.infer<typeof updateProveedorSchema>;
+
+// ─── Contacto ─────────────────────────────────────────────────────────────────
 
 export const createProveedorContactoSchema = z.object({
   nombre: z.string().min(1).max(100),
@@ -34,7 +58,10 @@ export const updateProveedorContactoSchema = createProveedorContactoSchema.parti
 });
 export type UpdateProveedorContactoInput = z.infer<typeof updateProveedorContactoSchema>;
 
+// ─── Método de pago ───────────────────────────────────────────────────────────
+
 export const createProveedorMetodoPagoSchema = z.object({
+  tipo_cuenta: z.enum(["banco", "monedero"]).optional(),
   tipo: z.string().min(1).max(30),
   banco: z.string().max(50).optional(),
   numero_cuenta: z.string().max(30).optional(),
@@ -47,6 +74,8 @@ export const updateProveedorMetodoPagoSchema = createProveedorMetodoPagoSchema.p
   activo: z.boolean().optional(),
 });
 export type UpdateProveedorMetodoPagoInput = z.infer<typeof updateProveedorMetodoPagoSchema>;
+
+// ─── Línea ────────────────────────────────────────────────────────────────────
 
 export const createProveedorLineaSchema = z.object({
   categoria_id: uuidSchema.optional(),

@@ -20,6 +20,8 @@ export async function createCliente(
       ? { telefono_secundario: input.telefono_secundario }
       : {}),
     ...(input.notas !== undefined ? { notas: input.notas } : {}),
+    ...(input.distrito !== undefined ? { distrito: input.distrito } : {}),
+    ...(input.nivel !== undefined ? { nivel: input.nivel } : {}),
   };
   return repo.create(tenantId, base);
 }

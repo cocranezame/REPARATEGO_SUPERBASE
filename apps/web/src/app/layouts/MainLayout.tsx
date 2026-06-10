@@ -147,6 +147,11 @@ const NAV_GROUPS: NavGroup[] = [
         to: "/inventario/metodos-pago",
         icon: <CreditCard className="h-5 w-5" />,
       },
+      {
+        label: "Registro completo",
+        to: "/inventario/registro",
+        icon: <ClipboardList className="h-5 w-5" />,
+      },
     ],
   },
   {

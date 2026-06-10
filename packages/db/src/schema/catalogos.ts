@@ -87,6 +87,34 @@ export const modelo = pgTable(
   (t) => [uniqueIndex("uq_modelo_tenant_marca_nombre").on(t.tenant_id, t.marca_id, t.nombre)]
 );
 
+export const tipoRepuesto = pgTable(
+  "tipo_repuesto",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tenant_id: uuid("tenant_id")
+      .notNull()
+      .references(() => tenant.id),
+    componente_id: uuid("componente_id")
+      .notNull()
+      .references(() => componente.id),
+    nombre: varchar("nombre", { length: 100 }).notNull(),
+    activo: boolean("activo").notNull().default(true),
+    created_at: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updated_at: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("uq_tipo_repuesto_tenant_comp_nombre").on(t.tenant_id, t.componente_id, t.nombre),
+  ]
+);
+
+export const tipoRepuestoRelations = relations(tipoRepuesto, ({ one }) => ({
+  tenant: one(tenant, { fields: [tipoRepuesto.tenant_id], references: [tenant.id] }),
+  componente: one(componente, {
+    fields: [tipoRepuesto.componente_id],
+    references: [componente.id],
+  }),
+}));
+
 export const categoriaRelations = relations(categoria, ({ one, many }) => ({
   tenant: one(tenant, { fields: [categoria.tenant_id], references: [tenant.id] }),
   padre: one(categoria, {

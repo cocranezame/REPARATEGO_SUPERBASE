@@ -1780,7 +1780,15 @@ export class ServicioDrizzleRepository implements IServicioRepository {
         throw new Error("SKUs solo pueden asignarse en estado AGREGAR_SKU");
       }
 
-      // Check stock
+      // [C009-A] Bloqueo pesimista del lote — impide que dos técnicos concurrentes
+      // pasen el check de stock con el mismo saldo disponible
+      const lockResult = (await tx.execute(
+        sql`SELECT id, sucursal_id FROM lote WHERE id = ${data.lote_id} AND tenant_id = ${tenantId} FOR UPDATE`
+      )) as unknown as { rows: Array<{ id: string; sucursal_id: string }> };
+      const loteRow = lockResult.rows[0];
+      if (!loteRow) throw new Error("Lote no encontrado");
+
+      // Check stock (ahora atómico: protegido por el row lock del lote)
       const stockRows = await tx
         .select({ stock: sum(movimientoTable.cantidad) })
         .from(movimientoTable)
@@ -1809,6 +1817,21 @@ export class ServicioDrizzleRepository implements IServicioRepository {
         .returning();
 
       const sku = row as typeof osSkuTable.$inferSelect;
+
+      // [C009-A] Movimiento de reserva inmediato — el sum() de la siguiente transacción
+      // concurrente ya refleja esta deducción, eliminando la race condition
+      await tx.insert(movimientoTable).values({
+        tenant_id: tenantId,
+        producto_id: data.producto_id,
+        lote_id: data.lote_id,
+        sucursal_id: loteRow.sucursal_id,
+        tipo: "SERVICIO" as const,
+        cantidad: -data.cantidad,
+        referencia_tipo: "orden_servicio",
+        referencia_id: ordenId,
+        notas: `RESERVA-OS-${ordenId}`,
+        usuario_id: userId,
+      });
 
       const prodRows = await tx
         .select({ nombre: productoTable.nombre })

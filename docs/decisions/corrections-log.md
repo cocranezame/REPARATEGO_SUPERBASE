@@ -918,3 +918,21 @@ La página `/crm/config/agentes` solo permitía editar agentes existentes. No ex
   - Limpiar dato corrupto: eliminar instancia que apunta a repuesto (Batería Apple)
 - **Razón:** gap de diseño que impedía identificar equipos por modelo y permitía crear instancias con repuestos
 - **Migración:** ALTER TABLE producto ADD COLUMN modelo_id UUID REFERENCES modelo(id); limpiar instancias corruptas
+
+---
+
+## [C009] 2026-06-10 — Fix race condition stock, hash SHA-256 aceptaciones, notificaciones estados
+- **Afecta:** servicios, inventario
+- **Antes:**
+  - [A] asignarSku usa check-then-act sin movimiento de reserva: dos técnicos pueden asignar el mismo lote simultáneamente sobrepasando stock disponible
+  - [D] orden_servicio_aceptacion guarda texto_mostrado como texto plano sin integridad criptográfica
+  - [E] No existe ninguna notificación al cliente para transiciones COTIZADO, AVISADO, ENTREGADO
+  - [B] Movimiento de consumo de stock ocurre en REPARADO/PRIORIDAD en vez de ENTREGADO. Si la OS nunca llega a ENTREGADO, el stock ya fue decrementado
+- **Ahora:**
+  - [A] asignarSku inserta movimiento de RESERVA (cantidad negativa) al momento de asignar el SKU dentro de la misma transacción. El sum() de la siguiente transacción concurrente ya refleja la deducción. Se usa SELECT FOR UPDATE en el lote para bloqueo pesimista.
+  - [D] Se agrega campo hash_sha256 a orden_servicio_aceptacion. Se calcula con crypto.createHash('sha256').update(texto_mostrado).digest('hex') al crear la aceptación.
+  - [E] Se agregan notificaciones no bloqueantes vía EventBridge para: COTIZADO (presupuesto listo), AVISADO (equipo listo para recoger), ENTREGADO (confirmación de entrega). Las notificaciones se procesan en background.
+  - [B] El movimiento de consumo (ASIGNADO→CONSUMIDO) se mueve de REPARADO/PRIORIDAD a ENTREGADO. En REPARADO/PRIORIDAD solo se crea la venta. En ENTREGADO se consume el stock definitivamente.
+- **Razón:** auditoría de patrones detectó race condition real en stock, ausencia de integridad criptográfica en aceptaciones legales, y cero notificaciones al cliente
+- **Migración:** ALTER TABLE orden_servicio_aceptacion ADD COLUMN hash_sha256 VARCHAR(64)
+- **Impacto:** lógica de _autoCrearVenta se separa en dos momentos: venta en REPARADO/PRIORIDAD, consumo de stock en ENTREGADO
